@@ -32,11 +32,6 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-/* 아이폰 상단(상태바 아래 ~12%)은 시스템이 흐리게 처리한다(캡처로 확인). 주소창 없는 화면(안전 영역>0)에서만 윗 12% 높이까지 비운다.
-   display-mode 조건은 이 폰의 '웹 앱으로 열기'에서 맞지 않아 안전 영역 값으로 판단한다: 안전 영역이 0(일반 브라우저)이면 추가 여백 0. */
-@supports (top: min(1px, 2px)) {
-  :root { --st: calc(env(safe-area-inset-top, 0px) + min(calc(env(safe-area-inset-top, 0px) * 1000), max(14px, calc(12vh - env(safe-area-inset-top, 0px))))); }
-}
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: var(--st); z-index: 30; background: var(--bg); }
 * { box-sizing: border-box; touch-action: manipulation; }   /* 빈 곳을 두 번 눌러도 확대되지 않게 */
 html { -webkit-text-size-adjust: 100%; }
@@ -1391,6 +1386,29 @@ input:disabled { opacity: .55; }
   addEventListener("scroll", function () {
     if (sess) sess.follow = (window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 160;
   }, { passive: true });
+  /* 상단 여백: 아이폰 상단(상태바 아래 약 12%)은 시스템이 흐리게 처리한다(캡처로 확인).
+     안전 영역(상태바 높이)이 있는 화면(주소창 없는 웹앱)에서만 윗 12% 높이까지 비운다.
+     CSS 계산식은 이 폰의 웹앱에서 적용되지 않아, 안전 영역을 직접 재서 --st 에 넣는다. */
+  function applySafeTop() {
+    try {
+      var probe = document.createElement("div");
+      probe.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top, 0px)";
+      document.body.appendChild(probe);
+      var inset = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+      probe.remove();
+      var st = inset > 0 ? Math.max(inset + 14, Math.round(window.innerHeight * 0.12)) : 0;
+      document.documentElement.style.setProperty("--st", st + "px");
+      /* 임시 확인 문구(폰에서 값이 맞게 들어가는지 확인한 뒤 삭제) */
+      var dbg = document.getElementById("stdbg");
+      if (inset > 0) {
+        if (!dbg) { dbg = document.createElement("div"); dbg.id = "stdbg"; dbg.style.cssText = "font:11px var(--font);color:var(--muted);padding:18px 0 6px;"; document.body.appendChild(dbg); }
+        dbg.textContent = "화면 확인용(임시) 안전 영역 " + Math.round(inset) + " · 상단 여백 " + Math.round(st) + " · 높이 " + Math.round(window.innerHeight);
+      } else if (dbg) { dbg.remove(); }
+    } catch (e) {}
+  }
+  applySafeTop();
+  addEventListener("orientationchange", function () { setTimeout(applySafeTop, 300); });
+  addEventListener("pageshow", applySafeTop);
   watchKeyboard();
   addEventListener("hashchange", route);
   route();
