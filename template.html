@@ -1398,7 +1398,10 @@ input:disabled { opacity: .55; }
       document.body.appendChild(probe);
       var inset = parseFloat(getComputedStyle(probe).paddingTop) || 0;
       probe.remove();
-      var st = inset > 0 ? Math.max(inset + 14, Math.round(window.innerHeight * 0.12)) : 0;
+      /* 홈 화면 앱(navigator.standalone)인데 안전 영역을 못 읽으면(0) 아이폰 상태바 높이 59 로 본다 */
+      if (!inset && window.navigator.standalone === true) inset = 59;
+      /* 윗 12% 와 안전 영역+14 중 큰 값 + 로그인 버튼 높이(36px)의 절반(18px) 만큼 더 내린다 */
+      var st = inset > 0 ? Math.max(inset + 14, Math.round(window.innerHeight * 0.12)) + 18 : 0;
       document.documentElement.style.setProperty("--st", st + "px");
       /* 임시 확인 문구(폰에서 값이 맞게 들어가는지 확인한 뒤 삭제) */
       var dbg = document.getElementById("stdbg");
