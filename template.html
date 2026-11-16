@@ -111,7 +111,8 @@ input:disabled { opacity: .55; }
 .seg button[aria-pressed="true"] { background: var(--brand-soft); color: var(--brand); }
 .note { color: var(--muted); font-size: 14px; padding: 14px 0; overflow-wrap: anywhere; }
 .note .btn.link { font-size: 14px; }
-.cm { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.cm { display: grid; grid-template-columns: var(--tw, 52px) minmax(0, 1fr) auto; gap: 14px;   /* 시각 칸 폭(--tw)은 방송 길이에 맞춘다: 1시간 넘으면 '1:12:30' 이 들어가도록 넓힘 */
+   padding: 10px 0; border-top: 1px solid var(--line); }
 .cm .t { font: 500 14px/1.7 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 button.t { border: 0; background: none; padding: 0; margin: 0; text-align: left; align-self: start; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 button.t:hover, button.t:active { text-decoration: underline; }
@@ -543,6 +544,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
     S.useAudio = SITE && !!ep.audio && (!OTHER_APP || store.get("ds_mode") !== "clock");
     if (S.useAudio) ensureAudio();
     var r = S.r;
+    document.documentElement.style.setProperty("--tw", (!ep.sec || ep.sec >= 3600) ? "62px" : "52px");
     r.mode = el("div");
     r.sync = el("section", { class: "sync", "aria-label": "재생 위치" });
     r.plat = el("div", { class: "sec" });
