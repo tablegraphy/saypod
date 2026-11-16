@@ -1040,7 +1040,7 @@ input:disabled { opacity: .55; }
       if (!sb) why = "로그인 기능을 불러오지 못했어요";
       else if (!me) why = "로그인하면 댓글을 남길 수 있어요";
       else if (!me.nick) why = "프로필이 없어요. 운영자에게 알려 주세요";
-      else if (!isSynced()) why = "먼저 위에서 재생 위치를 맞춰 주세요";
+      else if (!isSynced() && !S.replyTo) why = "먼저 위에서 재생 위치를 맞춰 주세요";   /* 답글은 시각이 없어 재생 위치를 맞추지 않아도 쓸 수 있다 */
     }
     else if (!isSynced()) why = "먼저 위에서 재생 위치를 맞춰 주세요";
     else if (!nick) why = "닉네임을 먼저 저장해 주세요";
@@ -1060,8 +1060,9 @@ input:disabled { opacity: .55; }
   async function send() {
     var S = sess, r = S.r; if (!S || S.sending || (!SB && !caps.db)) return;
     var txt = r.msg.value.trim(), nick = SB ? (me && me.nick) : (store.get("ds_nick") || "");
-    if (!txt || !isSynced() || !nick) return;
-    var sec = Math.min(S.dur, Math.floor(S.stamp != null ? S.stamp : pos()));
+    var isReply = !!S.replyTo;
+    if (!txt || (!isSynced() && !isReply) || !nick) return;
+    var sec = (isReply && !isSynced()) ? 0 : Math.min(S.dur, Math.floor(S.stamp != null ? S.stamp : pos()));   /* 답글의 시각은 서버가 원 댓글 시각으로 덮어쓴다 */
     S.sending = true; updateComposer();
     try {
       if (SB) {
