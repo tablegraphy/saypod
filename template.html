@@ -786,7 +786,6 @@ button.t:hover, button.t:active { text-decoration: underline; }
           iconBtn("fwd", "30초 앞으로", function () { seekBy(30); }))),
       el("div", { class: "bar" }, S.r.marks, S.r.fill, S.r.dot, S.r.seek),
       el("div", { class: "tot", text: fmt(S.dur) }),
-      S.resumedFrom ? el("div", { class: "hint", text: (S.resumedElsewhere ? "다른 기기에서 듣던 " : "지난번에 듣던 ") + fmt(S.resumedFrom) + "부터 이어서 들어요." }) : null,
       S.r.err2);
     updatePlayBtn();
   }
