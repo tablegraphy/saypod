@@ -274,6 +274,7 @@ input:disabled { opacity: .55; }
     clearInterval(sess.timer); clearInterval(sess.pollTimer); clearTimeout(sess.lt);
     if (sess.unsub) { try { sess.unsub(); } catch (e) {} }
     if (sess.audio) {
+      savePos(sess);
       try { sess.audio.pause(); sess.audio.removeAttribute("src"); sess.audio.load(); } catch (e) {}
       if ("mediaSession" in navigator) { try { navigator.mediaSession.metadata = null; } catch (e) {} }
     }
@@ -333,9 +334,13 @@ input:disabled { opacity: .55; }
         return el("a", { class: "er", href: "#e-" + c.id + "-" + e.n },
           el("div", { class: "n", text: e.n }),
           el("div", null, el("div", { class: "et", text: e.title }),
-            el("div", { class: "em", text: dotDate(e.date) + (e.sec ? " · " + durText(e.sec) : "") })));
+            el("div", { class: "em", text: dotDate(e.date) + (e.sec ? " · " + durText(e.sec) : "") + resumeText(c.id, e) })));
       })
     );
+  }
+  function resumeText(chId, e) {
+    var sp = parseFloat(store.get("ds_pos_" + chId + "-" + e.n));
+    return sp > 5 && (!e.sec || sp < e.sec - 15) ? " · 이어듣기 " + fmt(sp) : "";
   }
   function platLinks(c, small) {
     var items = PLAT.filter(function (p) { return c.links[p[0]]; });
@@ -519,16 +524,21 @@ input:disabled { opacity: .55; }
 
   /* ---- 에피소드: 사이트 안 재생 ---- */
   function savePos(S) {
-    if (S.audio && S.audio.currentTime > 5) store.set("ds_pos_" + S.key, String(Math.floor(S.audio.currentTime)));
+    var a = S.audio; if (!a) return;
+    if (a.readyState === 0 && !(a.currentTime > 0)) return;   /* 아직 음원을 못 읽었으면 저장된 위치를 건드리지 않는다 */
+    store.set("ds_pos_" + S.key, a.currentTime > 5 ? String(Math.floor(a.currentTime)) : "");
   }
   function ensureAudio() {
     var S = sess; if (S.audio || !S.ep.audio) return;
     var a = S.audio = new Audio();
     a.preload = "metadata"; a.src = S.ep.audio;
+    var sp0 = parseFloat(store.get("ds_pos_" + S.key));
+    if (sp0 > 5 && sp0 < S.dur - 15) { try { a.currentTime = sp0; } catch (e) {} S.resumedFrom = sp0; S.resumed = true; }
     a.addEventListener("loadedmetadata", function () {
       if (sess !== S) return;
       if (!S.ep.sec && isFinite(a.duration) && a.duration > 0) { S.dur = a.duration; renderSync(); renderMarks(); }
       if (S.pendingSeek != null) { a.currentTime = S.pendingSeek; S.pendingSeek = null; S.resumed = true; }
+      else if (S.resumedFrom && Math.abs(a.currentTime - S.resumedFrom) > 2) a.currentTime = S.resumedFrom;
       if (!S.resumed) {
         S.resumed = true;
         var sp = parseFloat(store.get("ds_pos_" + S.key));
@@ -607,6 +617,7 @@ input:disabled { opacity: .55; }
         el("button", { class: "btn", type: "button", text: "−10초", onclick: function () { seekBy(-10); } }),
         S.r.play,
         el("button", { class: "btn", type: "button", text: "+10초", onclick: function () { seekBy(10); } })),
+      S.resumedFrom ? el("div", { class: "hint", text: "지난번에 듣던 " + fmt(S.resumedFrom) + "부터 이어서 들어요." }) : null,
       S.r.err2);
     updatePlayBtn();
   }
@@ -988,7 +999,11 @@ input:disabled { opacity: .55; }
 
   /* 시계는 setInterval 횟수가 아니라 실제 시각(Date.now)에서 계산한다.
      화면이 꺼져 타이머가 멈춰도 돌아오는 순간 정확한 위치로 따라잡는다. */
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) { tick(); if (sess && sess.poll) sess.poll(false); } });
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { if (sess && sess.audio) savePos(sess); }
+    else { tick(); if (sess && sess.poll) sess.poll(false); }
+  });
+  addEventListener("pagehide", function () { if (sess && sess.audio) savePos(sess); });
   addEventListener("pageshow", function () { tick(); });
   addEventListener("focus", function () { tick(); });
   watchKeyboard();
