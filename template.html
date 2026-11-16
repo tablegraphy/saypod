@@ -39,7 +39,6 @@ a { color: inherit; }
 .top { display: flex; align-items: center; justify-content: space-between; padding: 16px 0 8px; }
 .brand { font: 700 27px/1.1 var(--font); text-decoration: none; letter-spacing: -0.03em; }
 .lede { margin: 4px 0 20px; color: var(--muted); }
-.lede span { display: block; }
 h1, h2 { margin: 0; font-weight: 700; text-wrap: balance; }
 .btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 500 15px var(--font); cursor: pointer; }
 .btn.pri { background: var(--brand); border-color: var(--brand); color: var(--brand-fg); }
@@ -359,7 +358,7 @@ input:disabled { opacity: .55; }
   function showHome() {
     put(app,
       topbar(),
-      el("p", { class: "lede" }, el("span", { text: "듣는 사이에," }), el("span", { text: "듣는 사이와 나누는 대화" })),
+      el("p", { class: "lede", text: "함께 듣고, 서로 이어지는" }),
       el("div", { class: "list" }, CH.slice().sort(function (a, b) {
         return (b.episodes[0] ? b.episodes[0].date : "").localeCompare(a.episodes[0] ? a.episodes[0].date : "");
       }).map(function (c) {
