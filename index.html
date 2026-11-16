@@ -690,7 +690,7 @@ input[type=text]:disabled { opacity: .55; }
     var S = sess, nick = store.get("ds_nick") || "", box = S.r.nick;
     box.replaceChildren();
     if (!nick || S.editNick) {
-      var inp = el("input", { type: "text", id: "nick-in", maxlength: "12", placeholder: "닉네임 (한 번만 적으면 기억해요)", autocomplete: "off", "aria-label": "닉네임", value: nick });
+      var inp = el("input", { type: "text", id: "nick-in", maxlength: "12", placeholder: "닉네임 (한 번만)", autocomplete: "off", "aria-label": "닉네임", value: nick });
       box.append(el("form", { class: "tform", style: "margin:0", onsubmit: function (e) {
         e.preventDefault();
         var v = inp.value.trim().slice(0, 12);
