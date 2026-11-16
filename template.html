@@ -168,21 +168,22 @@ input:disabled { opacity: .55; }
 .stick .hd { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
 .stick .th { flex: none; border-radius: 8px; object-fit: cover; background: var(--brand-soft); }
 .stick .th.wide { width: 112px; height: 63px; }
-.stick .th.sq { width: 72px; height: 72px; }
-.stick .hdm { min-width: 0; }
-.stick .hdm .back { margin: 0; min-height: 0; font-size: 12px; display: block; }
-.stick .hdm h1 { font-size: 15px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 2px 0 0; }
-.stick .hdm .em { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.stick .th.sq { width: 56px; height: 56px; }
+.stick .eptitle { font-size: 17px; line-height: 1.4; margin: 0 0 8px; overflow-wrap: anywhere; }
+.stick .hd .em { color: var(--muted); font-size: 13px; }
 .stick .sync { position: static; padding: 8px 12px; }
 .stick .prow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .stick .clock.sm { font-size: 30px; }
-.stick .ctrl.sm { margin: 0; flex: none; gap: 6px; }
-.stick .ctrl.sm .btn { flex: none; min-width: 0; min-height: 40px; padding: 0 10px; font-size: 14px; }
-.stick .ctrl.sm .btn.pri { min-width: 60px; }
+.stick .ctrl.sm { margin: 0; flex: none; gap: 0; }
+.ib { flex: none; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--fg); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ib:active { background: var(--brand-soft); }
+.ib:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.ib .gl { width: 30px; height: 30px; display: block; }
+.ib.pl .gl { width: 34px; height: 34px; }
 .stick .bar { margin: 6px 0 0; }
 .stick .tot { text-align: right; font: 500 11px var(--mono); color: var(--muted); margin-top: 2px; }
 .stick .hint { margin: 2px 0 0; font-size: 12px; }
-.stick.compact .hd, .stick.compact .sync .bar, .stick.compact .sync .ctrl, .stick.compact .sync .hint, .stick.compact .sync .tot { display: none; }
+.stick.compact .hd, .stick.compact .eptitle, .stick.compact .sync .bar, .stick.compact .sync .ctrl, .stick.compact .sync .hint, .stick.compact .sync .tot { display: none; }
 @media (max-height: 620px) { .stick .th { display: none; } }
 .pwrap { margin: 0 0 8px; }
 .pbtn { display: inline-flex; align-items: center; gap: 6px; }
@@ -361,6 +362,28 @@ input:disabled { opacity: .55; }
     svg.appendChild(pa);
     return svg;
   }
+  /* 재생 컨트롤 아이콘: play·pause·back(10초 뒤로)·fwd(30초 앞으로). 글자 없이 모양만, 색은 글자색(currentColor) */
+  function glyph(kind) {
+    var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    function n(tag, attrs, parent) { var e = document.createElementNS(ns, tag); Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); }); (parent || svg).appendChild(e); return e; }
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true"); svg.setAttribute("class", "gl g-" + kind);   /* back 같은 기존 클래스와 겹치지 않게 접두사 */
+    if (kind === "play") {
+      n("path", { d: "M7 4.8v14.4a1 1 0 0 0 1.55.84l11.4-7.2a1 1 0 0 0 0-1.68L8.55 3.96A1 1 0 0 0 7 4.8z", fill: "currentColor" });
+    } else if (kind === "pause") {
+      n("rect", { x: "5.5", y: "4.5", width: "4.6", height: "15", rx: "1.3", fill: "currentColor" });
+      n("rect", { x: "13.9", y: "4.5", width: "4.6", height: "15", rx: "1.3", fill: "currentColor" });
+    } else {
+      var ring = n("g", kind === "fwd" ? { transform: "translate(24 0) scale(-1 1)" } : {});
+      n("path", { d: "M12 5.2A8 8 0 1 0 19.4 10", fill: "none", stroke: "currentColor", "stroke-width": "2.1", "stroke-linecap": "round" }, ring);
+      n("path", { d: "M12 1.4v7.6L7.3 5.2z", fill: "currentColor", stroke: "currentColor", "stroke-width": "1", "stroke-linejoin": "round" }, ring);
+      var t = n("text", { x: "12", y: "16.2", "text-anchor": "middle", style: "font:800 8.6px var(--font)", fill: "currentColor" });
+      t.textContent = kind === "fwd" ? "30" : "10";
+    }
+    return svg;
+  }
+  function iconBtn(kind, label, onclick) {
+    return el("button", { class: "ib" + (kind === "play" || kind === "pause" ? " pl" : ""), type: "button", "aria-label": label, onclick: onclick }, glyph(kind));
+  }
   /* back 가 있으면 '‹ 이름'(한 단계 뒤로), 없으면 첫 화면의 '듣는 사이' */
   function topbar(back) {
     var slot = el("div", { class: "authbar" });
@@ -511,10 +534,9 @@ input:disabled { opacity: .55; }
     r.comp = el("div", { class: "comp" }, el("div", { class: "in" }, r.rep, el("div", { class: "meta" }, r.nick, r.stamp), r.form, r.err));
 
     r.stick = el("div", { class: "stick" },
+      el("h1", { class: "eptitle", text: ep.title }),
       el("div", { class: "hd" }, episodeThumb(ch, ep),
-        el("div", { class: "hdm" },
-          el("h1", { text: ep.title }),
-          el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") }))),
+        el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") })),
       r.sync);
     r.msg.addEventListener("focus", function () { r.stick.classList.add("compact"); });   /* 글 쓸 때는 키보드가 화면을 차지하므로 고정 영역을 줄인다 */
     r.msg.addEventListener("blur", function () { r.stick.classList.remove("compact"); });
@@ -571,11 +593,11 @@ input:disabled { opacity: .55; }
       el("div", { class: "clock" }, S.r.clockEl, el("small", { text: " / " + fmt(S.dur) })),
       el("div", { class: "bar", "aria-hidden": "true" }, S.r.marks, S.r.fill, S.r.dot),
       el("div", { class: "ctrl" },
-        el("button", { class: "btn", type: "button", text: "−10초", onclick: function () { setClock(pos() - 10, S.clock.playing); tick(); } }),
-        el("button", { class: "btn pri", type: "button", text: playing ? "멈춤" : "재생", onclick: function () {
+        iconBtn("back", "10초 뒤로", function () { setClock(pos() - 10, S.clock.playing); tick(); }),
+        iconBtn(playing ? "pause" : "play", playing ? "일시정지" : "재생", function () {
           var p = pos(); setClock(p, !S.clock.playing); renderSync(); renderMarks(); tick();
-        } }),
-        el("button", { class: "btn", type: "button", text: "+10초", onclick: function () { setClock(pos() + 10, S.clock.playing); tick(); } }),
+        }),
+        iconBtn("fwd", "30초 앞으로", function () { setClock(pos() + 30, S.clock.playing); tick(); }),
         el("button", { class: "btn", type: "button", text: S.showSet ? "닫기" : "입력", "aria-expanded": S.showSet ? "true" : "false", onclick: function () { S.showSet = !S.showSet; renderSync(); renderMarks(); tick(); } })),
       S.showSet ? timeForm("이 위치로 맞추기") : null
     );
@@ -685,7 +707,7 @@ input:disabled { opacity: .55; }
     h("play", function () { a.play().catch(function () {}); });
     h("pause", function () { a.pause(); });
     h("seekbackward", function (d) { seekBy(-((d && d.seekOffset) || 10)); });
-    h("seekforward", function (d) { seekBy((d && d.seekOffset) || 10); });
+    h("seekforward", function (d) { seekBy((d && d.seekOffset) || 30); });
     h("seekto", function (d) { if (d && typeof d.seekTime === "number") { a.currentTime = d.seekTime; tick(); } });
   }
   function audioTick(S, p) {
@@ -699,7 +721,9 @@ input:disabled { opacity: .55; }
   }
   function updatePlayBtn() {
     var S = sess; if (!S || !S.r.play || !S.audio) return;
-    S.r.play.textContent = S.audio.paused ? "재생" : "멈춤";
+    var paused = S.audio.paused;
+    S.r.play.replaceChildren(glyph(paused ? "play" : "pause"));
+    S.r.play.setAttribute("aria-label", paused ? "재생" : "일시정지");
   }
   function togglePlay() {
     var S = sess, a = S.audio; if (!a) return;
@@ -721,15 +745,15 @@ input:disabled { opacity: .55; }
     S.r.seek = el("input", { type: "range", class: "seek", min: "0", max: String(Math.floor(S.dur)), step: "1", value: String(Math.floor(pos())), "aria-label": "재생 위치" });
     S.r.seek.addEventListener("input", function () { S.seeking = true; S.touched = true; a.currentTime = +S.r.seek.value; tick(); });
     S.r.seek.addEventListener("change", function () { S.seeking = false; });
-    S.r.play = el("button", { class: "btn pri", type: "button", onclick: togglePlay });
+    S.r.play = iconBtn("play", "재생", togglePlay);
     S.r.err2 = el("div", { class: "err", role: "alert", text: S.audioErr || "" });
     put(box,
       el("div", { class: "prow" },
         el("div", { class: "clock sm" }, S.r.clockEl),
         el("div", { class: "ctrl sm" },
-          el("button", { class: "btn", type: "button", text: "−10초", onclick: function () { seekBy(-10); } }),
+          iconBtn("back", "10초 뒤로", function () { seekBy(-10); }),
           S.r.play,
-          el("button", { class: "btn", type: "button", text: "+10초", onclick: function () { seekBy(10); } }))),
+          iconBtn("fwd", "30초 앞으로", function () { seekBy(30); }))),
       el("div", { class: "bar" }, S.r.marks, S.r.fill, S.r.dot, S.r.seek),
       el("div", { class: "tot", text: fmt(S.dur) }),
       S.resumedFrom ? el("div", { class: "hint", text: (S.resumedElsewhere ? "다른 기기에서 듣던 " : "지난번에 듣던 ") + fmt(S.resumedFrom) + "부터 이어서 들어요." }) : null,
@@ -850,9 +874,9 @@ input:disabled { opacity: .55; }
     svg.setAttribute("class", "host"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", "운영자");
     var t = document.createElementNS(ns, "title"); t.textContent = "운영자"; svg.appendChild(t);
     var body = document.createElementNS(ns, "rect");
-    [["x", "9"], ["y", "2"], ["width", "6"], ["height", "12"], ["rx", "3"], ["fill", "currentColor"]].forEach(function (a) { body.setAttribute(a[0], a[1]); });
+    [["x", "8"], ["y", "1.8"], ["width", "8"], ["height", "12.4"], ["rx", "4"], ["fill", "currentColor"]].forEach(function (a) { body.setAttribute(a[0], a[1]); });   /* 녹음실 스탠드 마이크: 캡슐 + 받침 곡선 + 기둥 + 바닥 */
     var arc = document.createElementNS(ns, "path");
-    [["d", "M5 11a7 7 0 0 0 14 0M12 18v4"], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "2"], ["stroke-linecap", "round"]].forEach(function (a) { arc.setAttribute(a[0], a[1]); });
+    [["d", "M4.8 10.6a7.2 7.2 0 0 0 14.4 0M12 17.8v3.4M7.6 21.3h8.8"], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "1.9"], ["stroke-linecap", "round"]].forEach(function (a) { arc.setAttribute(a[0], a[1]); });
     svg.appendChild(body); svg.appendChild(arc);
     return svg;
   }
@@ -994,7 +1018,7 @@ input:disabled { opacity: .55; }
     box.replaceChildren();
     if (SB) {
       put(box, me
-        ? el("div", { class: "nk" }, "닉네임 ", el("b", { text: me.nick || "(없음)" }), me.nick ? roleIcon((me.hosts || []).indexOf(chOf(S)) >= 0) : null, el("button", { class: "btn link", type: "button", text: "변경", onclick: function () { openAuth("nick"); } }))
+        ? el("div", { class: "nk" }, "닉네임 ", el("b", { text: me.nick || "(없음)" }), me.nick ? roleIcon(!!me.admin || (me.hosts || []).indexOf(chOf(S)) >= 0) : null, el("button", { class: "btn link", type: "button", text: "변경", onclick: function () { openAuth("nick"); } }))
         : el("div", { class: "nk" }, el("button", { class: "btn", type: "button", text: "로그인하고 댓글 남기기", onclick: function () { openAuth("login"); } })));
       return;
     }
@@ -1149,7 +1173,7 @@ input:disabled { opacity: .55; }
       else {
         var r = await sb.from("profiles").select("nickname").eq("user_id", user.id).maybeSingle();
         var rr = await sb.rpc("my_roles"), ro = (rr && rr.data) || {};
-        me = { id: user.id, nick: r && r.data ? r.data.nickname : null, admin: !!ro.admin, hosts: ro.hosts || [], host: !!(ro.hosts && ro.hosts.length) };
+        me = { id: user.id, nick: r && r.data ? r.data.nickname : null, admin: !!ro.admin, hosts: ro.hosts || [], host: !!(ro.admin || (ro.hosts && ro.hosts.length)) };
       }
     } catch (e) { me = null; }
     caps.isAdmin = !!(me && me.admin);
