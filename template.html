@@ -797,7 +797,7 @@ input:disabled { opacity: .55; }
     else if (S.loadState === "loading") body = el("div", { class: "note", text: "댓글을 확인하고 있어요." });
     else if (S.mode === "near" && !synced) body = el("div", { class: "note", text: "위에서 재생 위치를 맞추면 지금 장면의 댓글이 보여요. 지금까지 달린 댓글은 " + S.comments.length + "개예요." });
     else if (!vis.length) {
-      body = el("div", { class: "note", text: S.mode === "near" ? "지금까지 달린 댓글이 없어요. 첫 댓글을 남겨 보세요." : "아직 댓글이 없어요. 첫 댓글을 남겨 보세요." });
+      body = el("div", { class: "note", text: S.mode === "near" ? "내가 들은 지점까지의 댓글만 보여요." : "아직 댓글이 없어요. 첫 댓글을 남겨 보세요." });
     } else {
       body = el("div", null, tops.map(function (x) { return commentRow(x.c, x.st, reps[x.c.id] || []); }));
     }
