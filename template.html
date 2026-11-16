@@ -164,7 +164,7 @@ input:disabled { opacity: .55; }
 .policy p, .policy li { font-size: 14px; line-height: 1.7; margin: 0 0 8px; overflow-wrap: anywhere; }
 .policy ul { padding-left: 20px; margin: 0 0 8px; }
 .foot a { color: var(--muted); }
-.stick { position: sticky; top: var(--st); z-index: 6; background: var(--bg); padding: 6px 0 12px; margin: 0; box-shadow: 0 10px 10px -10px rgba(0, 0, 0, .25); }
+.stick { position: sticky; top: var(--st); z-index: 6; background: var(--bg); padding: 6px 0 12px; margin: 12px 0 0; box-shadow: 0 10px 10px -10px rgba(0, 0, 0, .25); }
 .stick .hd { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
 .stick .th { flex: none; border-radius: 8px; object-fit: cover; background: var(--brand-soft); }
 .stick .th.wide { width: 112px; height: 63px; }
@@ -174,7 +174,7 @@ input:disabled { opacity: .55; }
 .stick .sync { position: static; padding: 8px 12px; }
 .stick .prow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .stick .clock.sm { font-size: 30px; }
-.stick .ctrl.sm { margin: 0; flex: none; gap: 0; }
+.stick .ctrl.sm { margin: 0; flex: none; gap: 7px; }   /* 아이콘 사이 눈에 보이는 간격 14→21px(+50%) */
 .ib { flex: none; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--fg); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .ib:active { background: var(--brand-soft); }
 .ib:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
@@ -934,7 +934,8 @@ input:disabled { opacity: .55; }
   }
   async function removeComment(c) {
     var S = sess; if (!S) return;
-    if (!confirm("이 댓글을 삭제할까요?")) return;
+    var repN = S.comments.filter(function (x) { return x.parent === c.id; }).length;   /* 화면에 보이는 답글 수(관리자는 답글 달린 글도 지울 수 있고 답글도 함께 지워진다) */
+    if (!confirm(me && me.admin && repN ? "이 댓글과 답글 " + repN + "개가 함께 삭제돼요. 삭제할까요?" : "이 댓글을 삭제할까요?")) return;
     try {
       var r = await sb.rpc("delete_comment", { p_id: c.id });
       if (r.error) throw r.error;
