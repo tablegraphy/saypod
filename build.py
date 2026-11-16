@@ -9,6 +9,7 @@
 """
 import base64, datetime, json, os, re, shutil, subprocess, sys, tempfile, urllib.request
 import xml.etree.ElementTree as ET
+KST = datetime.timezone(datetime.timedelta(hours=9))   # 한국 표준시(서머타임 없음)
 from email.utils import parsedate_to_datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -165,7 +166,7 @@ def build_channel(ch):
         e = {
             "n": n,
             "title": title,
-            "date": parsedate_to_datetime(it.findtext("pubDate")).strftime("%Y-%m-%d"),
+            "date": parsedate_to_datetime(it.findtext("pubDate")).astimezone(KST).strftime("%Y-%m-%d"),   # RSS 시각은 GMT → 한국시간 날짜
             "sec": seconds(it.findtext("itunes:duration", namespaces=NS)),
             "audio": (it.find("enclosure").get("url") if it.find("enclosure") is not None else ""),
             "_img": (it.find("itunes:image", NS).get("href") if it.find("itunes:image", NS) is not None else ""),
