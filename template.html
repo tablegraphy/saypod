@@ -1400,15 +1400,14 @@ input:disabled { opacity: .55; }
       probe.remove();
       /* 홈 화면 앱(navigator.standalone)인데 안전 영역을 못 읽으면(0) 아이폰 상태바 높이 59 로 본다 */
       if (!inset && window.navigator.standalone === true) inset = 59;
-      /* 윗 12% 와 안전 영역+14 중 큰 값 + 로그인 버튼 높이(36px)의 절반(18px) 만큼 더 내린다 */
-      var st = inset > 0 ? Math.max(inset + 14, Math.round(window.innerHeight * 0.12)) + 18 : 0;
+      /* 사용자 폰 실측(2026-11-17): '웹 앱으로 열기'는 페이지 영역이 이미 상태바 아래에서 시작한다(화면 852, 페이지 높이 793 = 852-59).
+         그런데도 안전 영역은 59 로 알려 줘서 그대로 더하면 상태바 높이가 두 번 들어간다(캡처에서 로그인 줄이 화면 180pt).
+         이때는 시스템이 흐리게 처리하는 윗부분(페이지 위 약 46px)만 피하면 되므로 44px 만 비운다.
+         페이지가 상태바 밑까지 올라가는 화면이면(높이 = 화면 높이) 안전 영역+흐림 구간(윗 12%)까지 비운다. */
+      var screenH = (window.screen && window.screen.height) || 0;
+      var below = inset > 0 && screenH > 0 && (screenH - window.innerHeight) >= inset - 2;
+      var st = !inset ? 0 : (below ? 44 : Math.max(inset + 14, Math.round(window.innerHeight * 0.12)));
       document.documentElement.style.setProperty("--st", st + "px");
-      /* 임시 확인 문구(폰에서 값이 맞게 들어가는지 확인한 뒤 삭제) */
-      var dbg = document.getElementById("stdbg");
-      if (inset > 0) {
-        if (!dbg) { dbg = document.createElement("div"); dbg.id = "stdbg"; dbg.style.cssText = "font:11px var(--font);color:var(--muted);padding:18px 0 6px;"; document.body.appendChild(dbg); }
-        dbg.textContent = "화면 확인용(임시) 안전 영역 " + Math.round(inset) + " · 상단 여백 " + Math.round(st) + " · 높이 " + Math.round(window.innerHeight);
-      } else if (dbg) { dbg.remove(); }
     } catch (e) {}
   }
   applySafeTop();
