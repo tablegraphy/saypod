@@ -32,7 +32,12 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: var(--st); z-index: 30; background: var(--bg); }
+/* 상태바 아래가 시스템에 의해 흐려지는 화면(아이폰 홈 화면 앱)에서는 앱 전체를 위에서 --st 아래에서 시작하는 고정 스크롤 영역에 담는다.
+   덮개로 가리는 방식이 아니라 스크롤 영역 자체가 그 아래에서 시작해, 내용이 위 --st 구간으로 올라가지 않는다. (일반 브라우저는 그대로 페이지 스크롤) */
+html.framed, html.framed body { height: 100%; overflow: hidden; padding: 0; }
+html.framed #scroller { position: fixed; top: var(--st); right: 0; bottom: 0; left: 0; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
+  padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+html.framed .top { padding-top: 0; }
 * { box-sizing: border-box; touch-action: manipulation; }   /* 빈 곳을 두 번 눌러도 확대되지 않게 */
 html { -webkit-text-size-adjust: 100%; }
 a { color: inherit; }
@@ -74,7 +79,7 @@ input:disabled { opacity: .55; }
 .eph { margin: 0 0 14px; }
 .eph h1 { font-size: 21px; line-height: 1.35; }
 .eph .em { color: var(--muted); font-size: 13px; margin-top: 4px; }
-.sync { position: sticky; top: var(--st); z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.sync { position: sticky; top: 0; z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
 .sync .sh { font-size: 16px; }
 .hint { margin: 4px 0 12px; color: var(--muted); font-size: 14px; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
@@ -164,7 +169,7 @@ input:disabled { opacity: .55; }
 .policy p, .policy li { font-size: 14px; line-height: 1.7; margin: 0 0 8px; overflow-wrap: anywhere; }
 .policy ul { padding-left: 20px; margin: 0 0 8px; }
 .foot a { color: var(--muted); }
-.stick { position: sticky; top: var(--st); z-index: 6; background: var(--bg); padding: 6px 0 12px; margin: 12px 0 0; box-shadow: 0 10px 10px -10px rgba(0, 0, 0, .25); }
+.stick { position: sticky; top: 0; z-index: 6; background: var(--bg); padding: 6px 0 12px; margin: 12px 0 0; box-shadow: 0 10px 10px -10px rgba(0, 0, 0, .25); }
 .stick .hd { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
 .stick .th { flex: none; border-radius: 8px; object-fit: cover; background: var(--brand-soft); }
 .stick .th.wide { width: 112px; height: 63px; }
@@ -211,7 +216,7 @@ input:disabled { opacity: .55; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
-<div class="wrap" id="app"></div>
+<div id="scroller"><div class="wrap" id="app"></div></div>
 
 <script>
 (function () {
@@ -340,7 +345,7 @@ input:disabled { opacity: .55; }
   }
   function route() {
     leave();
-    try { window.scrollTo(0, 0); } catch (e) {}
+    scrollToTop();
     var h = location.hash, m, ch;
     if ((m = h.match(/^#e-([a-z0-9]+)-(\d+)$/))) {
       ch = CH.find(function (c) { return c.id === m[1]; });
@@ -384,6 +389,11 @@ input:disabled { opacity: .55; }
   function iconBtn(kind, label, onclick) {
     return el("button", { class: "ib" + (kind === "play" || kind === "pause" ? " pl" : ""), type: "button", "aria-label": label, onclick: onclick }, glyph(kind));
   }
+  /* 스크롤: 고정 스크롤 영역(html.framed)이면 #scroller, 아니면 페이지 */
+  function framedEl() { return document.documentElement.classList.contains("framed") ? document.getElementById("scroller") : null; }
+  function scrollToTop() { var f = framedEl(); if (f) f.scrollTop = 0; else { try { window.scrollTo(0, 0); } catch (e) {} } }
+  function scrollToBottom() { var f = framedEl(); if (f) f.scrollTop = f.scrollHeight; else window.scrollTo(0, document.documentElement.scrollHeight); }
+  function nearBottom() { var f = framedEl(); return f ? (f.clientHeight + f.scrollTop) >= f.scrollHeight - 160 : (window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 160; }
   /* back 가 있으면 '‹ 이름'(한 단계 뒤로), 없으면 첫 화면의 '듣는 사이' */
   function topbar(back) {
     var slot = el("div", { class: "authbar" });
@@ -851,7 +861,7 @@ input:disabled { opacity: .55; }
       if (ei) { ei.focus(); try { ei.setSelectionRange(ei.value.length, ei.value.length); } catch (e) {} }
       S.focusEdit = false;
     }
-    if (followNow) requestAnimationFrame(function () { if (sess === S) window.scrollTo(0, document.documentElement.scrollHeight); });
+    if (followNow) requestAnimationFrame(function () { if (sess === S) scrollToBottom(); });
   }
   function roleIcon(isHost) { return isHost ? micIcon() : (SB ? headIcon() : null); }
   function headIcon() {
@@ -1385,9 +1395,9 @@ input:disabled { opacity: .55; }
   addEventListener("pagehide", function () { if (sess && sess.audio) savePos(sess, true); });
   addEventListener("pageshow", function () { tick(); });
   addEventListener("focus", function () { tick(); });
-  addEventListener("scroll", function () {
-    if (sess) sess.follow = (window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 160;
-  }, { passive: true });
+  function onScroll() { if (sess) sess.follow = nearBottom(); }
+  addEventListener("scroll", onScroll, { passive: true });
+  document.getElementById("scroller").addEventListener("scroll", onScroll, { passive: true });
   /* 상단 여백: 아이폰 상단(상태바 아래 약 12%)은 시스템이 흐리게 처리한다(캡처로 확인).
      안전 영역(상태바 높이)이 있는 화면(주소창 없는 웹앱)에서만 윗 12% 높이까지 비운다.
      CSS 계산식은 이 폰의 웹앱에서 적용되지 않아, 안전 영역을 직접 재서 --st 에 넣는다. */
@@ -1402,12 +1412,13 @@ input:disabled { opacity: .55; }
       if (!inset && window.navigator.standalone === true) inset = 59;
       /* 사용자 폰 실측(2026-11-17): '웹 앱으로 열기'는 페이지 영역이 이미 상태바 아래에서 시작한다(화면 852, 페이지 높이 793 = 852-59).
          그런데도 안전 영역은 59 로 알려 줘서 그대로 더하면 상태바 높이가 두 번 들어간다(캡처에서 로그인 줄이 화면 180pt).
-         이때는 시스템이 흐리게 처리하는 윗부분(페이지 위 약 46px)만 피하면 되므로 44px 만 비운다.
+         이때는 시스템이 흐리게 처리하는 윗부분(페이지 위 약 46px)만 피하면 되므로 50px 만 비운다(사용자 요청: 전체 구성을 50px 아래에서 시작).
          페이지가 상태바 밑까지 올라가는 화면이면(높이 = 화면 높이) 안전 영역+흐림 구간(윗 12%)까지 비운다. */
       var screenH = (window.screen && window.screen.height) || 0;
       var below = inset > 0 && screenH > 0 && (screenH - window.innerHeight) >= inset - 2;
-      var st = !inset ? 0 : (below ? 44 : Math.max(inset + 14, Math.round(window.innerHeight * 0.12)));
+      var st = !inset ? 0 : (below ? 50 : Math.max(inset + 14, Math.round(window.innerHeight * 0.12)));
       document.documentElement.style.setProperty("--st", st + "px");
+      document.documentElement.classList.toggle("framed", st > 0);   /* 위 --st 아래에서 시작하는 고정 스크롤 영역 사용 여부 */
     } catch (e) {}
   }
   applySafeTop();
