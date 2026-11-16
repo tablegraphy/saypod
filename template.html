@@ -1412,11 +1412,11 @@ input:disabled { opacity: .55; }
       if (!inset && window.navigator.standalone === true) inset = 59;
       /* 사용자 폰 실측(2026-11-17): '웹 앱으로 열기'는 페이지 영역이 이미 상태바 아래에서 시작한다(화면 852, 페이지 높이 793 = 852-59).
          그런데도 안전 영역은 59 로 알려 줘서 그대로 더하면 상태바 높이가 두 번 들어간다(캡처에서 로그인 줄이 화면 180pt).
-         이때는 시스템이 흐리게 처리하는 윗부분(페이지 위 약 46px)만 피하면 되므로 50px 만 비운다(사용자 요청: 전체 구성을 50px 아래에서 시작).
+         이때는 위쪽 일부만 비우면 된다: 50px 는 흐림 없음·너무 아래라는 사용자 확인으로 30px 로 줄였다(2026-11-17).
          페이지가 상태바 밑까지 올라가는 화면이면(높이 = 화면 높이) 안전 영역+흐림 구간(윗 12%)까지 비운다. */
       var screenH = (window.screen && window.screen.height) || 0;
       var below = inset > 0 && screenH > 0 && (screenH - window.innerHeight) >= inset - 2;
-      var st = !inset ? 0 : (below ? 50 : Math.max(inset + 14, Math.round(window.innerHeight * 0.12)));
+      var st = !inset ? 0 : (below ? 30 : Math.max(inset + 14, Math.round(window.innerHeight * 0.12)));
       document.documentElement.style.setProperty("--st", st + "px");
       document.documentElement.classList.toggle("framed", st > 0);   /* 위 --st 아래에서 시작하는 고정 스크롤 영역 사용 여부 */
     } catch (e) {}
