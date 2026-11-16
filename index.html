@@ -747,9 +747,8 @@ input:disabled { opacity: .55; }
 
     var head = el("div", { class: "fhead" },
       el("div", { class: "seg", role: "group", "aria-label": "댓글 범위" },
-        el("button", { type: "button", text: "함께 듣기", "aria-pressed": S.mode === "near" ? "true" : "false", onclick: function () { S.mode = "near"; renderFeed(true); } }),
-        el("button", { type: "button", text: "전체 " + (S.comments.length + (S.extra || 0)), "aria-pressed": S.mode === "all" ? "true" : "false", onclick: function () { S.mode = "all"; renderFeed(true); } })),
-      S.mode === "all" ? el("button", { class: "chip", type: "button", text: "스포일러 보기", "aria-pressed": S.reveal ? "true" : "false", onclick: function () { S.reveal = !S.reveal; if (S.poll) S.poll(true); renderMarks(); renderFeed(true); } }) : null
+        el("button", { type: "button", text: "함께 듣기", "aria-pressed": S.mode === "near" ? "true" : "false", onclick: function () { setFeedMode("near"); } }),
+        el("button", { type: "button", text: "스포일러 보기", "aria-pressed": S.mode === "all" ? "true" : "false", onclick: function () { setFeedMode("all"); } }))
     );
 
     var body;
@@ -759,19 +758,12 @@ input:disabled { opacity: .55; }
     else if (S.loadState === "loading") body = el("div", { class: "note", text: "댓글을 확인하고 있어요." });
     else if (S.mode === "near" && !synced) body = el("div", { class: "note", text: "위에서 재생 위치를 맞추면 지금 장면의 댓글이 보여요. 지금까지 달린 댓글은 " + S.comments.length + "개예요." });
     else if (!vis.length) {
-      body = el("div", { class: "note" },
-        S.mode === "near" ? "지금까지 달린 댓글이 없어요. 첫 댓글을 남겨 보세요." : "아직 댓글이 없어요. 첫 댓글을 남겨 보세요.",
-        S.mode === "near" && futN ? el("div", null, "앞으로 나올 댓글 " + futN + "개는 계속 들으면 나타나요. ",
-          el("button", { class: "btn link", type: "button", text: "전체 보기", onclick: function () { S.mode = "all"; renderFeed(true); } })) : null);
+      body = el("div", { class: "note", text: S.mode === "near" ? "지금까지 달린 댓글이 없어요. 첫 댓글을 남겨 보세요." : "아직 댓글이 없어요. 첫 댓글을 남겨 보세요." });
     } else {
-      body = el("div", null, vis.map(function (x) { return commentRow(x.c, x.st); }),
-        S.mode === "near" && futN ? el("div", { class: "note" }, "앞으로 나올 댓글 " + futN + "개는 계속 들으면 나타나요. ",
-          el("button", { class: "btn link", type: "button", text: "전체 보기", onclick: function () { S.mode = "all"; renderFeed(true); } })) : null);
+      body = el("div", null, vis.map(function (x) { return commentRow(x.c, x.st); }));
     }
-    var hint = (S.mode === "all" && !S.reveal && S.extra > 0)
-      ? el("div", { class: "note", text: "앞으로 나올 댓글 " + S.extra + "개는 '스포일러 보기'를 누르면 볼 수 있어요." }) : null;
     var followNow = S.mode === "near" && S.follow !== false && vis.length > 0;
-    put(S.r.feed, head, body, hint, (SITE && !SB) ? el("div", { class: "note", text: "시험판이라 댓글은 이 기기에만 저장돼요. 다른 분의 댓글은 아직 보이지 않아요." }) : null);
+    put(S.r.feed, head, body, (SITE && !SB) ? el("div", { class: "note", text: "시험판이라 댓글은 이 기기에만 저장돼요. 다른 분의 댓글은 아직 보이지 않아요." }) : null);
     if (followNow) requestAnimationFrame(function () { if (sess === S) window.scrollTo(0, document.documentElement.scrollHeight); });
   }
   function roleIcon(isHost) { return isHost ? micIcon() : (SB ? headIcon() : null); }
@@ -799,6 +791,12 @@ input:disabled { opacity: .55; }
     [["d", "M5 11a7 7 0 0 0 14 0M12 18v4"], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "2"], ["stroke-linecap", "round"]].forEach(function (a) { arc.setAttribute(a[0], a[1]); });
     svg.appendChild(body); svg.appendChild(arc);
     return svg;
+  }
+  function setFeedMode(m) {
+    var S = sess; if (!S || S.mode === m) return;
+    S.mode = m; S.reveal = (m === "all");   /* 스포일러 보기 = 앞으로 나올 댓글까지 전부 */
+    if (S.poll) S.poll(true);
+    renderMarks(); renderFeed(true);
   }
   function commentRow(c, st) {
     var S = sess, masked = st === "future" && !S.reveal;
@@ -1148,11 +1146,7 @@ input:disabled { opacity: .55; }
         S.prevUpto = full ? upto : Math.max(S.prevUpto, upto);
         S.comments = Object.keys(S.map).map(function (k) { return S.map[k]; }).sort(function (a, b) { return a.sec - b.sec || a.id - b.id; });
         S.loadState = "ok";
-        if (!S.reveal && S.polls % 3 === 0) {
-          var cn = await sb.rpc("count_comments_after", { p_ep: S.key, p_after: -1 });   /* 에피소드 전체 개수(내용은 안 받음) */
-          if (sess === S && !cn.error) S.total = cn.data || 0;
-        }
-        S.extra = S.reveal ? 0 : Math.max(0, (S.total || 0) - S.comments.length);       /* 아직 안 받은(앞으로 나올) 개수 */
+        S.extra = 0;
         S.polls++;
         renderMarks(); renderFeed(false);
       } catch (e) {
