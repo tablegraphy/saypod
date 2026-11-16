@@ -202,8 +202,7 @@ input:disabled { opacity: .55; }
 .link2.tg { color: var(--brand); }
 .link2.tg .pv { color: var(--muted); font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .cm .rps { margin-top: 4px; border-left: 2px solid var(--line); padding-left: 10px; }
-.rp { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 8px; padding: 6px 0; }
-.rp .t { font: 500 12px/1.9 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.rp { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 6px 0; }
 .rp .tx { overflow-wrap: anywhere; white-space: pre-wrap; }
 .rp .at { color: var(--brand); }
 .rp .who { font-size: 13px; color: var(--muted); }
@@ -960,8 +959,7 @@ input:disabled { opacity: .55; }
   }
   function replyRow(x) {
     var c = x.c;
-    return el("div", { class: "rp" },
-      el("div", { class: "t", text: fmt(c.sec) }),
+    return el("div", { class: "rp" },   /* 답글은 방송 내용이 아니라 댓글에 대한 의견이라 시각을 보이지 않는다(서버에는 스포 방지용으로 그대로 저장) */
       el("div", null, whoEl(c), txEl(c, false),
         el("div", { class: "act" }, [replyBtn(c)].concat(ownBtns(c, false)))),
       (!SB && caps.isAdmin) ? delBtn(c) : el("span"));
