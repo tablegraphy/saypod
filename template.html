@@ -1258,7 +1258,7 @@ input:disabled { opacity: .55; }
           el("label", { class: "chk" }, agree2, " 만 14세 이상입니다. (필수)")) : null,
         el("div", { class: "row2" }, go), msg, ok);
       put(card, el("h2", { text: titles[m] }), form,
-        m === "nick" ? el("p", { class: "fine", text: "바꾸면 지금까지 남긴 댓글의 닉네임도 함께 바뀌어요. 일반 사용자는 24시간에 한 번만 바꿀 수 있어요." }) : null,
+        m === "nick" ? el("p", { class: "fine", text: "닉네임을 변경하면 지금까지 남긴 댓글의 닉네임도 함께 바뀌어요. 24시간에 한 번만 바꿀 수 있어요." }) : null,
         m === "signup" ? el("p", { class: "fine", text: "받는 정보는 이메일·비밀번호·닉네임뿐이에요. 이메일은 로그인과 비밀번호 찾기에만 쓰고 공개하지 않아요." }) : null,
         el("div", { class: "row" },
           m === "login" ? [link("가입하기", "signup"), link("비밀번호를 잊으셨나요?", "forgot")] : ((m === "reset" || m === "nick") ? null : link("로그인으로", "login")),
