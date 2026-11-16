@@ -105,9 +105,9 @@ input:disabled { opacity: .55; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { min-height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 500 14px var(--font); cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
-.fhead { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin: 22px 0 6px; }
+.fhead { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin: 0; padding: 6px 0; border-bottom: 1px solid var(--line); }   /* 선 아래부터 댓글이 스크롤 */
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
-.seg button { min-height: 40px; padding: 0 14px; border: 0; background: none; color: var(--muted); font: 500 14px var(--font); cursor: pointer; }
+.seg button { min-height: 32px; padding: 0 12px; border: 0; background: none; color: var(--muted); font: 500 14px var(--font); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--brand-soft); color: var(--brand); }
 .note { color: var(--muted); font-size: 14px; padding: 14px 0; overflow-wrap: anywhere; }
 .note .btn.link { font-size: 14px; }
@@ -175,7 +175,8 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .policy p, .policy li { font-size: 14px; line-height: 1.7; margin: 0 0 8px; overflow-wrap: anywhere; }
 .policy ul { padding-left: 20px; margin: 0 0 8px; }
 .foot a { color: var(--muted); }
-.stick { position: sticky; top: 0; z-index: 6; background: var(--bg); padding: 6px 0 12px; margin: 12px 0 0; box-shadow: 0 10px 10px -10px rgba(0, 0, 0, .25); }
+.stick { position: sticky; top: 0; z-index: 6; background: var(--bg); padding: 6px 0 0; margin: 12px 0 0; }   /* 아래 경계는 함께 듣기 줄의 선 */
+.fbody > .cm:first-child { border-top: 0; }
 .stick .hd { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
 .stick .th { flex: none; border-radius: 8px; object-fit: cover; background: var(--brand-soft); }
 .stick .th.wide { width: 112px; height: 63px; }
@@ -194,7 +195,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .stick .bar { margin: 6px 0 0; }
 .stick .tot { text-align: right; font: 500 11px var(--mono); color: var(--muted); margin-top: 2px; }
 .stick .hint { margin: 2px 0 0; font-size: 12px; }
-.stick.compact .hd, .stick.compact .eptitle, .stick.compact .sync .bar, .stick.compact .sync .ctrl, .stick.compact .sync .hint, .stick.compact .sync .tot { display: none; }
+.stick.compact .hd, .stick.compact .eptitle, .stick.compact .fh, .stick.compact .sync .bar, .stick.compact .sync .ctrl, .stick.compact .sync .hint, .stick.compact .sync .tot { display: none; }
 @media (max-height: 620px) { .stick .th { display: none; } }
 .pwrap { margin-bottom: 8px; }
 .pwrap { display: flex; flex-direction: column; align-items: stretch; width: fit-content; margin-left: auto; }   /* 버튼과 펼침 목록을 같은 폭으로 화면 오른쪽에 붙인다 */
@@ -216,7 +217,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .rp .who b { color: var(--fg); font-weight: 500; }
 .rp .who .host, .rp .who .listener { display: inline-block; margin-left: 4px; vertical-align: -2px; }
 .rp .who .host { color: var(--brand); }
-.fhead .gt { margin-left: auto; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.fhead .gt { margin-left: auto; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .repbar { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); }
 .repbar:empty { display: none; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
@@ -546,6 +547,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
     r.sync = el("section", { class: "sync", "aria-label": "재생 위치" });
     r.plat = el("div", { class: "sec" });
     r.feed = el("div", { "aria-live": "polite" });
+    r.fh = el("div", { class: "fh" });   /* 함께 듣기·스포일러 보기 줄: 고정 영역 맨 아래(선 아래부터 댓글이 스크롤) */
     r.nick = el("div");
     r.rep = el("div", { class: "repbar" });
     r.stamp = el("div", { class: "stamp" });
@@ -565,7 +567,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
       el("h1", { class: "eptitle", text: ep.title }),
       el("div", { class: "hd" }, episodeThumb(ch, ep),
         el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") })),
-      r.sync);
+      r.sync, r.fh);
     r.msg.addEventListener("focus", function () { r.stick.classList.add("compact"); });   /* 글 쓸 때는 키보드가 화면을 차지하므로 고정 영역을 줄인다 */
     r.msg.addEventListener("blur", function () { r.stick.classList.remove("compact"); });
     put(app, topbar({ href: "#c-" + ch.id, label: ch.name }), r.mode, r.stick, r.plat, r.feed, el("div", { class: "pad" }), r.comp);
@@ -869,12 +871,13 @@ button.t:hover, button.t:active { text-decoration: underline; }
     else if (!vis.length) {
       body = el("div", { class: "note", text: S.mode === "near" ? "내가 들은 지점까지의 댓글만 보여요." : "아직 댓글이 없어요. 첫 댓글을 남겨 보세요." });
     } else {
-      body = el("div", null, tops.map(function (x) { return commentRow(x.c, x.st, reps[x.c.id] || []); }));
+      body = el("div", { class: "fbody" }, tops.map(function (x) { return commentRow(x.c, x.st, reps[x.c.id] || []); }));
     }
     var followNow = S.mode === "near" && S.follow !== false && vis.length > 0 && !S.noFollowOnce && !S.editing;
     var hadFocus = !!(S.editing && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("edin"));
     S.noFollowOnce = false;
-    put(S.r.feed, head, body, (SITE && !SB) ? el("div", { class: "note", text: "시험판이라 댓글은 이 기기에만 저장돼요. 다른 분의 댓글은 아직 보이지 않아요." }) : null);
+    put(S.r.fh, head);
+    put(S.r.feed, body, (SITE && !SB) ? el("div", { class: "note", text: "시험판이라 댓글은 이 기기에만 저장돼요. 다른 분의 댓글은 아직 보이지 않아요." }) : null);
     if (S.editing && (hadFocus || S.focusEdit)) {
       var ei = S.r.feed.querySelector(".edin");
       if (ei) { ei.focus(); try { ei.setSelectionRange(ei.value.length, ei.value.length); } catch (e) {} }
