@@ -202,7 +202,7 @@ SITE_HEAD = (
     '<meta name="theme-color" content="#17707A">\n'
     '<link rel="apple-touch-icon" href="icon-180.png">\n'
     '<link rel="icon" href="icon-180.png">\n'
-    '<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}'
+    '<style>:root{color-scheme:light;padding-top:var(--st,env(safe-area-inset-top,0px));padding-bottom:env(safe-area-inset-bottom,0px)}'
     'body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>\n'
 )
 
