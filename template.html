@@ -40,6 +40,9 @@ a { color: inherit; }
 .wrap { max-width: 640px; margin: 0 auto; }
 .top { display: flex; align-items: center; justify-content: space-between; padding: 16px 0 8px; }
 .brand { font: 700 27px/1.1 var(--font); text-decoration: none; letter-spacing: -0.03em; }
+.brand.bk { display: inline-flex; align-items: center; min-height: 44px; min-width: 0; margin-left: -8px; padding-right: 8px; }
+.brand.bk .chev { flex: none; color: var(--brand); }
+.brand.bk span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lede { margin: 4px 0 20px; color: var(--muted); }
 h1, h2 { margin: 0; font-weight: 700; text-wrap: balance; }
 .btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 500 15px var(--font); cursor: pointer; }
@@ -108,6 +111,10 @@ input:disabled { opacity: .55; }
 .cm .who .listener { display: inline-block; margin-left: 4px; vertical-align: -2px; color: var(--muted); }
 .cm .tx { overflow-wrap: anywhere; white-space: pre-wrap; }
 .mask { display: inline-block; height: 14px; width: min(70%, 220px); background: var(--mask); border-radius: 4px; margin-top: 4px; }
+.ed { margin: 2px 0 4px; }
+.ed input { width: 100%; }
+.edb { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.edited { color: var(--muted); font-size: 12px; }
 .del { min-height: 32px; padding: 0 8px; border: 0; background: none; color: var(--muted); font: 13px var(--font); cursor: pointer; text-decoration: underline; }
 .pad { height: 150px; }
 .comp { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); border-top: 1px solid var(--line);
@@ -346,10 +353,22 @@ input:disabled { opacity: .55; }
     if (h === "#privacy" && SITE && D.privacy) return showPrivacy();
     showHome(); appendLegal();
   }
-  function topbar() {
+  function chevron() {
+    var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("width", "22"); svg.setAttribute("height", "22"); svg.setAttribute("class", "chev"); svg.setAttribute("aria-hidden", "true");
+    var pa = document.createElementNS(ns, "path");
+    [["d", "M15 5l-7 7 7 7"], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "2.4"], ["stroke-linecap", "round"], ["stroke-linejoin", "round"]].forEach(function (a) { pa.setAttribute(a[0], a[1]); });
+    svg.appendChild(pa);
+    return svg;
+  }
+  /* back 가 있으면 '‹ 이름'(한 단계 뒤로), 없으면 첫 화면의 '듣는 사이' */
+  function topbar(back) {
     var slot = el("div", { class: "authbar" });
     if (SB) renderAuthBar(slot);
-    return el("div", { class: "top" }, el("a", { class: "brand", href: "#", text: "듣는 사이" }), slot);
+    return el("div", { class: "top" },
+      back ? el("a", { class: "brand bk", href: back.href, "aria-label": "뒤로, " + back.label }, chevron(), el("span", { text: back.label }))
+           : el("a", { class: "brand", href: "#", text: "듣는 사이" }),
+      slot);
   }
   function cover(c, big) {
     return c.cover
@@ -378,7 +397,7 @@ input:disabled { opacity: .55; }
 
   function showChannel(c) {
     put(app,
-      topbar(),
+      topbar({ href: "#", label: "듣는 사이" }),
       el("div", { class: "chhead" }, cover(c, true),
         el("div", { class: "chm" }, el("h1", { text: c.name }), el("div", { class: "chs", text: c.tagline }))),
       platMenu(c),
@@ -494,13 +513,12 @@ input:disabled { opacity: .55; }
     r.stick = el("div", { class: "stick" },
       el("div", { class: "hd" }, episodeThumb(ch, ep),
         el("div", { class: "hdm" },
-          el("a", { class: "back", href: "#c-" + ch.id, text: "← " + ch.name }),
           el("h1", { text: ep.title }),
           el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") }))),
       r.sync);
     r.msg.addEventListener("focus", function () { r.stick.classList.add("compact"); });   /* 글 쓸 때는 키보드가 화면을 차지하므로 고정 영역을 줄인다 */
     r.msg.addEventListener("blur", function () { r.stick.classList.remove("compact"); });
-    put(app, topbar(), r.mode, r.stick, r.plat, r.feed, el("div", { class: "pad" }), r.comp);
+    put(app, topbar({ href: "#c-" + ch.id, label: ch.name }), r.mode, r.stick, r.plat, r.feed, el("div", { class: "pad" }), r.comp);
     renderMode(); renderSync(); renderPlat(); renderNick(); updateComposer(); renderMarks(); renderFeed(true);
     S.timer = setInterval(tick, 500);
     tick();
@@ -773,7 +791,7 @@ input:disabled { opacity: .55; }
     var pastN = rows.filter(function (x) { return x.st === "past"; }).length;
     var futN = rows.filter(function (x) { return x.st === "future"; }).length + (S.extra || 0);
     var vis = rows.filter(function (x) { return S.mode === "all" || (synced && x.st !== "future"); });
-    var sig = [S.mode, S.reveal, synced, S.loadState, caps.isAdmin, me && me.nick, S.replyTo && S.replyTo.id, Object.keys(S.open).filter(function (k) { return S.open[k]; }).join("."), pastN, futN, vis.map(function (x) { return x.c.id + x.st; }).join(",")].join("|");
+    var sig = [S.mode, S.reveal, synced, S.loadState, S.rev, S.editing, caps.isAdmin, me && me.nick, me && (me.hosts || []).join("+"), S.replyTo && S.replyTo.id, Object.keys(S.open).filter(function (k) { return S.open[k]; }).join("."), pastN, futN, vis.map(function (x) { return x.c.id + x.st; }).join(",")].join("|");
     if (!force && sig === S.sig) return;
     S.sig = sig;
     var reps = {}, tops = [], topIds = {};
@@ -801,9 +819,15 @@ input:disabled { opacity: .55; }
     } else {
       body = el("div", null, tops.map(function (x) { return commentRow(x.c, x.st, reps[x.c.id] || []); }));
     }
-    var followNow = S.mode === "near" && S.follow !== false && vis.length > 0 && !S.noFollowOnce;
+    var followNow = S.mode === "near" && S.follow !== false && vis.length > 0 && !S.noFollowOnce && !S.editing;
+    var hadFocus = !!(S.editing && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("edin"));
     S.noFollowOnce = false;
     put(S.r.feed, head, body, (SITE && !SB) ? el("div", { class: "note", text: "시험판이라 댓글은 이 기기에만 저장돼요. 다른 분의 댓글은 아직 보이지 않아요." }) : null);
+    if (S.editing && (hadFocus || S.focusEdit)) {
+      var ei = S.r.feed.querySelector(".edin");
+      if (ei) { ei.focus(); try { ei.setSelectionRange(ei.value.length, ei.value.length); } catch (e) {} }
+      S.focusEdit = false;
+    }
     if (followNow) requestAnimationFrame(function () { if (sess === S) window.scrollTo(0, document.documentElement.scrollHeight); });
   }
   function roleIcon(isHost) { return isHost ? micIcon() : (SB ? headIcon() : null); }
@@ -843,18 +867,79 @@ input:disabled { opacity: .55; }
       (SB ? (me && me.nick && c.nick === me.nick) : (c.uid && c.uid === caps.uid)) ? " · 나" : "");
   }
   function replyBtn(c) { return el("button", { class: "link2", type: "button", text: "답글", onclick: function () { startReply(c); } }); }
+  function chOf(S) { return String(S.key || "").split("-")[0]; }
+  function canDelete(c) {
+    return !!(SB && me && sess && (c.mine || me.admin || (me.hosts || []).indexOf(chOf(sess)) >= 0));
+  }
+  function ownBtns(c, masked) {
+    var out = [];
+    if (!SB || !me || masked || (sess && sess.editing === c.id)) return out;   /* 수정 중인 글에는 수정·삭제 줄을 숨긴다 */
+    if (c.mine) out.push(el("button", { class: "link2", type: "button", text: "수정", onclick: function () { startEdit(c); } }));
+    if (canDelete(c)) out.push(el("button", { class: "link2", type: "button", text: "삭제", onclick: function () { removeComment(c); } }));
+    return out;
+  }
+  function cmErr(e) {
+    var m = String((e && (e.message || e.msg)) || "");
+    if (/has_replies/.test(m)) return "답글이 달린 댓글은 지울 수 없어요.";
+    if (/too_fast/.test(m)) return "조금 뒤에 다시 해 주세요.";
+    if (/not_allowed|not_authenticated/.test(m)) return "이 댓글은 고치거나 지울 수 없어요.";
+    if (/bad_body/.test(m)) return "1자 이상 200자 이하로 써 주세요.";
+    return "처리하지 못했어요. 다시 해 주세요.";
+  }
+  function startEdit(c) {
+    var S = sess; if (!S) return;
+    S.editing = c.id; S.editDraft = c.text; S.focusEdit = true; S.noFollowOnce = true;
+    renderFeed(true);
+  }
+  function cancelEdit() {
+    var S = sess; if (!S) return;
+    S.editing = null; S.editDraft = null; S.noFollowOnce = true; renderFeed(true);
+  }
+  async function saveEdit(c, v) {
+    var S = sess; if (!S || S.savingEdit) return;
+    v = String(v || "").trim();
+    if (!v) return;
+    if (v === c.text) { cancelEdit(); return; }
+    S.savingEdit = true;
+    try {
+      var r = await sb.rpc("edit_comment", { p_id: c.id, p_body: v.slice(0, 200) });
+      if (r.error) throw r.error;
+      if (sess === S) { S.editing = null; S.editDraft = null; S.noFollowOnce = true; renderFeed(true); if (S.poll) S.poll(true); }
+    } catch (e) { toast(cmErr(e)); }
+    finally { S.savingEdit = false; }
+  }
+  async function removeComment(c) {
+    var S = sess; if (!S) return;
+    if (!confirm("이 댓글을 삭제할까요?")) return;
+    try {
+      var r = await sb.rpc("delete_comment", { p_id: c.id });
+      if (r.error) throw r.error;
+      if (sess === S && S.poll) S.poll(true);
+    } catch (e) { toast(cmErr(e)); }
+  }
+  function editForm(c) {
+    var S = sess, inp = el("input", { class: "edin", type: "text", maxlength: "200", autocomplete: "off", "aria-label": "댓글 수정", value: S.editDraft != null ? S.editDraft : c.text });
+    inp.addEventListener("input", function () { S.editDraft = inp.value; });
+    return el("form", { class: "ed", onsubmit: function (e) { e.preventDefault(); saveEdit(c, inp.value); } }, inp,
+      el("div", { class: "edb" }, el("button", { class: "btn", type: "submit", text: "저장" }), el("button", { class: "btn link", type: "button", text: "취소", onclick: cancelEdit })));
+  }
+  function txEl(c, masked) {
+    var S = sess;
+    if (!masked && S.editing === c.id) return editForm(c);
+    return el("div", { class: "tx" }, c.replyTo ? el("span", { class: "at", text: "@" + c.replyTo + " " }) : null, c.text,
+      c.edited ? el("span", { class: "edited", text: " (수정됨)" }) : null);
+  }
   function replyRow(x) {
     var c = x.c;
     return el("div", { class: "rp" },
       el("div", { class: "t", text: fmt(c.sec) }),
-      el("div", null, whoEl(c),
-        el("div", { class: "tx" }, c.replyTo ? el("span", { class: "at", text: "@" + c.replyTo + " " }) : null, c.text),
-        el("div", { class: "act" }, replyBtn(c))),
-      caps.isAdmin ? delBtn(c) : el("span"));
+      el("div", null, whoEl(c), txEl(c, false),
+        el("div", { class: "act" }, [replyBtn(c)].concat(ownBtns(c, false)))),
+      (!SB && caps.isAdmin) ? delBtn(c) : el("span"));
   }
-  function actionsRow(c, replies) {
+  function actionsRow(c, replies, masked) {
     var S = sess; if (!SB) return null;
-    var n = replies ? replies.length : 0, open = !!S.open[c.id], kids = [replyBtn(c)];
+    var n = replies ? replies.length : 0, open = !!S.open[c.id], kids = [replyBtn(c)].concat(ownBtns(c, masked));
     if (n) {
       var last = replies[n - 1].c;
       kids.push(el("button", { class: "link2 tg", type: "button", "aria-expanded": open ? "true" : "false", onclick: function () { S.open[c.id] = !open; S.noFollowOnce = true; renderFeed(true); } },
@@ -888,8 +973,8 @@ input:disabled { opacity: .55; }
       c.plat && PLAT_SHORT[c.plat] ? " · " + PLAT_SHORT[c.plat] : "");
     return el("div", { class: "cm " + st },
       el("div", { class: "t", text: fmt(c.sec) }),
-      el("div", null, who, masked ? el("span", { class: "mask", role: "img", "aria-label": "아직 가려진 댓글" }) : el("div", { class: "tx", text: c.text }), actionsRow(c, replies)),
-      caps.isAdmin ? delBtn(c) : el("span"));
+      el("div", null, who, masked ? el("span", { class: "mask", role: "img", "aria-label": "아직 가려진 댓글" }) : txEl(c, false), actionsRow(c, replies, masked)),
+      (!SB && caps.isAdmin) ? delBtn(c) : el("span"));
   }
   function delBtn(c) {
     var armed = false, b = el("button", { class: "del", type: "button", text: "삭제" });
@@ -909,7 +994,7 @@ input:disabled { opacity: .55; }
     box.replaceChildren();
     if (SB) {
       put(box, me
-        ? el("div", { class: "nk" }, "닉네임 ", el("b", { text: me.nick || "(없음)" }), me.nick ? roleIcon(me.host) : null, el("button", { class: "btn link", type: "button", text: "변경", onclick: function () { openAuth("nick"); } }))
+        ? el("div", { class: "nk" }, "닉네임 ", el("b", { text: me.nick || "(없음)" }), me.nick ? roleIcon((me.hosts || []).indexOf(chOf(S)) >= 0) : null, el("button", { class: "btn link", type: "button", text: "변경", onclick: function () { openAuth("nick"); } }))
         : el("div", { class: "nk" }, el("button", { class: "btn", type: "button", text: "로그인하고 댓글 남기기", onclick: function () { openAuth("login"); } })));
       return;
     }
@@ -1019,7 +1104,7 @@ input:disabled { opacity: .55; }
   function appendLegal() { var lf = legalFoot(); if (lf) app.append(lf); }
   function showPrivacy() {
     var P = D.privacy;
-    put(app, topbar(), el("a", { class: "back", href: "#", text: "← 홈" }),
+    put(app, topbar({ href: "#", label: "듣는 사이" }),
       el("article", { class: "policy" },
         el("h1", { text: P.title }),
         el("p", { class: "fine", text: "시행일 " + String(P.version).replace(/-/g, ".") }),
@@ -1062,13 +1147,15 @@ input:disabled { opacity: .55; }
       var user = s && s.data && s.data.session ? s.data.session.user : null;
       if (!user) me = null;
       else {
-        var r = await sb.from("profiles").select("nickname,is_host").eq("user_id", user.id).maybeSingle();
-        me = { id: user.id, nick: r && r.data ? r.data.nickname : null, host: !!(r && r.data && r.data.is_host) };
+        var r = await sb.from("profiles").select("nickname").eq("user_id", user.id).maybeSingle();
+        var rr = await sb.rpc("my_roles"), ro = (rr && rr.data) || {};
+        me = { id: user.id, nick: r && r.data ? r.data.nickname : null, admin: !!ro.admin, hosts: ro.hosts || [], host: !!(ro.hosts && ro.hosts.length) };
       }
     } catch (e) { me = null; }
-    caps.isAdmin = !!(me && me.host);
+    caps.isAdmin = !!(me && me.admin);
     refreshAuthUI();
     loadServerPositions();
+    if (sess && sess.poll) sess.poll(true);   /* 로그인·로그아웃으로 '내 댓글' 표시가 달라지므로 다시 받는다 */
   }
   function refreshAuthUI() {
     document.querySelectorAll(".authbar").forEach(renderAuthBar);
@@ -1211,10 +1298,10 @@ input:disabled { opacity: .55; }
   /* ---- 댓글 조회(몇 초마다). 앞으로 나올 댓글은 서버가 보내지 않는다 ---- */
   function startPolling(S) {
     S.map = {}; S.afterId = 0; S.prevUpto = -1; S.extra = 0; S.total = 0; S.polls = 0; S.lastFull = 0;
-    function norm(c) { return { id: c.id, sec: c.sec, text: c.body, nick: c.nickname, host: !!c.is_host, parent: c.parent_id || null, replyTo: c.reply_to_nick || "" }; }
+    function norm(c) { return { id: c.id, sec: c.sec, text: c.body, nick: c.nickname, host: !!c.is_host, parent: c.parent_id || null, replyTo: c.reply_to_nick || "", mine: !!c.mine, edited: !!c.edited }; }
     async function poll(full) {
       if (sess !== S) return;
-      if (S.polling) { S.again = true; return; }
+      if (S.polling) { S.again = true; if (full) S.wantFull = true; return; }
       S.polling = true; S.lastPollAt = Date.now();
       try {
         var upto = S.reveal ? 43200 : Math.min(43200, Math.ceil(pos()) + NEAR + 5);
@@ -1224,8 +1311,13 @@ input:disabled { opacity: .55; }
         var r = await sb.rpc("list_comments", args);
         if (sess !== S) return;
         if (r.error) throw r.error;
+        var old = S.map;
         if (full) { S.map = {}; S.afterId = 0; S.lastFull = Date.now(); }
-        r.data.forEach(function (c) { S.map[c.id] = norm(c); if (c.id > S.afterId) S.afterId = c.id; });
+        r.data.forEach(function (c) {
+          var n = norm(c), o = old[c.id];
+          if (o && (o.text !== n.text || o.edited !== n.edited || o.nick !== n.nick || o.host !== n.host || o.mine !== n.mine)) S.rev = (S.rev || 0) + 1;
+          S.map[c.id] = n; if (c.id > S.afterId) S.afterId = c.id;
+        });
         S.prevUpto = full ? upto : Math.max(S.prevUpto, upto);
         S.comments = Object.keys(S.map).map(function (k) { return S.map[k]; }).sort(function (a, b) { return a.sec - b.sec || a.id - b.id; });
         S.loadState = "ok";
@@ -1234,20 +1326,22 @@ input:disabled { opacity: .55; }
         renderMarks(); renderFeed(false);
       } catch (e) {
         if (sess === S && S.loadState !== "ok") { S.loadState = "error"; renderFeed(true); }
-      } finally { S.polling = false; if (S.again && sess === S) { S.again = false; setTimeout(function () { poll(false); }, 300); } }
+      } finally { S.polling = false; if (S.again && sess === S) { S.again = false; setTimeout(function () { var f = !!S.wantFull; S.wantFull = false; poll(f); }, 300); } }
     }
     S.poll = poll;
     poll(true);
     /* 새 댓글이 올라오면 서버가 '신호'만 보낸다(내용 없음). 신호를 받으면 바로 다시 조회한다. */
-    var kickAt = 0, kickTimer = null;
-    function kick() {
+    var kickAt = 0, kickTimer = null, kickFull = false;
+    function run() { var f = kickFull; kickFull = false; kickAt = Date.now(); poll(f); }
+    function kick(full) {
+      if (full) kickFull = true;   /* 수정·삭제 신호는 전체를 다시 받아야 반영된다 */
       var wait = 1500 - (Date.now() - kickAt);   /* 신호가 몰려도 1.5초에 한 번만 조회 */
-      if (wait <= 0) { kickAt = Date.now(); poll(false); }
-      else if (!kickTimer) kickTimer = setTimeout(function () { kickTimer = null; kickAt = Date.now(); poll(false); }, wait);
+      if (wait <= 0) run();
+      else if (!kickTimer) kickTimer = setTimeout(function () { kickTimer = null; run(); }, wait);
     }
     try {
       S.rt = sb.channel("ep:" + S.key, { config: { broadcast: { self: false } } })
-        .on("broadcast", { event: "comment" }, kick)
+        .on("broadcast", { event: "comment" }, function (m) { var op = m && m.payload && m.payload.op; kick(!!op && op !== "INSERT"); })
         .subscribe(function (status) { S.rtOk = (status === "SUBSCRIBED"); });
     } catch (e) { S.rtOk = false; }
     /* 실시간 연결이 되어 있으면 30초마다 확인만, 안 되어 있으면 4초마다 조회 */
