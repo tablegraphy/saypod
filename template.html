@@ -32,7 +32,11 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-@media (display-mode: standalone) { :root { --st: max(calc(env(safe-area-inset-top, 0px) + 14px), 10vh); } }   /* 윗 10%는 아이폰이 흐리게 처리해서 그만큼 비워 둔다 */
+/* 아이폰 상단(상태바 아래 ~12%)은 시스템이 흐리게 처리한다(캡처로 확인). 주소창 없는 화면(안전 영역>0)에서만 윗 12% 높이까지 비운다.
+   display-mode 조건은 이 폰의 '웹 앱으로 열기'에서 맞지 않아 안전 영역 값으로 판단한다: 안전 영역이 0(일반 브라우저)이면 추가 여백 0. */
+@supports (top: min(1px, 2px)) {
+  :root { --st: calc(env(safe-area-inset-top, 0px) + min(calc(env(safe-area-inset-top, 0px) * 1000), max(14px, calc(12vh - env(safe-area-inset-top, 0px))))); }
+}
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: var(--st); z-index: 30; background: var(--bg); }
 * { box-sizing: border-box; touch-action: manipulation; }   /* 빈 곳을 두 번 눌러도 확대되지 않게 */
 html { -webkit-text-size-adjust: 100%; }
