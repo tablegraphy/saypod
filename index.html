@@ -155,6 +155,17 @@ input:disabled { opacity: .55; }
 .fine { font-size: 12px; color: var(--muted); margin: 12px 0 0; line-height: 1.5; }
 .toast { position: fixed; top: calc(68px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 50; background: var(--fg); color: var(--bg); padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: calc(100% - 32px); text-align: center; }
 @media (min-width: 560px) { .modal { place-items: center; } }
+.consent { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 13px; line-height: 1.55; }
+.consent .ct { font-weight: 700; margin-bottom: 4px; }
+.consent ul { margin: 0 0 6px; padding-left: 18px; }
+.consent a { color: var(--brand); }
+.modal .consent .chk { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0 0; font-size: 14px; color: var(--fg); }
+.consent .chk input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+.policy h1 { font-size: 22px; margin: 8px 0 4px; }
+.policy h2 { font-size: 16px; margin: 22px 0 6px; }
+.policy p, .policy li { font-size: 14px; line-height: 1.7; margin: 0 0 8px; overflow-wrap: anywhere; }
+.policy ul { padding-left: 20px; margin: 0 0 8px; }
+.foot a { color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
@@ -163,15 +174,17 @@ input:disabled { opacity: .55; }
 <script>
 (function () {
   "use strict";
-  var D = {"site":true,"channels":[{"id":"saysiot","name":"사이시옷","tagline":"이런저런 사이를 이야기합니다.","links":{"spotify":"https://open.spotify.com/show/5jRbe125CXLdqk6iTawSbX","apple":"https://podcasts.apple.com/kr/podcast/%EC%82%AC%EC%9D%B4%EC%8B%9C%EC%98%B7/id1809160765","podbbang":"https://www.podbbang.com/channels/1792439","youtube":"https://www.youtube.com/@saysiot"},"cover":"data:image/jpeg;base64,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","episodes":[{"n":12,"title":"Ep12. TV와 라디오 사이","date":"2025-07-14","sec":2772,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/105475178/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-6-14%2F403880925-44100-2-9a82e9d90334d.m4a"},{"n":11,"title":"Ep11. 산과 바다 사이","date":"2025-07-07","sec":2780,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/105134389/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-6-7%2F403441627-44100-2-3b056f5e80a99.m4a"},{"n":10,"title":"Ep10. 낮과 밤 사이","date":"2025-06-30","sec":2725,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/104835600/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-5-30%2F403059533-44100-2-ae291220b08d3.m4a"},{"n":9,"title":"Ep9. 운전자와 뚜벅이 사이","date":"2025-06-23","sec":2636,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/104518384/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-5-23%2F402654291-44100-2-2022ebf419331.m4a"},{"n":8,"title":"Ep8. 하면 된다와 되면 한다 사이","date":"2025-06-16","sec":2354,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/104037319/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-5-12%2F402048471-44100-2-ee9a95d9b9731.m4a"},{"n":7,"title":"Ep7. 일과 취미 사이","date":"2025-06-09","sec":2183,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/103798416/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-5-7%2F401749438-44100-2-91aa1399c9306.m4a"},{"n":6,"title":"Ep6. 청년과 중년 사이","date":"2025-06-02","sec":3046,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/103504855/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-5-1%2F401376225-44100-2-b8ad011b0d7d9.m4a"},{"n":5,"title":"Ep5. 경험과 경력 사이","date":"2025-05-26","sec":1919,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/103222941/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-4-26%2F401023077-44100-2-30443e6d0e466.m4a"},{"n":4,"title":"Ep4. 직장인과 프리랜서 사이 (with 노윤주 작가)","date":"2025-05-19","sec":3358,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/102868024/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-4-19%2F400560292-44100-2-71c694be500b8.m4a"},{"n":3,"title":"Ep3. 봄과 여름 사이","date":"2025-05-12","sec":2738,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/102550250/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-4-12%2F400102624-44100-2-05f0d6a47fadb.m4a"},{"n":2,"title":"Ep2. 여행과 살아보는 것의 사이","date":"2025-05-05","sec":2307,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/102194408/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-4-5%2F399620374-44100-2-f20ef551fc998.m4a"},{"n":1,"title":"Ep1. 관심과 무관심 사이","date":"2025-04-27","sec":2466,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/101813130/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-3-27%2F399152556-44100-2-9d5ef0e702586.m4a"},{"n":0,"title":"Ep0. 사이시옷","date":"2025-04-20","sec":1973,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/101406860/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-3-19%2F398649458-44100-2-6911947ab306.m4a"}]},{"id":"geobuk","name":"거북목 라디오","tagline":"책 때문에 책을 좋아해서 거북목이 된 사람들의 이야기","links":{"spotify":"https://open.spotify.com/show/0fR9KjOkTilNrb4x9rV1Bx","apple":"https://podcasts.apple.com/kr/podcast/%EA%B1%B0%EB%B6%81%EB%AA%A9-%EB%9D%BC%EB%94%94%EC%98%A4/id1862187912","podbbang":"https://dlink.podbbang.com/1148eb66","youtube":"https://www.youtube.com/playlist?list=PLQCVdJAnj2R5xxghFveCPsLzeFkFcYV1i"},"cover":"data:image/jpeg;base64,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","episodes":[{"n":21,"title":"[21화] 유한한 삶을 사랑하는 법 (feat. 정시우 작가)","date":"2026-11-11","sec":6770,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/129049562/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-10-8%2Fc1e9f012-08b9-d419-1554-5ce18d07e55a.mp3","links":{"youtube":"https://youtu.be/WxNsfoAaWSM"}},{"n":20,"title":"[20화] 연장하시겠습니까","date":"2026-10-21","sec":5322,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/127760501/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-9-20%2F20bab833-a567-7e4d-7586-b73ff3483024.mp3","links":{"youtube":"https://youtu.be/sFkH_dLBoJM"}},{"n":19,"title":"[19화] 환절기","date":"2026-10-07","sec":4482,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/126858898/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-9-5%2F23febd33-b84d-27a2-dbd1-51e32a2abee3.mp3","links":{"youtube":"https://youtu.be/YUte3Osj-Eo"}},{"n":18,"title":"[18화] 잡도리","date":"2026-09-22","sec":5905,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/126085863/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-8-21%2F0bdbdd64-deb4-73b2-fb7d-d5171d11e681.mp3","links":{"youtube":"https://youtu.be/e3uEzfUke1A"}},{"n":17,"title":"[17화] 당신은 거북목 멤버가 아닙니다","date":"2026-09-09","sec":4314,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/125339860/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-8-7%2Fe623bc79-7464-ae05-fe92-c4567b78d5e0.mp3","links":{"youtube":"https://youtu.be/7R7o6gpKw9M"}},{"n":16,"title":"[16화] 한수희의 인생 (feat. 한수희 작가)","date":"2026-08-26","sec":5911,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/124642145/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-7-24%2F81a32c3e-b02e-9f67-f8f4-12b879bcf697.mp3","links":{"youtube":"https://youtu.be/MU9oZRwBwrk"}},{"n":15,"title":"[15화] 친구","date":"2026-08-12","sec":4258,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/124111312/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-7-12%2F3b0db49a-3644-6f9c-b615-44ee1f318f2c.mp3","links":{"youtube":"https://youtu.be/1j_UuQszZiE"}},{"n":14,"title":"[14화] 시차 (feat.장은교 작가)","date":"2026-07-22","sec":6924,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/123160829/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-6-22%2F7eda8a29-1ff4-3449-0d78-c8a8205d02cf.mp3","links":{"youtube":"https://youtu.be/wq7u03eB9gI"}},{"n":13,"title":"[13화] 연착륙","date":"2026-07-08","sec":6082,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/122536976/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-6-8%2F254d0512-4307-2d20-54f4-a858c5a272ea.mp3","links":{"youtube":"https://youtu.be/a0IFBXOgD1s"}},{"n":12,"title":"[12화] 도란도란 (2026 거북목 도서전 공개방송)","date":"2026-06-24","sec":6854,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/121927958/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-5-24%2Fe6b92cff-bb1b-9376-4b2d-4fde9f867a65.mp3","links":{"youtube":"https://youtu.be/XoD-a_a-SVU"}},{"n":11,"title":"[11화] 정지선이 출발선이 될 때","date":"2026-06-10","sec":7452,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/121211794/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-5-9%2Ff6c36ef3-817c-00c2-4d4e-eb1f73183982.mp3","links":{"youtube":"https://youtu.be/aQNfABTSHXs"}},{"n":10,"title":"[10화] 굳이","date":"2026-05-27","sec":2879,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/120605296/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-4-27%2Fede25cc3-9de5-a49f-768f-14621ac54101.mp3","links":{"youtube":"https://youtu.be/vLYY61WmPHM"}},{"n":9,"title":"[9화] 틈 짬 겨를 사이","date":"2026-05-13","sec":4439,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/119917495/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-4-13%2F551dd9e3-623a-1da6-2169-de41fd025384.mp3","links":{"youtube":"https://youtu.be/6i-hysa1B54"}},{"n":8,"title":"[8화] 교집합 (feat. 민턴)","date":"2026-04-22","sec":6622,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/118717381/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-3-20%2F3bcdc64c-2956-c9a4-0e0a-9f3b0befdb48.mp3","links":{"youtube":"https://youtu.be/szLnormF7Us"}},{"n":7,"title":"[7화] 기록의 기록","date":"2026-04-08","sec":5243,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/118125839/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-3-8%2F1d526d98-d2be-416d-c3f5-24af91292632.mp3","links":{"youtube":"https://youtu.be/SvrqbsXkBx8"}},{"n":6,"title":"[6화] 짓다","date":"2026-03-25","sec":4314,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/117446317/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-2-25%2Fc546f268-5eb6-2942-d560-b54c2112fb2a.mp3","links":{"youtube":"https://youtu.be/ukSVpAefKZU"}},{"n":5,"title":"[5화] 축하샤워","date":"2026-03-11","sec":4391,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/116727730/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-2-11%2Fc9758836-fd8a-4b08-4588-de9d9ef00e37.mp3","links":{"youtube":"https://youtu.be/oGYqsVrHCPE"}},{"n":4,"title":"[4화] 회피 아니고 해피!","date":"2026-02-25","sec":4443,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/116013805/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-25%2F7f3d1138-479a-5dc7-f303-50e4f3a9be9f.mp3","links":{"youtube":"https://youtu.be/mqV6iVdCNf8"}},{"n":3,"title":"[3화] 써 '버리기'","date":"2026-02-11","sec":5483,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/115334017/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-11%2Fad71e6cd-357c-5570-f154-73bb8007e646.mp3","links":{"youtube":"https://youtu.be/F6oBkMxjQs8"}},{"n":2,"title":"[2화] 마음을 다해 대충","date":"2026-01-21","sec":5239,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/114073701/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-0-16%2F0f7577e0-1122-e6bc-fbbf-89cffd7039c4.mp3","links":{"youtube":"https://youtu.be/c_W65IbCWr4"}},{"n":1,"title":"[1화] 오래오래","date":"2026-01-07","sec":4390,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/113571119/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-0-7%2F4f7c0edc-b68f-414f-c9c7-aa462aed1b6d.mp3","links":{"youtube":"https://youtu.be/q70B0KNOf0M"}},{"n":0,"title":"[0화] 거북목 라디오 : 개국","date":"2025-12-17","sec":4660,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/112721438/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-11-16%2Fd1aea3b5-102f-85e9-fda0-74933baeb365.mp3","links":{"youtube":"https://youtu.be/VtDkOOJP9iY"}}]}],"supabase":{"url":"https://uskanhkdemmrvwfajvzu.supabase.co","key":"sb_publishable_7MpM1OsPPIoe9OzEb2MpvQ_Za1rfBM1"}};
+  var D = {"site":true,"channels":[{"id":"saysiot","name":"사이시옷","tagline":"이런저런 사이를 이야기합니다.","links":{"spotify":"https://open.spotify.com/show/5jRbe125CXLdqk6iTawSbX","apple":"https://podcasts.apple.com/kr/podcast/%EC%82%AC%EC%9D%B4%EC%8B%9C%EC%98%B7/id1809160765","podbbang":"https://www.podbbang.com/channels/1792439","youtube":"https://www.youtube.com/@saysiot"},"cover":"data:image/jpeg;base64,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","episodes":[{"n":12,"title":"Ep12. TV와 라디오 사이","date":"2025-07-14","sec":2772,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/105475178/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-6-14%2F403880925-44100-2-9a82e9d90334d.m4a"},{"n":11,"title":"Ep11. 산과 바다 사이","date":"2025-07-07","sec":2780,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/105134389/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-6-7%2F403441627-44100-2-3b056f5e80a99.m4a"},{"n":10,"title":"Ep10. 낮과 밤 사이","date":"2025-06-30","sec":2725,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/104835600/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-5-30%2F403059533-44100-2-ae291220b08d3.m4a"},{"n":9,"title":"Ep9. 운전자와 뚜벅이 사이","date":"2025-06-23","sec":2636,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/104518384/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-5-23%2F402654291-44100-2-2022ebf419331.m4a"},{"n":8,"title":"Ep8. 하면 된다와 되면 한다 사이","date":"2025-06-16","sec":2354,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/104037319/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-5-12%2F402048471-44100-2-ee9a95d9b9731.m4a"},{"n":7,"title":"Ep7. 일과 취미 사이","date":"2025-06-09","sec":2183,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/103798416/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-5-7%2F401749438-44100-2-91aa1399c9306.m4a"},{"n":6,"title":"Ep6. 청년과 중년 사이","date":"2025-06-02","sec":3046,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/103504855/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-5-1%2F401376225-44100-2-b8ad011b0d7d9.m4a"},{"n":5,"title":"Ep5. 경험과 경력 사이","date":"2025-05-26","sec":1919,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/103222941/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-4-26%2F401023077-44100-2-30443e6d0e466.m4a"},{"n":4,"title":"Ep4. 직장인과 프리랜서 사이 (with 노윤주 작가)","date":"2025-05-19","sec":3358,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/102868024/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-4-19%2F400560292-44100-2-71c694be500b8.m4a"},{"n":3,"title":"Ep3. 봄과 여름 사이","date":"2025-05-12","sec":2738,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/102550250/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-4-12%2F400102624-44100-2-05f0d6a47fadb.m4a"},{"n":2,"title":"Ep2. 여행과 살아보는 것의 사이","date":"2025-05-05","sec":2307,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/102194408/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-4-5%2F399620374-44100-2-f20ef551fc998.m4a"},{"n":1,"title":"Ep1. 관심과 무관심 사이","date":"2025-04-27","sec":2466,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/101813130/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-3-27%2F399152556-44100-2-9d5ef0e702586.m4a"},{"n":0,"title":"Ep0. 사이시옷","date":"2025-04-20","sec":1973,"audio":"https://anchor.fm/s/103bd40a8/podcast/play/101406860/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-3-19%2F398649458-44100-2-6911947ab306.m4a"}]},{"id":"geobuk","name":"거북목 라디오","tagline":"책 때문에 책을 좋아해서 거북목이 된 사람들의 이야기","links":{"spotify":"https://open.spotify.com/show/0fR9KjOkTilNrb4x9rV1Bx","apple":"https://podcasts.apple.com/kr/podcast/%EA%B1%B0%EB%B6%81%EB%AA%A9-%EB%9D%BC%EB%94%94%EC%98%A4/id1862187912","podbbang":"https://dlink.podbbang.com/1148eb66","youtube":"https://www.youtube.com/playlist?list=PLQCVdJAnj2R5xxghFveCPsLzeFkFcYV1i"},"cover":"data:image/jpeg;base64,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","episodes":[{"n":21,"title":"[21화] 유한한 삶을 사랑하는 법 (feat. 정시우 작가)","date":"2026-11-11","sec":6770,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/129049562/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-10-8%2Fc1e9f012-08b9-d419-1554-5ce18d07e55a.mp3","links":{"youtube":"https://youtu.be/WxNsfoAaWSM"}},{"n":20,"title":"[20화] 연장하시겠습니까","date":"2026-10-21","sec":5322,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/127760501/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-9-20%2F20bab833-a567-7e4d-7586-b73ff3483024.mp3","links":{"youtube":"https://youtu.be/sFkH_dLBoJM"}},{"n":19,"title":"[19화] 환절기","date":"2026-10-07","sec":4482,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/126858898/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-9-5%2F23febd33-b84d-27a2-dbd1-51e32a2abee3.mp3","links":{"youtube":"https://youtu.be/YUte3Osj-Eo"}},{"n":18,"title":"[18화] 잡도리","date":"2026-09-22","sec":5905,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/126085863/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-8-21%2F0bdbdd64-deb4-73b2-fb7d-d5171d11e681.mp3","links":{"youtube":"https://youtu.be/e3uEzfUke1A"}},{"n":17,"title":"[17화] 당신은 거북목 멤버가 아닙니다","date":"2026-09-09","sec":4314,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/125339860/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-8-7%2Fe623bc79-7464-ae05-fe92-c4567b78d5e0.mp3","links":{"youtube":"https://youtu.be/7R7o6gpKw9M"}},{"n":16,"title":"[16화] 한수희의 인생 (feat. 한수희 작가)","date":"2026-08-26","sec":5911,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/124642145/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-7-24%2F81a32c3e-b02e-9f67-f8f4-12b879bcf697.mp3","links":{"youtube":"https://youtu.be/MU9oZRwBwrk"}},{"n":15,"title":"[15화] 친구","date":"2026-08-12","sec":4258,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/124111312/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-7-12%2F3b0db49a-3644-6f9c-b615-44ee1f318f2c.mp3","links":{"youtube":"https://youtu.be/1j_UuQszZiE"}},{"n":14,"title":"[14화] 시차 (feat.장은교 작가)","date":"2026-07-22","sec":6924,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/123160829/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-6-22%2F7eda8a29-1ff4-3449-0d78-c8a8205d02cf.mp3","links":{"youtube":"https://youtu.be/wq7u03eB9gI"}},{"n":13,"title":"[13화] 연착륙","date":"2026-07-08","sec":6082,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/122536976/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-6-8%2F254d0512-4307-2d20-54f4-a858c5a272ea.mp3","links":{"youtube":"https://youtu.be/a0IFBXOgD1s"}},{"n":12,"title":"[12화] 도란도란 (2026 거북목 도서전 공개방송)","date":"2026-06-24","sec":6854,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/121927958/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-5-24%2Fe6b92cff-bb1b-9376-4b2d-4fde9f867a65.mp3","links":{"youtube":"https://youtu.be/XoD-a_a-SVU"}},{"n":11,"title":"[11화] 정지선이 출발선이 될 때","date":"2026-06-10","sec":7452,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/121211794/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-5-9%2Ff6c36ef3-817c-00c2-4d4e-eb1f73183982.mp3","links":{"youtube":"https://youtu.be/aQNfABTSHXs"}},{"n":10,"title":"[10화] 굳이","date":"2026-05-27","sec":2879,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/120605296/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-4-27%2Fede25cc3-9de5-a49f-768f-14621ac54101.mp3","links":{"youtube":"https://youtu.be/vLYY61WmPHM"}},{"n":9,"title":"[9화] 틈 짬 겨를 사이","date":"2026-05-13","sec":4439,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/119917495/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-4-13%2F551dd9e3-623a-1da6-2169-de41fd025384.mp3","links":{"youtube":"https://youtu.be/6i-hysa1B54"}},{"n":8,"title":"[8화] 교집합 (feat. 민턴)","date":"2026-04-22","sec":6622,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/118717381/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-3-20%2F3bcdc64c-2956-c9a4-0e0a-9f3b0befdb48.mp3","links":{"youtube":"https://youtu.be/szLnormF7Us"}},{"n":7,"title":"[7화] 기록의 기록","date":"2026-04-08","sec":5243,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/118125839/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-3-8%2F1d526d98-d2be-416d-c3f5-24af91292632.mp3","links":{"youtube":"https://youtu.be/SvrqbsXkBx8"}},{"n":6,"title":"[6화] 짓다","date":"2026-03-25","sec":4314,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/117446317/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-2-25%2Fc546f268-5eb6-2942-d560-b54c2112fb2a.mp3","links":{"youtube":"https://youtu.be/ukSVpAefKZU"}},{"n":5,"title":"[5화] 축하샤워","date":"2026-03-11","sec":4391,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/116727730/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-2-11%2Fc9758836-fd8a-4b08-4588-de9d9ef00e37.mp3","links":{"youtube":"https://youtu.be/oGYqsVrHCPE"}},{"n":4,"title":"[4화] 회피 아니고 해피!","date":"2026-02-25","sec":4443,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/116013805/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-25%2F7f3d1138-479a-5dc7-f303-50e4f3a9be9f.mp3","links":{"youtube":"https://youtu.be/mqV6iVdCNf8"}},{"n":3,"title":"[3화] 써 '버리기'","date":"2026-02-11","sec":5483,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/115334017/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-1-11%2Fad71e6cd-357c-5570-f154-73bb8007e646.mp3","links":{"youtube":"https://youtu.be/F6oBkMxjQs8"}},{"n":2,"title":"[2화] 마음을 다해 대충","date":"2026-01-21","sec":5239,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/114073701/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-0-16%2F0f7577e0-1122-e6bc-fbbf-89cffd7039c4.mp3","links":{"youtube":"https://youtu.be/c_W65IbCWr4"}},{"n":1,"title":"[1화] 오래오래","date":"2026-01-07","sec":4390,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/113571119/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2026-0-7%2F4f7c0edc-b68f-414f-c9c7-aa462aed1b6d.mp3","links":{"youtube":"https://youtu.be/q70B0KNOf0M"}},{"n":0,"title":"[0화] 거북목 라디오 : 개국","date":"2025-12-17","sec":4660,"audio":"https://anchor.fm/s/10ca0cc1c/podcast/play/112721438/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2025-11-16%2Fd1aea3b5-102f-85e9-fda0-74933baeb365.mp3","links":{"youtube":"https://youtu.be/VtDkOOJP9iY"}}]}],"privacy":{"_설명":"듣는 사이 개인정보 처리방침 본문. 사이트의 #privacy 화면과 가입 창의 동의 문구가 이 내용을 따른다. 고치면 version(시행일)을 올리고 build.py를 다시 실행한다. 뼈대는 saysiot.com/partner 의 개인정보 수집·이용 동의 조항을 가져와 듣는 사이의 실제 처리 내용에 맞게 고친 것이다(법률 자문 아님).","version":"2026-11-16","title":"듣는 사이 개인정보 처리방침","intro":"테이블그라피(이하 '운영자')는 '듣는 사이'(이하 '서비스') 이용자의 개인정보를 소중히 다루며, 개인정보 보호법 등 관련 법령을 지키기 위해 아래와 같이 개인정보 처리방침을 정합니다.","sections":[{"h":"제1조 (개인정보의 처리 목적)","p":["운영자는 다음 목적을 위해서만 개인정보를 처리하며, 목적이 바뀌면 법령에 따라 별도의 동의를 받습니다."],"li":["회원 가입 의사 확인, 로그인과 본인 확인, 회원 관리","닉네임 표시와 중복 방지, 댓글 서비스 제공(댓글 표시, 진행자·청취자 표시)","이어듣기 위치 저장과 기기 간 이어듣기","이메일 인증과 비밀번호 재설정 메일 발송","도배 등 부정 이용 방지, 고지·통지, 고충 처리"]},{"h":"제2조 (처리하는 개인정보 항목)","li":["필수 항목: 이메일 주소, 비밀번호, 닉네임","서비스를 이용하는 과정에서 생성되는 정보: 작성한 댓글(내용, 작성 시각, 에피소드 안의 위치), 이어듣기 위치(에피소드, 재생 시각, 저장 시각)","자동으로 남는 정보: 가입·로그인 요청 때 서비스 제공 시스템에 기록되는 접속 기록(접속 IP 주소 등)","선택 항목은 없습니다. 이름, 전화번호, 생년월일, 주소 등은 받지 않습니다."]},{"h":"제3조 (개인정보의 보유 및 이용 기간)","li":["회원 정보(이메일, 비밀번호, 닉네임): 회원 탈퇴(계정 삭제) 때까지","댓글: 계정을 삭제하면 함께 삭제됩니다. 운영자가 삭제한 댓글은 즉시 삭제됩니다.","이어듣기 위치: 마지막으로 저장한 날부터 30일이 지나면 자동으로 삭제됩니다.","접속 기록: 관계 법령에서 보관 기간을 정한 경우 그 기간 동안 보관합니다.","법령 위반에 따른 수사·조사가 진행 중이면 그 종료 때까지 보관할 수 있습니다."]},{"h":"제4조 (개인정보 처리의 위탁과 외부 서비스)","p":["운영자는 이용자의 개인정보를 제3자에게 제공하지 않습니다(법령에 근거가 있는 경우는 제외). 다만 서비스 운영을 위해 다음 업체에 처리를 맡기거나 외부 서비스를 이용합니다."],"li":["Supabase, Inc.(미국에 본사를 둔 업체): 회원 인증, 데이터베이스 저장·관리, 인증 메일 발송. 데이터는 대한민국 서울 지역의 서버에 저장됩니다.","GitHub, Inc.(미국): 서비스 화면(웹사이트) 제공. 이용자가 접속할 때 접속 정보(IP 주소 등)가 처리될 수 있습니다.","jsDelivr(소프트웨어 라이브러리 제공)와 Google Fonts(글꼴 제공): 화면을 구성하는 파일을 내려받는 과정에서 접속 정보가 처리될 수 있습니다.","메일 발송을 맡길 업체를 추가하거나 바꾸면 이 방침에 알립니다."]},{"h":"제4조의2 (동의를 거부할 권리)","p":["이용자는 개인정보 수집·이용에 동의하지 않을 수 있습니다. 동의하지 않으면 가입과 댓글 작성이 제한되며, 방송 듣기와 댓글 읽기는 가입 없이 이용할 수 있습니다."]},{"h":"제5조 (개인정보의 파기)","p":["보유 기간이 지나거나 처리 목적을 달성해 개인정보가 불필요해지면 지체 없이 파기합니다. 전자 파일은 복구할 수 없는 방법으로 삭제합니다. 이어듣기 위치는 30일이 지나면 자동으로 삭제됩니다."]},{"h":"제6조 (이용자의 권리와 행사 방법)","p":["이용자는 언제든지 자신의 개인정보에 대해 열람, 정정, 삭제, 처리 정지를 요구할 수 있습니다. 계정 삭제(회원 탈퇴)와 개인정보 관련 요청은 아래 개인정보 보호책임자의 이메일로 보내 주시면 지체 없이 처리합니다."]},{"h":"제7조 (안전성 확보 조치)","li":["비밀번호는 암호화되어 저장되며 운영자도 알 수 없습니다.","데이터베이스에는 접근 제한 규칙을 적용해, 이용자는 자신의 정보와 공개된 댓글 외에는 읽을 수 없습니다.","서비스와의 통신은 HTTPS로 암호화됩니다.","관리 권한은 운영자 계정으로 제한합니다."]},{"h":"제8조 (브라우저 저장 공간의 사용)","p":["서비스는 광고나 추적을 위한 쿠키를 사용하지 않습니다. 로그인 상태 유지와 이어듣기를 위해 이용자 기기의 브라우저 저장 공간(localStorage)에 로그인 정보(인증 표시)와 이어듣기 위치를 저장합니다. 브라우저 설정에서 사이트 데이터를 삭제하면 지워지며, 삭제하면 로그인이 풀립니다."]},{"h":"제9조 (개인정보 보호책임자)","li":["성명과 직책: 정주환(대표)","이메일: tablegraphy@naver.com"]},{"h":"제10조 (권익침해 구제 방법)","p":["개인정보 침해에 대한 신고나 상담이 필요하면 아래 기관에 문의할 수 있습니다."],"li":["개인정보 분쟁조정위원회: 1833-6972","개인정보침해신고센터: 118","대검찰청: 1301","경찰청: 182"]},{"h":"제11조 (처리방침의 변경)","p":["이 방침이 바뀌면 시행일과 변경 내용을 서비스 화면에 알립니다. 이 방침은 위에 적힌 시행일부터 적용됩니다."]}],"operator":["상호: 테이블그라피","대표자: 정주환","사업장 주소: 서울 마포구 양화로7길 14 (서교동) 포레스트합정 5층","사업자등록번호: 144-02-14583"]},"supabase":{"url":"https://uskanhkdemmrvwfajvzu.supabase.co","key":"sb_publishable_7MpM1OsPPIoe9OzEb2MpvQ_Za1rfBM1"}};
   var CH = (D && D.channels) || [];
   var SITE = !!(D && D.site);
   var CFG = (D && D.supabase) || null;   /* 사이트 빌드에서만 들어오는 공개 연결 값(주소·공개 키) */
   var SB = SITE && !!CFG;                 /* 로그인·공유 댓글 모드 */
   var sb = null;                          /* Supabase 클라이언트 */
   var me = null;                          /* 로그인한 사람: {id, nick, host} */
+  var srvPos = {};   /* 서버에 저장된 이어듣기 위치 {에피소드키: {sec, ms}} */
   var OTHER_APP = false; /* '다른 앱에서 듣기' 전환. 2026-11-16 사용자가 헷갈린다며 뺌. true로 바꾸면 되살아난다 */
-  var NEAR = 30;
+  var NEAR = 30;    /* 방금 지난 댓글 강조 범위(초) · 서버에서 미리 받아 두는 폭 */
+  var AHEAD = 3;    /* 내 위치보다 이만큼(초) 앞까지만 화면에 보임 */
   var PLAT = [["spotify", "스포티파이"], ["apple", "애플 팟캐스트"], ["podbbang", "팟빵"], ["youtube", "유튜브"]];
   var PLAT_SHORT = { spotify: "스포티파이", apple: "애플", podbbang: "팟빵", youtube: "유튜브" };
   var app = document.getElementById("app");
@@ -275,8 +288,9 @@ input:disabled { opacity: .55; }
     if (!sess) return;
     clearInterval(sess.timer); clearInterval(sess.pollTimer); clearTimeout(sess.lt);
     if (sess.unsub) { try { sess.unsub(); } catch (e) {} }
+    if (sess.rt) { try { sb.removeChannel(sess.rt); } catch (e) {} }
     if (sess.audio) {
-      savePos(sess);
+      savePos(sess, true);
       try { sess.audio.pause(); sess.audio.removeAttribute("src"); sess.audio.load(); } catch (e) {}
       if ("mediaSession" in navigator) { try { navigator.mediaSession.metadata = null; } catch (e) {} }
     }
@@ -293,9 +307,10 @@ input:disabled { opacity: .55; }
     }
     if ((m = h.match(/^#c-([a-z0-9]+)$/))) {
       ch = CH.find(function (c) { return c.id === m[1]; });
-      if (ch) return showChannel(ch);
+      if (ch) { showChannel(ch); return appendLegal(); }
     }
-    showHome();
+    if (h === "#privacy" && SITE && D.privacy) return showPrivacy();
+    showHome(); appendLegal();
   }
   function topbar() {
     var slot = el("div", { class: "authbar" });
@@ -333,15 +348,17 @@ input:disabled { opacity: .55; }
       platLinks(c),
       el("div", { class: "sec" }, el("div", { class: "lb", text: "에피소드 " + c.episodes.length + "개" })),
       c.episodes.map(function (e) {
-        return el("a", { class: "er", href: "#e-" + c.id + "-" + e.n },
+        return el("a", { class: "er", href: "#e-" + c.id + "-" + e.n, "data-ch": c.id, "data-n": e.n },
           el("div", { class: "n", text: e.n }),
           el("div", null, el("div", { class: "et", text: e.title }),
-            el("div", { class: "em", text: dotDate(e.date) + (e.sec ? " · " + durText(e.sec) : "") + resumeText(c.id, e) })));
+            el("div", { class: "em", "data-base": dotDate(e.date) + (e.sec ? " · " + durText(e.sec) : ""), text: dotDate(e.date) + (e.sec ? " · " + durText(e.sec) : "") + resumeText(c.id, e) })));
       })
     );
   }
   function resumeText(chId, e) {
-    var sp = parseFloat(store.get("ds_pos_" + chId + "-" + e.n));
+    var k = chId + "-" + e.n, sp = parseFloat(store.get("ds_pos_" + k)) || 0, lms = parseFloat(store.get("ds_post_" + k)) || 0;
+    var sv = srvPos[k];
+    if (sv && sv.ms > lms) sp = sv.sec;   /* 서버 기록이 더 최근이면 그쪽 */
     return sp > 5 && (!e.sec || sp < e.sec - 15) ? " · 이어듣기 " + fmt(sp) : "";
   }
   function platLinks(c, small) {
@@ -420,7 +437,7 @@ input:disabled { opacity: .55; }
       el("div", { class: "eph" },
         el("h1", { text: ep.title }),
         el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") })),
-      r.mode, r.sync, r.plat, r.feed, el("div", { class: "pad" }), r.comp
+      r.mode, r.sync, r.plat, r.feed, legalFoot(), el("div", { class: "pad" }), r.comp
     );
     renderMode(); renderSync(); renderPlat(); renderNick(); updateComposer(); renderMarks(); renderFeed(true);
     S.timer = setInterval(tick, 500);
@@ -498,7 +515,7 @@ input:disabled { opacity: .55; }
   }
   function renderMarks() {
     var S = sess; if (!S || !S.r.marks) return;
-    var f = document.createDocumentFragment(), seen = {}, lim = S.reveal ? Infinity : pos() + NEAR;
+    var f = document.createDocumentFragment(), seen = {}, lim = S.reveal ? Infinity : pos() + AHEAD;
     S.markN = 0;
     S.comments.forEach(function (c) {
       if (c.sec > lim) return;
@@ -517,7 +534,7 @@ input:disabled { opacity: .55; }
       S.r.fill.style.width = pct + "%"; S.r.dot.style.left = pct + "%";
       if (S.r.seek && !S.seeking) S.r.seek.value = String(Math.floor(p));
       audioTick(S, p);
-      var vis = S.reveal ? S.comments.length : S.comments.filter(function (c) { return c.sec <= p + NEAR; }).length;
+      var vis = S.reveal ? S.comments.length : S.comments.filter(function (c) { return c.sec <= p + AHEAD; }).length;
       if (vis !== S.markN) renderMarks();
     }
     renderFeed(false);
@@ -525,10 +542,21 @@ input:disabled { opacity: .55; }
   }
 
   /* ---- 에피소드: 사이트 안 재생 ---- */
-  function savePos(S) {
+  function savePos(S, force) {
     var a = S.audio; if (!a) return;
     if (a.readyState === 0 && !(a.currentTime > 0)) return;   /* 아직 음원을 못 읽었으면 저장된 위치를 건드리지 않는다 */
-    store.set("ds_pos_" + S.key, a.currentTime > 5 ? String(Math.floor(a.currentTime)) : "");
+    var t = a.currentTime > 5 ? Math.floor(a.currentTime) : 0;
+    store.set("ds_pos_" + S.key, t ? String(t) : "");
+    store.set("ds_post_" + S.key, String(Date.now()));
+    pushPos(S, t, force);
+  }
+  function pushPos(S, t, force) {
+    if (!SB || !sb || !me) return;
+    var now = Date.now();
+    if (!force && (now - (S.lastPush || 0) < 15000 || S.lastPushed === t)) return;   /* 15초에 한 번, 같은 값은 다시 안 보냄 */
+    S.lastPush = now; S.lastPushed = t;
+    srvPos[S.key] = { sec: t, ms: now };
+    try { sb.rpc("save_position", { p_ep: S.key, p_sec: t }).then(function () {}, function () {}); } catch (e) {}
   }
   function ensureAudio() {
     var S = sess; if (S.audio || !S.ep.audio) return;
@@ -536,6 +564,7 @@ input:disabled { opacity: .55; }
     a.preload = "metadata"; a.src = S.ep.audio;
     var sp0 = parseFloat(store.get("ds_pos_" + S.key));
     if (sp0 > 5 && sp0 < S.dur - 15) { try { a.currentTime = sp0; } catch (e) {} S.resumedFrom = sp0; S.resumed = true; }
+    if (SB && me) fetchServerPos(S);
     a.addEventListener("loadedmetadata", function () {
       if (sess !== S) return;
       if (!S.ep.sec && isFinite(a.duration) && a.duration > 0) { S.dur = a.duration; renderSync(); renderMarks(); }
@@ -551,8 +580,9 @@ input:disabled { opacity: .55; }
     ["play", "pause", "ended"].forEach(function (ev) {
       a.addEventListener(ev, function () {
         if (sess !== S) return;
-        if (ev !== "play") savePos(S);
-        if (ev === "ended") store.set("ds_pos_" + S.key, "");
+        if (ev === "play") S.touched = true;
+        if (ev === "ended") { store.set("ds_pos_" + S.key, ""); store.set("ds_post_" + S.key, String(Date.now())); pushPos(S, 0, true); }
+        else if (ev !== "play") savePos(S, true);
         updatePlayBtn(); tick();
       });
     });
@@ -601,6 +631,7 @@ input:disabled { opacity: .55; }
   }
   function seekBy(d) {
     var S = sess; if (!S || !S.audio) return;
+    S.touched = true;
     S.audio.currentTime = Math.min(S.dur, Math.max(0, S.audio.currentTime + d));
     tick();
   }
@@ -608,7 +639,7 @@ input:disabled { opacity: .55; }
     var S = sess, a = S.audio;
     S.r.clockEl = el("span"); S.r.fill = el("div", { class: "fill" }); S.r.dot = el("div", { class: "dot" }); S.r.marks = el("div");
     S.r.seek = el("input", { type: "range", class: "seek", min: "0", max: String(Math.floor(S.dur)), step: "1", value: String(Math.floor(pos())), "aria-label": "재생 위치" });
-    S.r.seek.addEventListener("input", function () { S.seeking = true; a.currentTime = +S.r.seek.value; tick(); });
+    S.r.seek.addEventListener("input", function () { S.seeking = true; S.touched = true; a.currentTime = +S.r.seek.value; tick(); });
     S.r.seek.addEventListener("change", function () { S.seeking = false; });
     S.r.play = el("button", { class: "btn pri", type: "button", onclick: togglePlay });
     S.r.err2 = el("div", { class: "err", role: "alert", text: S.audioErr || "" });
@@ -619,7 +650,7 @@ input:disabled { opacity: .55; }
         el("button", { class: "btn", type: "button", text: "−10초", onclick: function () { seekBy(-10); } }),
         S.r.play,
         el("button", { class: "btn", type: "button", text: "+10초", onclick: function () { seekBy(10); } })),
-      S.resumedFrom ? el("div", { class: "hint", text: "지난번에 듣던 " + fmt(S.resumedFrom) + "부터 이어서 들어요." }) : null,
+      S.resumedFrom ? el("div", { class: "hint", text: (S.resumedElsewhere ? "다른 기기에서 듣던 " : "지난번에 듣던 ") + fmt(S.resumedFrom) + "부터 이어서 들어요." }) : null,
       S.r.err2);
     updatePlayBtn();
   }
@@ -670,21 +701,21 @@ input:disabled { opacity: .55; }
   }
 
   /* ---- 댓글 흐름 ---- */
-  function status(c, p) { return c.sec > p + NEAR ? "future" : (c.sec < p - NEAR ? "past" : "near"); }
+  function status(c, p) { return c.sec > p + AHEAD ? "future" : (c.sec < p - NEAR ? "past" : "near"); }
   function renderFeed(force) {
     var S = sess; if (!S) return;
     var synced = isSynced(), p = synced ? pos() : 0;
     var rows = S.comments.map(function (c) { return { c: c, st: status(c, p) }; });
     var pastN = rows.filter(function (x) { return x.st === "past"; }).length;
     var futN = rows.filter(function (x) { return x.st === "future"; }).length + (S.extra || 0);
-    var vis = rows.filter(function (x) { return S.mode === "all" || (synced && x.st === "near"); });
+    var vis = rows.filter(function (x) { return S.mode === "all" || (synced && x.st !== "future"); });
     var sig = [S.mode, S.reveal, synced, S.loadState, caps.isAdmin, me && me.nick, pastN, futN, vis.map(function (x) { return x.c.id + x.st; }).join(",")].join("|");
     if (!force && sig === S.sig) return;
     S.sig = sig;
 
     var head = el("div", { class: "fhead" },
       el("div", { class: "seg", role: "group", "aria-label": "댓글 범위" },
-        el("button", { type: "button", text: "지금 근처", "aria-pressed": S.mode === "near" ? "true" : "false", onclick: function () { S.mode = "near"; renderFeed(true); } }),
+        el("button", { type: "button", text: "함께 듣기", "aria-pressed": S.mode === "near" ? "true" : "false", onclick: function () { S.mode = "near"; renderFeed(true); } }),
         el("button", { type: "button", text: "전체 " + (S.comments.length + (S.extra || 0)), "aria-pressed": S.mode === "all" ? "true" : "false", onclick: function () { S.mode = "all"; renderFeed(true); } })),
       S.mode === "all" ? el("button", { class: "chip", type: "button", text: "스포일러 보기", "aria-pressed": S.reveal ? "true" : "false", onclick: function () { S.reveal = !S.reveal; if (S.poll) S.poll(true); renderMarks(); renderFeed(true); } }) : null
     );
@@ -697,17 +728,19 @@ input:disabled { opacity: .55; }
     else if (S.mode === "near" && !synced) body = el("div", { class: "note", text: "위에서 재생 위치를 맞추면 지금 장면의 댓글이 보여요. 지금까지 달린 댓글은 " + S.comments.length + "개예요." });
     else if (!vis.length) {
       body = el("div", { class: "note" },
-        S.mode === "near" ? "이 장면(앞뒤 30초)에는 아직 댓글이 없어요. 첫 댓글을 남겨 보세요." : "아직 댓글이 없어요. 첫 댓글을 남겨 보세요.",
-        S.mode === "near" && (pastN || futN) ? el("div", null, "지나간 댓글 " + pastN + "개 · 앞으로 나올 댓글 " + futN + "개 ",
+        S.mode === "near" ? "지금까지 달린 댓글이 없어요. 첫 댓글을 남겨 보세요." : "아직 댓글이 없어요. 첫 댓글을 남겨 보세요.",
+        S.mode === "near" && futN ? el("div", null, "앞으로 나올 댓글 " + futN + "개는 계속 들으면 나타나요. ",
           el("button", { class: "btn link", type: "button", text: "전체 보기", onclick: function () { S.mode = "all"; renderFeed(true); } })) : null);
     } else {
       body = el("div", null, vis.map(function (x) { return commentRow(x.c, x.st); }),
-        S.mode === "near" && (pastN || futN) ? el("div", { class: "note" }, "지나간 댓글 " + pastN + "개 · 앞으로 나올 댓글 " + futN + "개 ",
+        S.mode === "near" && futN ? el("div", { class: "note" }, "앞으로 나올 댓글 " + futN + "개는 계속 들으면 나타나요. ",
           el("button", { class: "btn link", type: "button", text: "전체 보기", onclick: function () { S.mode = "all"; renderFeed(true); } })) : null);
     }
     var hint = (S.mode === "all" && !S.reveal && S.extra > 0)
       ? el("div", { class: "note", text: "앞으로 나올 댓글 " + S.extra + "개는 '스포일러 보기'를 누르면 볼 수 있어요." }) : null;
+    var followNow = S.mode === "near" && S.follow !== false && vis.length > 0;
     put(S.r.feed, head, body, hint, (SITE && !SB) ? el("div", { class: "note", text: "시험판이라 댓글은 이 기기에만 저장돼요. 다른 분의 댓글은 아직 보이지 않아요." }) : null);
+    if (followNow) requestAnimationFrame(function () { if (sess === S) window.scrollTo(0, document.documentElement.scrollHeight); });
   }
   function roleIcon(isHost) { return isHost ? micIcon() : (SB ? headIcon() : null); }
   function headIcon() {
@@ -794,7 +827,7 @@ input:disabled { opacity: .55; }
     else if (S.loadState === "nodb") why = "저장소에 연결되지 않았어요";
     else if (caps.canWrite === false) why = "댓글은 초대된 분만 쓸 수 있어요";
     r.msg.disabled = !!why || S.sending; r.send.disabled = !!why || S.sending;
-    r.msg.placeholder = why || "이 장면에 한마디";
+    r.msg.placeholder = why || "함께 대화 나누기";
     updateStampLabel();
   }
   function updateStampLabel() {
@@ -826,6 +859,64 @@ input:disabled { opacity: .55; }
     } finally {
       if (sess === S) { S.sending = false; updateComposer(); }
     }
+  }
+
+  /* ---- 서버 이어듣기 위치 ---- */
+  async function loadServerPositions() {
+    srvPos = {};
+    if (!SB || !sb || !me) { refreshResumeLabels(); return; }
+    try {
+      var r = await sb.rpc("list_positions");
+      if (r && r.data) r.data.forEach(function (x) { srvPos[x.episode_key] = { sec: x.sec, ms: Date.parse(x.updated_at) || 0 }; });
+    } catch (e) {}
+    if (sess && sess.audio) fetchServerPos(sess);
+    refreshResumeLabels();
+  }
+  function refreshResumeLabels() {
+    document.querySelectorAll(".er[data-ch]").forEach(function (a) {
+      var ch = CH.find(function (c) { return c.id === a.getAttribute("data-ch"); });
+      var ep = ch && ch.episodes.find(function (e) { return String(e.n) === a.getAttribute("data-n"); });
+      var em = a.querySelector(".em");
+      if (ep && em) em.textContent = (em.getAttribute("data-base") || "") + resumeText(ch.id, ep);
+    });
+  }
+  async function fetchServerPos(S) {
+    if (!SB || !sb || !me || S.srvChecked || !S.audio) return;
+    S.srvChecked = true;
+    try {
+      var r = await sb.rpc("get_position", { p_ep: S.key });
+      if (sess !== S || !r || r.error || !r.data || !r.data.length) return;
+      var row = r.data[0], ms = Date.parse(row.updated_at) || 0;
+      var localMs = parseFloat(store.get("ds_post_" + S.key)) || 0;
+      if (row.sec > 5 && row.sec < S.dur - 15 && ms > localMs + 2000 && !S.touched) {
+        S.resumedFrom = row.sec; S.resumedElsewhere = true; S.resumed = true;
+        var a = S.audio;
+        if (a.readyState > 0) a.currentTime = row.sec; else { try { a.currentTime = row.sec; } catch (e) {} S.pendingSeek = row.sec; }
+        renderSync(); tick();
+      } else if (localMs > ms && S.audio.currentTime > 5) {
+        pushPos(S, Math.floor(S.audio.currentTime), true);   /* 이 기기가 더 최근이면 서버를 갱신 */
+      }
+    } catch (e) {}
+  }
+
+  /* ---- 개인정보 처리방침 ---- */
+  function legalFoot() {
+    return (SITE && D.privacy) ? el("p", { class: "foot" }, el("a", { href: "#privacy", text: "개인정보 처리방침" }), " · 테이블그라피") : null;
+  }
+  function appendLegal() { var lf = legalFoot(); if (lf) app.append(lf); }
+  function showPrivacy() {
+    var P = D.privacy;
+    put(app, topbar(), el("a", { class: "back", href: "#", text: "← 홈" }),
+      el("article", { class: "policy" },
+        el("h1", { text: P.title }),
+        el("p", { class: "fine", text: "시행일 " + String(P.version).replace(/-/g, ".") }),
+        P.intro ? el("p", { text: P.intro }) : null,
+        (P.sections || []).map(function (sec) {
+          return el("section", null, el("h2", { text: sec.h }),
+            (sec.p || []).map(function (t) { return el("p", { text: t }); }),
+            sec.li ? el("ul", null, sec.li.map(function (t) { return el("li", { text: t }); })) : null);
+        }),
+        el("section", null, el("h2", { text: "운영자 정보" }), el("ul", null, (P.operator || []).map(function (t) { return el("li", { text: t }); })))));
   }
 
   /* ---- 로그인·가입 (Supabase) ---- */
@@ -864,6 +955,7 @@ input:disabled { opacity: .55; }
     } catch (e) { me = null; }
     caps.isAdmin = !!(me && me.host);
     refreshAuthUI();
+    loadServerPositions();
   }
   function refreshAuthUI() {
     document.querySelectorAll(".authbar").forEach(renderAuthBar);
@@ -911,6 +1003,7 @@ input:disabled { opacity: .55; }
       var email = el("input", { type: "email", id: "auth-email", autocomplete: "email", inputmode: "email", maxlength: "120" });
       var pw = el("input", { type: "password", id: "auth-pw", autocomplete: (m === "signup" || m === "reset") ? "new-password" : "current-password", maxlength: "72" });
       var nick = el("input", { type: "text", id: "auth-nick", autocomplete: "nickname", maxlength: "12" });
+      var agree1 = el("input", { type: "checkbox", id: "auth-agree" }), agree2 = el("input", { type: "checkbox", id: "auth-age" });
       var titles = { login: "로그인", signup: "가입", forgot: "비밀번호 찾기", reset: "새 비밀번호" };
       var go = el("button", { class: "btn pri", type: "submit", text: { login: "로그인", signup: "가입하기", forgot: "메일 보내기", reset: "비밀번호 바꾸기" }[m] });
       var busy = false;
@@ -919,13 +1012,23 @@ input:disabled { opacity: .55; }
       var form = el("form", { novalidate: true, onsubmit: async function (e) {
         e.preventDefault(); if (busy) return;
         busy = true; go.disabled = true; msg.textContent = ""; ok.textContent = "";
-        try { await submitAuth(m, email.value.trim(), pw.value, nick.value.trim(), fail, ok); }
+        try { await submitAuth(m, email.value.trim(), pw.value, nick.value.trim(), fail, ok, { agree: agree1.checked, age: agree2.checked }); }
         catch (x) { fail(authMsg(x)); }
         finally { busy = false; go.disabled = false; }
       } },
         m === "reset" ? null : field("이메일", email),
         m === "forgot" ? null : field(m === "reset" ? "새 비밀번호 (8자 이상)" : (m === "signup" ? "비밀번호 (8자 이상)" : "비밀번호"), pw),
         m === "signup" ? field("닉네임 (한글·영문·숫자·밑줄 1~12자, 공개돼요)", nick) : null,
+        m === "signup" ? el("div", { class: "consent" },
+          el("div", { class: "ct", text: "개인정보 수집·이용 동의 (필수)" }),
+          el("ul", null,
+            el("li", { text: "수집 항목: 이메일, 비밀번호, 닉네임" }),
+            el("li", { text: "이용 목적: 회원 가입·로그인, 댓글 서비스, 비밀번호 찾기, 이어듣기 저장" }),
+            el("li", { text: "보유 기간: 회원 탈퇴 때까지(이어듣기 위치는 마지막 저장 후 30일)" }),
+            el("li", { text: "동의를 거부할 수 있어요. 거부하면 가입과 댓글 쓰기가 제한되고, 듣기와 댓글 읽기는 가입 없이 할 수 있어요." })),
+          (D && D.privacy) ? el("a", { href: "#privacy", target: "_blank", rel: "noopener", text: "개인정보 처리방침 전문 보기" }) : null,
+          el("label", { class: "chk" }, agree1, " 개인정보 수집·이용에 동의합니다. (필수)"),
+          el("label", { class: "chk" }, agree2, " 만 14세 이상입니다. (필수)")) : null,
         el("div", { class: "row2" }, go), msg, ok);
       put(card, el("h2", { text: titles[m] }), form,
         m === "signup" ? el("p", { class: "fine", text: "받는 정보는 이메일·비밀번호·닉네임뿐이에요. 이메일은 로그인과 비밀번호 찾기에만 쓰고 공개하지 않아요." }) : null,
@@ -936,7 +1039,7 @@ input:disabled { opacity: .55; }
       if (first) setTimeout(function () { first.focus(); }, 50);
     }
   }
-  async function submitAuth(m, email, pw, nick, fail, ok) {
+  async function submitAuth(m, email, pw, nick, fail, ok, consent) {
     if (!sb) return fail("로그인 기능을 불러오지 못했어요.");
     var r;
     if (m === "login") {
@@ -944,6 +1047,7 @@ input:disabled { opacity: .55; }
       if (r.error) return fail(authMsg(r.error));
       closeAuth(); toast("로그인했어요.");
     } else if (m === "signup") {
+      if (!(consent && consent.agree && consent.age)) return fail("필수 동의 항목에 체크해 주세요.");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("이메일 주소를 확인해 주세요.");
       if (pw.length < 8) return fail("비밀번호는 8자 이상으로 해 주세요.");
       if (!/^[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9_]{1,12}$/.test(nick)) return fail("닉네임은 한글·영문·숫자·밑줄 1~12자로 공백 없이 적어 주세요.");
@@ -952,7 +1056,7 @@ input:disabled { opacity: .55; }
       if (a.data === "taken") return fail("이미 사용 중인 닉네임이에요. 다른 이름을 써 주세요.");
       if (a.data === "reserved") return fail("이 닉네임은 쓸 수 없어요. 다른 이름을 써 주세요.");
       if (a.data !== "ok") return fail("닉네임 형식을 확인해 주세요.");
-      r = await sb.auth.signUp({ email: email, password: pw, options: { data: { nickname: nick }, emailRedirectTo: location.origin + location.pathname } });
+      r = await sb.auth.signUp({ email: email, password: pw, options: { data: { nickname: nick, consent_privacy: (D && D.privacy ? D.privacy.version : ""), age14: true }, emailRedirectTo: location.origin + location.pathname } });
       if (r.error) return fail(authMsg(r.error));
       if (r.data && r.data.user && r.data.user.identities && r.data.user.identities.length === 0) return fail("이미 가입된 이메일이에요. 로그인해 주세요.");
       ok.textContent = "확인 메일을 보냈어요. 메일의 링크를 누른 뒤 로그인해 주세요. 메일이 안 보이면 스팸함도 확인해 주세요.";
@@ -982,8 +1086,9 @@ input:disabled { opacity: .55; }
     S.map = {}; S.afterId = 0; S.prevUpto = -1; S.extra = 0; S.total = 0; S.polls = 0; S.lastFull = 0;
     function norm(c) { return { id: c.id, sec: c.sec, text: c.body, nick: c.nickname, host: !!c.is_host }; }
     async function poll(full) {
-      if (sess !== S || S.polling) return;
-      S.polling = true;
+      if (sess !== S) return;
+      if (S.polling) { S.again = true; return; }
+      S.polling = true; S.lastPollAt = Date.now();
       try {
         var upto = S.reveal ? 43200 : Math.min(43200, Math.ceil(pos()) + NEAR + 5);
         if (!full && Date.now() - S.lastFull > 45000) full = true;   /* 가끔 전체를 다시 받아 삭제된 댓글을 반영 */
@@ -1006,22 +1111,42 @@ input:disabled { opacity: .55; }
         renderMarks(); renderFeed(false);
       } catch (e) {
         if (sess === S && S.loadState !== "ok") { S.loadState = "error"; renderFeed(true); }
-      } finally { S.polling = false; }
+      } finally { S.polling = false; if (S.again && sess === S) { S.again = false; setTimeout(function () { poll(false); }, 300); } }
     }
     S.poll = poll;
     poll(true);
-    S.pollTimer = setInterval(function () { if (!document.hidden) poll(false); }, 4000);
+    /* 새 댓글이 올라오면 서버가 '신호'만 보낸다(내용 없음). 신호를 받으면 바로 다시 조회한다. */
+    var kickAt = 0, kickTimer = null;
+    function kick() {
+      var wait = 1500 - (Date.now() - kickAt);   /* 신호가 몰려도 1.5초에 한 번만 조회 */
+      if (wait <= 0) { kickAt = Date.now(); poll(false); }
+      else if (!kickTimer) kickTimer = setTimeout(function () { kickTimer = null; kickAt = Date.now(); poll(false); }, wait);
+    }
+    try {
+      S.rt = sb.channel("ep:" + S.key, { config: { broadcast: { self: false } } })
+        .on("broadcast", { event: "comment" }, kick)
+        .subscribe(function (status) { S.rtOk = (status === "SUBSCRIBED"); });
+    } catch (e) { S.rtOk = false; }
+    /* 실시간 연결이 되어 있으면 30초마다 확인만, 안 되어 있으면 4초마다 조회 */
+    S.pollTimer = setInterval(function () {
+      if (document.hidden) return;
+      var gap = S.rtOk ? 30000 : 4000;
+      if (Date.now() - (S.lastPollAt || 0) >= gap - 300) poll(false);
+    }, 1000);
   }
 
   /* 시계는 setInterval 횟수가 아니라 실제 시각(Date.now)에서 계산한다.
      화면이 꺼져 타이머가 멈춰도 돌아오는 순간 정확한 위치로 따라잡는다. */
   document.addEventListener("visibilitychange", function () {
-    if (document.hidden) { if (sess && sess.audio) savePos(sess); }
+    if (document.hidden) { if (sess && sess.audio) savePos(sess, true); }
     else { tick(); if (sess && sess.poll) sess.poll(false); }
   });
-  addEventListener("pagehide", function () { if (sess && sess.audio) savePos(sess); });
+  addEventListener("pagehide", function () { if (sess && sess.audio) savePos(sess, true); });
   addEventListener("pageshow", function () { tick(); });
   addEventListener("focus", function () { tick(); });
+  addEventListener("scroll", function () {
+    if (sess) sess.follow = (window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 160;
+  }, { passive: true });
   watchKeyboard();
   addEventListener("hashchange", route);
   route();
