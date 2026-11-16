@@ -38,7 +38,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: var(--st);
 html { -webkit-text-size-adjust: 100%; }
 a { color: inherit; }
 .wrap { max-width: 640px; margin: 0 auto; }
-.top { display: flex; align-items: center; justify-content: space-between; padding: 16px 0 8px; }
+.top { display: flex; flex-direction: column; align-items: stretch; padding: 8px 0 6px; }   /* 1줄: 로그인 정보(닉네임·아이콘·로그아웃), 2줄: 제목 */
+.top > .brand { align-self: flex-start; }
 .brand { font: 700 27px/1.1 var(--font); text-decoration: none; letter-spacing: -0.03em; }
 .brand.bk { display: inline-flex; align-items: center; min-height: 44px; min-width: 0; margin-left: -8px; padding-right: 8px; }
 .brand.bk .chev { flex: none; color: inherit; position: relative; top: 1px; }   /* 글자와 같은 색, 세로 중심은 글자에 맞춰 1px 내림(측정값) */
@@ -133,8 +134,8 @@ input:disabled { opacity: .55; }
 .bar .seek { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; -webkit-appearance: none; appearance: none; background: transparent; }
 .bar .seek::-webkit-slider-thumb { -webkit-appearance: none; width: 2px; height: 24px; }
 .bar .seek::-moz-range-thumb { width: 2px; height: 24px; border: 0; }
-.top { gap: 12px; }
-.authbar { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); min-width: 0; }
+.authbar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: 13px; color: var(--muted); min-width: 0; min-height: 36px; }
+.authbar:empty { display: none; }
 .authbar b { color: var(--fg); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9em; }
 .authbar .nickbtn { border: 0; background: none; padding: 0; font: inherit; font-weight: 500; color: var(--fg); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .authbar .host { color: var(--brand); flex: none; }
@@ -388,10 +389,9 @@ input:disabled { opacity: .55; }
   function topbar(back) {
     var slot = el("div", { class: "authbar" });
     if (SB) renderAuthBar(slot);
-    return el("div", { class: "top" },
+    return el("div", { class: "top" }, slot,
       back ? el("a", { class: "brand bk", href: back.href, "aria-label": "뒤로, " + back.label }, chevron(), el("span", { text: back.label }))
-           : el("a", { class: "brand", href: "#", text: "듣는 사이" }),
-      slot);
+           : el("a", { class: "brand", href: "#", text: "듣는 사이" }));
   }
   function cover(c, big) {
     return c.cover
