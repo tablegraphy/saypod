@@ -67,6 +67,9 @@ input:disabled { opacity: .55; }
 .chx { color: var(--muted); font-size: 13px; margin-top: 2px; }
 .foot { margin: 24px 0 0; color: var(--muted); font-size: 13px; }
 .chhead { display: flex; gap: 16px; align-items: center; margin: 8px 0 16px; }
+.chstick { position: sticky; top: 0; z-index: 6; background: var(--bg); }
+.chstick .sec { border-bottom: 1px solid var(--line); }
+.chstick + .er { border-top: 0; }
 .links { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
 .links a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); font-size: 14px; text-decoration: none; }
 .links.sm { gap: 4px 16px; margin: 8px 0 0; }
@@ -430,10 +433,12 @@ input:disabled { opacity: .55; }
   function showChannel(c) {
     put(app,
       topbar({ href: "#", label: "듣는 사이" }),
-      el("div", { class: "chhead" }, cover(c, true),
-        el("div", { class: "chm" }, el("h1", { text: c.name }), el("div", { class: "chs", text: c.tagline }))),
-      platMenu(c),
-      el("div", { class: "sec" }, el("div", { class: "lb", text: "에피소드 " + c.episodes.length + "개" })),
+      /* 프로그램 정보·'기존 플랫폼에서 듣기'·'에피소드 N개' 줄은 위에 고정하고, 그 아래 목록만 스크롤된다 */
+      el("div", { class: "chstick" },
+        el("div", { class: "chhead" }, cover(c, true),
+          el("div", { class: "chm" }, el("h1", { text: c.name }), el("div", { class: "chs", text: c.tagline }))),
+        platMenu(c),
+        el("div", { class: "sec" }, el("div", { class: "lb", text: "에피소드 " + c.episodes.length + "개" }))),
       c.episodes.map(function (e) {
         return el("a", { class: "er", href: "#e-" + c.id + "-" + e.n, "data-ch": c.id, "data-n": e.n },
           el("div", { class: "n", text: e.n }),
