@@ -1,0 +1,9 @@
+{
+  "_설명": "사이트(site/)가 쓰는 Supabase 연결 값. 프로젝트 주소와 공개용(publishable) 키만 둔다. 이 값은 사이트 화면에 들어가도록 만들어진 공개 값이다. 비밀 키(secret/service_role)와 데이터베이스 비밀번호는 절대 여기에 넣지 않는다.",
+  "supabase": {
+    "url": "https://uskanhkdemmrvwfajvzu.supabase.co",
+    "key": "sb_publishable_7MpM1OsPPIoe9OzEb2MpvQ_Za1rfBM1",
+    "jsVersion": "2.118.0",
+    "jsSri": "sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK"
+  }
+}

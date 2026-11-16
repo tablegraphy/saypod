@@ -1,0 +1,98 @@
+{
+  "_설명": "듣는 사이에 입주한 팟캐스트 목록입니다. 채널을 추가하려면 아래 형식으로 한 덩어리를 붙이고 build.py를 실행하세요. id는 영문 소문자와 숫자만 씁니다(주소와 댓글 저장 경로에 쓰여서 한 번 정하면 바꾸지 않습니다). 에피소드마다 다른 링크(예: 유튜브 영상)는 채널 안의 episodeLinks에 {\"에피소드번호\": {\"youtube\": 주소}} 로 적습니다. 주소의 ?si= 같은 추적 값은 뺍니다. youtubePlaylist(유튜브 재생목록 id)를 적으면 build.py가 재생목록의 최신 15편을 읽어, episodeLinks에 없는 에피소드에 영상 주소를 자동으로 연결합니다(제목이 같거나 번호+날짜가 맞을 때만).",
+  "channels": [
+    {
+      "id": "saysiot",
+      "name": "사이시옷",
+      "tagline": "이런저런 사이를 이야기합니다.",
+      "rss": "https://anchor.fm/s/103bd40a8/podcast/rss",
+      "links": {
+        "spotify": "https://open.spotify.com/show/5jRbe125CXLdqk6iTawSbX",
+        "apple": "https://podcasts.apple.com/kr/podcast/%EC%82%AC%EC%9D%B4%EC%8B%9C%EC%98%B7/id1809160765",
+        "podbbang": "https://www.podbbang.com/channels/1792439",
+        "youtube": "https://www.youtube.com/@saysiot"
+      }
+    },
+    {
+      "id": "geobuk",
+      "name": "거북목 라디오",
+      "tagline": "책 때문에 책을 좋아해서 거북목이 된 사람들의 이야기",
+      "rss": "https://anchor.fm/s/10ca0cc1c/podcast/rss",
+      "links": {
+        "spotify": "https://open.spotify.com/show/0fR9KjOkTilNrb4x9rV1Bx",
+        "apple": "https://podcasts.apple.com/kr/podcast/%EA%B1%B0%EB%B6%81%EB%AA%A9-%EB%9D%BC%EB%94%94%EC%98%A4/id1862187912",
+        "podbbang": "https://dlink.podbbang.com/1148eb66",
+        "youtube": "https://www.youtube.com/playlist?list=PLQCVdJAnj2R5xxghFveCPsLzeFkFcYV1i"
+      },
+      "episodeLinks": {
+        "0": {
+          "youtube": "https://youtu.be/VtDkOOJP9iY"
+        },
+        "1": {
+          "youtube": "https://youtu.be/q70B0KNOf0M"
+        },
+        "2": {
+          "youtube": "https://youtu.be/c_W65IbCWr4"
+        },
+        "3": {
+          "youtube": "https://youtu.be/F6oBkMxjQs8"
+        },
+        "4": {
+          "youtube": "https://youtu.be/mqV6iVdCNf8"
+        },
+        "5": {
+          "youtube": "https://youtu.be/oGYqsVrHCPE"
+        },
+        "6": {
+          "youtube": "https://youtu.be/ukSVpAefKZU"
+        },
+        "7": {
+          "youtube": "https://youtu.be/SvrqbsXkBx8"
+        },
+        "8": {
+          "youtube": "https://youtu.be/szLnormF7Us"
+        },
+        "9": {
+          "youtube": "https://youtu.be/6i-hysa1B54"
+        },
+        "10": {
+          "youtube": "https://youtu.be/vLYY61WmPHM"
+        },
+        "11": {
+          "youtube": "https://youtu.be/aQNfABTSHXs"
+        },
+        "12": {
+          "youtube": "https://youtu.be/XoD-a_a-SVU"
+        },
+        "13": {
+          "youtube": "https://youtu.be/a0IFBXOgD1s"
+        },
+        "14": {
+          "youtube": "https://youtu.be/wq7u03eB9gI"
+        },
+        "15": {
+          "youtube": "https://youtu.be/1j_UuQszZiE"
+        },
+        "16": {
+          "youtube": "https://youtu.be/MU9oZRwBwrk"
+        },
+        "17": {
+          "youtube": "https://youtu.be/7R7o6gpKw9M"
+        },
+        "18": {
+          "youtube": "https://youtu.be/e3uEzfUke1A"
+        },
+        "19": {
+          "youtube": "https://youtu.be/YUte3Osj-Eo"
+        },
+        "20": {
+          "youtube": "https://youtu.be/sFkH_dLBoJM"
+        },
+        "21": {
+          "youtube": "https://youtu.be/WxNsfoAaWSM"
+        }
+      },
+      "youtubePlaylist": "PLQCVdJAnj2R5xxghFveCPsLzeFkFcYV1i"
+    }
+  ]
+}

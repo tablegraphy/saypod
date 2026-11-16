@@ -1,0 +1,45 @@
+# 새 방송 자동 반영: 30분마다 RSS를 읽어 사이트를 다시 만들어 깃허브 페이지에 배포한다.
+# 공개 저장소(tablegraphy/saypod)의 .github/workflows/update-site.yml 로 올려서 쓴다.
+# 올릴 때 깃허브 도구(gh)에 workflow 권한이 필요하다(2026-11-17 승인됨).
+# 같은 폴더의 build.py·template.html·channels.json·privacy.json·config.json·cache/·icon-180.png 도 저장소 맨 위에 있어야 한다.
+name: 사이트 갱신 (새 방송 반영)
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: 새 방송 이미지 축소용 Pillow
+        run: pip install pillow==11.3.0
+      - name: 방송 목록을 읽어 사이트 만들기
+        run: |
+          python build.py --site-only --out _site
+          cp icon-180.png _site/
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
