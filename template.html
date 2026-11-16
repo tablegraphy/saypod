@@ -1058,7 +1058,7 @@ input:disabled { opacity: .55; }
   function updateStampLabel() {
     var S = sess; if (!S) return;
     var t = S.r.stamp;
-    if (!isSynced()) { t.textContent = ""; t.className = "stamp"; return; }
+    if (!isSynced() || S.replyTo) { t.textContent = ""; t.className = "stamp"; return; }   /* 답글은 시각이 없으므로 '지금 10:10' 표시도 숨긴다 */
     if (S.stamp != null) { t.textContent = fmt(S.stamp) + "에 남겨져요"; t.className = "stamp on"; }
     else { t.textContent = "지금 " + fmt(pos()); t.className = "stamp"; }
   }
