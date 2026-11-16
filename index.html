@@ -187,6 +187,29 @@ input:disabled { opacity: .55; }
 .stick .hint { margin: 2px 0 0; font-size: 12px; }
 .stick.compact .hd, .stick.compact .sync .bar, .stick.compact .sync .ctrl, .stick.compact .sync .hint, .stick.compact .sync .tot { display: none; }
 @media (max-height: 620px) { .stick .th { display: none; } }
+.pwrap { margin: 0 0 8px; }
+.pbtn { display: inline-flex; align-items: center; gap: 6px; }
+.pbtn .ci { display: inline-flex; }
+.pmenu { display: flex; flex-direction: column; margin-top: 6px; max-width: 320px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.pmenu a { padding: 13px 14px; text-decoration: none; color: var(--fg); border-top: 1px solid var(--line); }
+.pmenu a:first-child { border-top: 0; }
+.cm .act { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; margin-top: 2px; min-width: 0; }
+.link2 { border: 0; background: none; padding: 4px 0; min-height: 32px; font: 500 13px var(--font); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
+.link2:hover { color: var(--fg); }
+.link2.tg { color: var(--brand); }
+.link2.tg .pv { color: var(--muted); font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cm .rps { margin-top: 4px; border-left: 2px solid var(--line); padding-left: 10px; }
+.rp { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 8px; padding: 6px 0; }
+.rp .t { font: 500 12px/1.9 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.rp .tx { overflow-wrap: anywhere; white-space: pre-wrap; }
+.rp .at { color: var(--brand); }
+.rp .who { font-size: 13px; color: var(--muted); }
+.rp .who b { color: var(--fg); font-weight: 500; }
+.rp .who .host, .rp .who .listener { display: inline-block; margin-left: 4px; vertical-align: -2px; }
+.rp .who .host { color: var(--brand); }
+.fhead .gt { margin-left: auto; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.repbar { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.repbar:empty { display: none; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
@@ -347,8 +370,10 @@ input:disabled { opacity: .55; }
   function showHome() {
     put(app,
       topbar(),
-      el("p", { class: "lede" }, el("span", { text: "듣는 사이(에)" }), el("span", { text: "듣는 사이(와)" })),
-      el("div", { class: "list" }, CH.map(function (c) {
+      el("p", { class: "lede" }, el("span", { text: "듣는 사이에," }), el("span", { text: "듣는 사이와 나누는 대화" })),
+      el("div", { class: "list" }, CH.slice().sort(function (a, b) {
+        return (b.episodes[0] ? b.episodes[0].date : "").localeCompare(a.episodes[0] ? a.episodes[0].date : "");
+      }).map(function (c) {
         return el("a", { class: "ch", href: "#c-" + c.id },
           cover(c),
           el("div", { class: "chm" },
@@ -366,7 +391,7 @@ input:disabled { opacity: .55; }
       topbar(),
       el("div", { class: "chhead" }, cover(c, true),
         el("div", { class: "chm" }, el("h1", { text: c.name }), el("div", { class: "chs", text: c.tagline }))),
-      platLinks(c),
+      platMenu(c),
       el("div", { class: "sec" }, el("div", { class: "lb", text: "에피소드 " + c.episodes.length + "개" })),
       c.episodes.map(function (e) {
         return el("a", { class: "er", href: "#e-" + c.id + "-" + e.n, "data-ch": c.id, "data-n": e.n },
@@ -381,6 +406,25 @@ input:disabled { opacity: .55; }
     var sv = srvPos[k];
     if (sv && sv.ms > lms) sp = sv.sec;   /* 서버 기록이 더 최근이면 그쪽 */
     return sp > 5 && (!e.sec || sp < e.sec - 15) ? " · 이어듣기 " + fmt(sp) : "";
+  }
+  function chev(open) {
+    var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("width", "14"); svg.setAttribute("height", "14"); svg.setAttribute("aria-hidden", "true");
+    var path = document.createElementNS(ns, "path");
+    [["d", open ? "M6 9l6 6 6-6" : "M9 6l6 6-6 6"], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "2.2"], ["stroke-linecap", "round"], ["stroke-linejoin", "round"]].forEach(function (a) { path.setAttribute(a[0], a[1]); });
+    svg.appendChild(path); return svg;
+  }
+  function platMenu(c) {
+    var items = PLAT.filter(function (p) { return c.links[p[0]]; });
+    if (!items.length) return null;
+    var list = el("div", { class: "pmenu", hidden: true }, items.map(function (p) {
+      return el("a", { href: c.links[p[0]], target: "_blank", rel: "noopener", text: p[1] });
+    }));
+    var ico = el("span", { class: "ci" }, chev(false));
+    var btn = el("button", { class: "btn pbtn", type: "button", "aria-expanded": "false", onclick: function () {
+      var open = list.hidden; list.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false"); ico.replaceChildren(chev(open));
+    } }, "기존 플랫폼에서 듣기", ico);
+    return el("div", { class: "pwrap" }, btn, list);
   }
   function platLinks(c, small) {
     var items = PLAT.filter(function (p) { return c.links[p[0]]; });
@@ -432,7 +476,7 @@ input:disabled { opacity: .55; }
     var S = sess = {
       ch: ch, ep: ep, key: ch.id + "-" + ep.n, dur: ep.sec || 3 * 3600,
       comments: [], mode: "near", reveal: false, sig: "", stamp: null,
-      loadState: "loading", unsub: null, sending: false, editNick: false, showSet: false, r: {}
+      loadState: "loading", unsub: null, sending: false, editNick: false, showSet: false, open: {}, replyTo: null, threadIds: [], r: {}
     };
     S.clock = loadClock(S.key);
     S.useAudio = SITE && !!ep.audio && (!OTHER_APP || store.get("ds_mode") !== "clock");
@@ -443,6 +487,7 @@ input:disabled { opacity: .55; }
     r.plat = el("div", { class: "sec" });
     r.feed = el("div", { "aria-live": "polite" });
     r.nick = el("div");
+    r.rep = el("div", { class: "repbar" });
     r.stamp = el("div", { class: "stamp" });
     r.err = el("div", { class: "err", role: "alert" });
     r.msg = el("input", { type: "text", id: "msg-in", maxlength: "200", autocomplete: "off", "aria-label": "댓글" });
@@ -454,7 +499,7 @@ input:disabled { opacity: .55; }
       if (!has) S.stamp = null;
       updateStampLabel();
     });
-    r.comp = el("div", { class: "comp" }, el("div", { class: "in" }, el("div", { class: "meta" }, r.nick, r.stamp), r.form, r.err));
+    r.comp = el("div", { class: "comp" }, el("div", { class: "in" }, r.rep, el("div", { class: "meta" }, r.nick, r.stamp), r.form, r.err));
 
     r.stick = el("div", { class: "stick" },
       el("div", { class: "hd" }, episodeThumb(ch, ep),
@@ -738,14 +783,21 @@ input:disabled { opacity: .55; }
     var pastN = rows.filter(function (x) { return x.st === "past"; }).length;
     var futN = rows.filter(function (x) { return x.st === "future"; }).length + (S.extra || 0);
     var vis = rows.filter(function (x) { return S.mode === "all" || (synced && x.st !== "future"); });
-    var sig = [S.mode, S.reveal, synced, S.loadState, caps.isAdmin, me && me.nick, pastN, futN, vis.map(function (x) { return x.c.id + x.st; }).join(",")].join("|");
+    var sig = [S.mode, S.reveal, synced, S.loadState, caps.isAdmin, me && me.nick, S.replyTo && S.replyTo.id, Object.keys(S.open).filter(function (k) { return S.open[k]; }).join("."), pastN, futN, vis.map(function (x) { return x.c.id + x.st; }).join(",")].join("|");
     if (!force && sig === S.sig) return;
     S.sig = sig;
+    var reps = {}, tops = [], topIds = {};
+    vis.forEach(function (x) { if (!x.c.parent) { tops.push(x); topIds[x.c.id] = true; } });
+    vis.forEach(function (x) { if (x.c.parent) { if (topIds[x.c.parent]) (reps[x.c.parent] = reps[x.c.parent] || []).push(x); else tops.push(x); } });
+    tops.sort(function (a, b) { return a.c.sec - b.c.sec || a.c.id - b.c.id; });
+    S.threadIds = Object.keys(reps);
+    var allOpenNow = S.threadIds.length > 0 && S.threadIds.every(function (id) { return S.open[id]; });
 
     var head = el("div", { class: "fhead" },
       el("div", { class: "seg", role: "group", "aria-label": "댓글 범위" },
         el("button", { type: "button", text: "함께 듣기", "aria-pressed": S.mode === "near" ? "true" : "false", onclick: function () { setFeedMode("near"); } }),
-        el("button", { type: "button", text: "스포일러 보기", "aria-pressed": S.mode === "all" ? "true" : "false", onclick: function () { setFeedMode("all"); } }))
+        el("button", { type: "button", text: "스포일러 보기", "aria-pressed": S.mode === "all" ? "true" : "false", onclick: function () { setFeedMode("all"); } })),
+      S.threadIds.length ? el("button", { class: "gt", type: "button", "aria-label": "답글 모두 펼치기·접기", title: "답글 모두 펼치기·접기", onclick: toggleAllThreads }, chev(allOpenNow)) : null
     );
 
     var body;
@@ -757,9 +809,10 @@ input:disabled { opacity: .55; }
     else if (!vis.length) {
       body = el("div", { class: "note", text: S.mode === "near" ? "지금까지 달린 댓글이 없어요. 첫 댓글을 남겨 보세요." : "아직 댓글이 없어요. 첫 댓글을 남겨 보세요." });
     } else {
-      body = el("div", null, vis.map(function (x) { return commentRow(x.c, x.st); }));
+      body = el("div", null, tops.map(function (x) { return commentRow(x.c, x.st, reps[x.c.id] || []); }));
     }
-    var followNow = S.mode === "near" && S.follow !== false && vis.length > 0;
+    var followNow = S.mode === "near" && S.follow !== false && vis.length > 0 && !S.noFollowOnce;
+    S.noFollowOnce = false;
     put(S.r.feed, head, body, (SITE && !SB) ? el("div", { class: "note", text: "시험판이라 댓글은 이 기기에만 저장돼요. 다른 분의 댓글은 아직 보이지 않아요." }) : null);
     if (followNow) requestAnimationFrame(function () { if (sess === S) window.scrollTo(0, document.documentElement.scrollHeight); });
   }
@@ -795,14 +848,57 @@ input:disabled { opacity: .55; }
     if (S.poll) S.poll(true);
     renderMarks(); renderFeed(true);
   }
-  function commentRow(c, st) {
+  function whoEl(c) {
+    return el("div", { class: "who" }, el("b", { text: c.nick || "익명" }), roleIcon(c.host),
+      (SB ? (me && me.nick && c.nick === me.nick) : (c.uid && c.uid === caps.uid)) ? " · 나" : "");
+  }
+  function replyBtn(c) { return el("button", { class: "link2", type: "button", text: "답글", onclick: function () { startReply(c); } }); }
+  function replyRow(x) {
+    var c = x.c;
+    return el("div", { class: "rp" },
+      el("div", { class: "t", text: fmt(c.sec) }),
+      el("div", null, whoEl(c),
+        el("div", { class: "tx" }, c.replyTo ? el("span", { class: "at", text: "@" + c.replyTo + " " }) : null, c.text),
+        el("div", { class: "act" }, replyBtn(c))),
+      caps.isAdmin ? delBtn(c) : el("span"));
+  }
+  function actionsRow(c, replies) {
+    var S = sess; if (!SB) return null;
+    var n = replies ? replies.length : 0, open = !!S.open[c.id], kids = [replyBtn(c)];
+    if (n) {
+      var last = replies[n - 1].c;
+      kids.push(el("button", { class: "link2 tg", type: "button", "aria-expanded": open ? "true" : "false", onclick: function () { S.open[c.id] = !open; S.noFollowOnce = true; renderFeed(true); } },
+        chev(open), "답글 " + n, open ? null : el("span", { class: "pv", text: " · " + last.nick + ": " + last.text })));
+    }
+    return el("div", null, el("div", { class: "act" }, kids), (open && n) ? el("div", { class: "rps" }, replies.map(replyRow)) : null);
+  }
+  function startReply(c) {
+    var S = sess; if (!S) return;
+    if (!me) { openAuth("login"); return; }
+    S.replyTo = { id: c.id, root: c.parent || c.id, nick: c.nick || "익명" };
+    renderReplyBar(); updateComposer();
+    if (S.r.msg && !S.r.msg.disabled) S.r.msg.focus();
+  }
+  function renderReplyBar() {
+    var S = sess; if (!S || !S.r.rep) return;
+    if (!S.replyTo) { S.r.rep.replaceChildren(); updateComposer(); return; }
+    put(S.r.rep, el("span", { text: "↳ " + S.replyTo.nick + "에게 답글" }),
+      el("button", { class: "link2", type: "button", "aria-label": "답글 취소", text: "×", onclick: function () { S.replyTo = null; renderReplyBar(); } }));
+  }
+  function toggleAllThreads() {
+    var S = sess; if (!S) return;
+    var allOpen = S.threadIds.length > 0 && S.threadIds.every(function (id) { return S.open[id]; });
+    S.threadIds.forEach(function (id) { S.open[id] = !allOpen; });
+    S.noFollowOnce = true; renderFeed(true);
+  }
+  function commentRow(c, st, replies) {
     var S = sess, masked = st === "future" && !S.reveal;
     var who = el("div", { class: "who" }, el("b", { text: c.nick || "익명" }), roleIcon(c.host),
       (SB ? (me && me.nick && c.nick === me.nick) : (c.uid && c.uid === caps.uid)) ? " · 나" : "",
       c.plat && PLAT_SHORT[c.plat] ? " · " + PLAT_SHORT[c.plat] : "");
     return el("div", { class: "cm " + st },
       el("div", { class: "t", text: fmt(c.sec) }),
-      el("div", null, who, masked ? el("span", { class: "mask", role: "img", "aria-label": "아직 가려진 댓글" }) : el("div", { class: "tx", text: c.text })),
+      el("div", null, who, masked ? el("span", { class: "mask", role: "img", "aria-label": "아직 가려진 댓글" }) : el("div", { class: "tx", text: c.text }), actionsRow(c, replies)),
       caps.isAdmin ? delBtn(c) : el("span"));
   }
   function delBtn(c) {
@@ -854,7 +950,7 @@ input:disabled { opacity: .55; }
     else if (S.loadState === "nodb") why = "저장소에 연결되지 않았어요";
     else if (caps.canWrite === false) why = "댓글은 초대된 분만 쓸 수 있어요";
     r.msg.disabled = !!why || S.sending; r.send.disabled = !!why || S.sending;
-    r.msg.placeholder = why || "함께 대화 나누기";
+    r.msg.placeholder = why || (S.replyTo ? "답글 달기" : "함께 대화 나누기");
     updateStampLabel();
   }
   function updateStampLabel() {
@@ -872,14 +968,14 @@ input:disabled { opacity: .55; }
     S.sending = true; updateComposer();
     try {
       if (SB) {
-        var ins = await sb.from("comments").insert({ episode_key: S.key, sec: sec, body: txt.slice(0, 200) });
+        var ins = await sb.from("comments").insert({ episode_key: S.key, sec: sec, body: txt.slice(0, 200), parent_id: S.replyTo ? S.replyTo.root : null, reply_to_id: S.replyTo ? S.replyTo.id : null });
         if (ins.error) throw ins.error;
       } else {
         await caps.db.collection("eps/" + S.key + "/comments").add({
           sec: sec, text: txt.slice(0, 200), nick: nick, uid: caps.uid || null, plat: SITE ? "" : (store.get("ds_plat") || ""), at: Date.now()
         });
       }
-      if (sess === S) { r.msg.value = ""; S.stamp = null; r.err.textContent = ""; if (SB && S.poll) S.poll(false); }
+      if (sess === S) { r.msg.value = ""; S.stamp = null; r.err.textContent = ""; if (S.replyTo) { S.open[S.replyTo.root] = true; S.replyTo = null; renderReplyBar(); S.noFollowOnce = true; } if (SB && S.poll) S.poll(false); }
     } catch (e) {
       if (sess === S) r.err.textContent = SB ? sbSendError(e) : e && e.code === "invalid_argument" ? "댓글을 쓸 권한이 없어요. 초대된 분만 쓸 수 있어요."
         : e && e.code === "quota_exceeded" ? "저장 공간이 가득 찼어요." : "보내지 못했어요. 다시 눌러 주세요.";
@@ -1125,7 +1221,7 @@ input:disabled { opacity: .55; }
   /* ---- 댓글 조회(몇 초마다). 앞으로 나올 댓글은 서버가 보내지 않는다 ---- */
   function startPolling(S) {
     S.map = {}; S.afterId = 0; S.prevUpto = -1; S.extra = 0; S.total = 0; S.polls = 0; S.lastFull = 0;
-    function norm(c) { return { id: c.id, sec: c.sec, text: c.body, nick: c.nickname, host: !!c.is_host }; }
+    function norm(c) { return { id: c.id, sec: c.sec, text: c.body, nick: c.nickname, host: !!c.is_host, parent: c.parent_id || null, replyTo: c.reply_to_nick || "" }; }
     async function poll(full) {
       if (sess !== S) return;
       if (S.polling) { S.again = true; return; }
