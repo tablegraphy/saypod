@@ -185,7 +185,8 @@ input:disabled { opacity: .55; }
 .stick .hint { margin: 2px 0 0; font-size: 12px; }
 .stick.compact .hd, .stick.compact .eptitle, .stick.compact .sync .bar, .stick.compact .sync .ctrl, .stick.compact .sync .hint, .stick.compact .sync .tot { display: none; }
 @media (max-height: 620px) { .stick .th { display: none; } }
-.pwrap { margin: 0 0 8px; }
+.pwrap { margin-bottom: 8px; }
+.pwrap { display: flex; flex-direction: column; align-items: stretch; width: fit-content; margin-left: auto; }   /* 버튼과 펼침 목록을 같은 폭으로 화면 오른쪽에 붙인다 */
 .pbtn { display: inline-flex; align-items: center; gap: 6px; }
 .pbtn .ci { display: inline-flex; }
 .pmenu { display: flex; flex-direction: column; margin-top: 6px; max-width: 320px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
