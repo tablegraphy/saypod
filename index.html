@@ -889,7 +889,7 @@ input:disabled { opacity: .55; }
       var busy = false;
       function fail(t) { msg.textContent = t; ok.textContent = ""; }
       function link(t, to) { return el("button", { class: "btn link", type: "button", text: t, onclick: function () { draw(to); } }); }
-      var form = el("form", { onsubmit: async function (e) {
+      var form = el("form", { novalidate: true, onsubmit: async function (e) {
         e.preventDefault(); if (busy) return;
         busy = true; go.disabled = true; msg.textContent = ""; ok.textContent = "";
         try { await submitAuth(m, email.value.trim(), pw.value, nick.value.trim(), fail, ok); }
