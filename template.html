@@ -32,7 +32,7 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-@media (display-mode: standalone) { :root { --st: calc(env(safe-area-inset-top, 0px) + 14px); } }
+@media (display-mode: standalone) { :root { --st: max(calc(env(safe-area-inset-top, 0px) + 14px), 10vh); } }   /* 윗 10%는 아이폰이 흐리게 처리해서 그만큼 비워 둔다 */
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: var(--st); z-index: 30; background: var(--bg); }
 * { box-sizing: border-box; touch-action: manipulation; }   /* 빈 곳을 두 번 눌러도 확대되지 않게 */
 html { -webkit-text-size-adjust: 100%; }
