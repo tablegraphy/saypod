@@ -1194,7 +1194,9 @@ button.t:hover, button.t:active { text-decoration: underline; }
     });
     return loadMe().then(function () {
       if (hadCode) {
-        try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {}
+        /* 이메일 인증을 마치고 돌아오면 항상 메인(홈)으로 간다(비밀번호 재설정 창은 그대로 둔다) */
+        try { history.replaceState(null, "", location.pathname); } catch (e) {}
+        if (!document.getElementById("auth-modal")) { try { route(); } catch (e) {} }
         setTimeout(function () { if (me && !document.getElementById("auth-modal")) toast("이메일 인증이 끝났어요. 로그인되었어요."); }, 400);
       }
     });
