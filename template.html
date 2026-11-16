@@ -40,6 +40,7 @@ html.framed #scroller { position: fixed; top: var(--st); right: 0; bottom: 0; le
 html.framed .top { padding-top: 0; }
 * { box-sizing: border-box; touch-action: manipulation; }   /* 빈 곳을 두 번 눌러도 확대되지 않게 */
 html { -webkit-text-size-adjust: 100%; }
+html, body { touch-action: manipulation; }
 a { color: inherit; }
 .wrap { max-width: 640px; margin: 0 auto; }
 .top { display: flex; flex-direction: column; align-items: stretch; padding: 8px 0 6px; }   /* 1줄: 로그인 정보(닉네임·아이콘·로그아웃), 2줄: 제목 */
@@ -112,6 +113,8 @@ input:disabled { opacity: .55; }
 .note .btn.link { font-size: 14px; }
 .cm { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
 .cm .t { font: 500 14px/1.7 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+button.t { border: 0; background: none; padding: 0; margin: 0; text-align: left; align-self: start; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button.t:hover, button.t:active { text-decoration: underline; }
 .cm.near .t { color: var(--rec-text); }
 .cm .who { font-size: 13px; color: var(--muted); }
 .cm .who b { color: var(--fg); font-weight: 500; }
@@ -508,6 +511,17 @@ input:disabled { opacity: .55; }
     var S = sess;
     S.clock = { playing: playing, pos0: Math.min(S.dur, Math.max(0, sec)), t0: Date.now() };
     saveClock();
+  }
+  /* 댓글의 시각을 누르면 그 시각으로 이동해서 바로 재생한다 */
+  function playFrom(sec) {
+    var S = sess; if (!S) return;
+    sec = Math.max(0, Math.min(S.dur, sec));
+    if (S.useAudio && S.audio) {
+      S.touched = true; S.audio.currentTime = sec;
+      var pr = S.audio.play();
+      if (pr && pr.catch) pr.catch(function () { S.audioErr = "재생을 시작하지 못했어요. 다시 눌러 주세요."; if (S.r.err2) S.r.err2.textContent = S.audioErr; });
+      tick();
+    } else startAt(sec);
   }
   function startAt(sec) {
     var S = sess; setClock(sec, true); S.showSet = false; S.stamp = null;
@@ -1010,7 +1024,7 @@ input:disabled { opacity: .55; }
       (SB ? (me && me.nick && c.nick === me.nick) : (c.uid && c.uid === caps.uid)) ? " · 나" : "",
       c.plat && PLAT_SHORT[c.plat] ? " · " + PLAT_SHORT[c.plat] : "");
     return el("div", { class: "cm " + st },
-      el("div", { class: "t", text: fmt(c.sec) }),
+      el("button", { class: "t", type: "button", "aria-label": fmt(c.sec) + "부터 재생", text: fmt(c.sec), onclick: function () { playFrom(c.sec); } }),
       el("div", null, who, masked ? el("span", { class: "mask", role: "img", "aria-label": "아직 가려진 댓글" }) : txEl(c, false), actionsRow(c, replies, masked)),
       (!SB && caps.isAdmin) ? delBtn(c) : el("span"));
   }
@@ -1427,6 +1441,13 @@ input:disabled { opacity: .55; }
     } catch (e) {}
   }
   applySafeTop();
+  /* 빈 곳을 빠르게 두 번 누르면 아이폰이 확대한다: 두 번째 누름의 기본 동작을 막는다(버튼·링크·입력칸 등 누를 수 있는 곳은 제외해 빠른 연속 누르기는 그대로 동작) */
+  var lastTouchEnd = 0;
+  document.addEventListener("touchend", function (e) {
+    var now = Date.now();
+    if (now - lastTouchEnd <= 350 && e.cancelable && !(e.target.closest && e.target.closest("button, a, input, textarea, select, label, [role=button], .seek"))) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
   addEventListener("orientationchange", function () { setTimeout(applySafeTop, 300); });
   addEventListener("pageshow", applySafeTop);
   watchKeyboard();
