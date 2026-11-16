@@ -163,6 +163,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .okmsg { color: var(--brand); font-size: 14px; margin-top: 10px; line-height: 1.5; }
 .okmsg:empty { display: none; }
 .fine { font-size: 12px; color: var(--muted); margin: 12px 0 0; line-height: 1.5; }
+.fine.ev { font-size: 13px; color: var(--fg); margin: 12px 0 8px; }   /* 가입 버튼 바로 위: 이메일 인증을 완료하면 가입된다는 한 줄 */
 .toast { position: fixed; top: calc(68px + var(--st)); left: 50%; transform: translateX(-50%); z-index: 50; background: var(--fg); color: var(--bg); padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: calc(100% - 32px); text-align: center; }
 @media (min-width: 560px) { .modal { place-items: center; } }
 .consent { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 13px; line-height: 1.55; }
@@ -1289,6 +1290,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
           (D && D.privacy) ? el("a", { href: "#privacy", target: "_blank", rel: "noopener", text: "개인정보 처리방침 전문 보기" }) : null,
           el("label", { class: "chk" }, agree1, " 개인정보 수집·이용에 동의합니다. (필수)"),
           el("label", { class: "chk" }, agree2, " 만 14세 이상입니다. (필수)")) : null,
+        m === "signup" ? el("p", { class: "fine ev", text: "이메일 인증을 완료하면 가입됩니다." }) : null,
         el("div", { class: "row2" }, go), msg, ok);
       put(card, el("h2", { text: titles[m] }), form,
         m === "nick" ? el("p", { class: "fine", text: "닉네임을 변경하면 지금까지 남긴 댓글의 닉네임도 함께 바뀌어요. 24시간에 한 번만 바꿀 수 있어요." }) : null,
@@ -1320,7 +1322,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
       r = await sb.auth.signUp({ email: email, password: pw, options: { data: { nickname: nick, consent_privacy: (D && D.privacy ? D.privacy.version : ""), age14: true }, emailRedirectTo: location.origin + location.pathname } });
       if (r.error) return fail(authMsg(r.error));
       if (r.data && r.data.user && r.data.user.identities && r.data.user.identities.length === 0) return fail("이미 가입된 이메일이에요. 로그인해 주세요.");
-      ok.textContent = "확인 메일을 보냈어요. 메일의 링크를 누른 뒤 로그인해 주세요. 메일이 안 보이면 스팸함도 확인해 주세요.";
+      ok.textContent = "이메일 인증을 완료하면 가입됩니다. 보낸 메일의 링크를 눌러 주세요. 메일이 안 보이면 스팸함도 확인해 주세요.";
     } else if (m === "forgot") {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("이메일 주소를 확인해 주세요.");
       r = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
