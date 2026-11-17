@@ -7,7 +7,7 @@
 - 깃허브 자동 갱신용: python build.py --site-only --out _site  (시제품 파일은 만들지 않고 지정한 폴더에 index.html만 만든다).
 - 표지는 cache/cover_<채널id>.json 에 한 번 저장해 두고 재사용한다(깃허브 서버에는 sips가 없다).
 """
-import base64, datetime, json, os, re, shutil, subprocess, sys, tempfile, urllib.request
+import base64, datetime, hashlib, json, os, re, shutil, subprocess, sys, tempfile, urllib.request
 import xml.etree.ElementTree as ET
 KST = datetime.timezone(datetime.timedelta(hours=9))   # 한국 표준시(서머타임 없음)
 from email.utils import parsedate_to_datetime
@@ -248,7 +248,12 @@ def main():
                  % (sbcfg["jsVersion"], sbcfg["jsSri"]))
     site = tpl.replace("/*__DATA__*/null", dump(site_data))
     os.makedirs(out_dir, exist_ok=True)
-    open(os.path.join(out_dir, "index.html"), "w", encoding="utf-8").write(head + site + "\n</html>\n")
+    page = head + site + "\n</html>\n"
+    # 새 버전 알림용 버전표: 화면 내용의 해시를 화면(BUILD_ID)과 version.txt 에 같이 적는다(화면이 달라지면 값도 달라짐)
+    build_id = hashlib.sha1(page.encode("utf-8")).hexdigest()[:10]
+    page = page.replace("__BUILD_ID__", build_id)
+    open(os.path.join(out_dir, "index.html"), "w", encoding="utf-8").write(page)
+    open(os.path.join(out_dir, "version.txt"), "w", encoding="utf-8").write(build_id + "\n")
 
     for c in channels:
         print(f"{c['name']}: 에피소드 {len(c['episodes'])}개, 표지 {'있음' if c['cover'] else '없음'}")

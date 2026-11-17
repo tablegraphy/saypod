@@ -1468,6 +1468,36 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }, { passive: false });
   addEventListener("orientationchange", function () { setTimeout(applySafeTop, 300); });
   addEventListener("pageshow", applySafeTop);
+  /* ---- 새 버전 알아채기 ----
+     사이트가 새로 배포되면 열어 둔 앱도 스스로 새 화면으로 바꾼다. 앱으로 돌아올 때·10분마다 version.txt 를 확인하고,
+     달라졌으면 '재생 중이 아니고, 글 쓰는 중이 아니고, 창이 열려 있지 않을 때'(=방해되지 않을 때) 다시 불러온다. */
+  var BUILD_ID = "__BUILD_ID__", newBuild = "";
+  function updateIdle() {
+    var S = sess, ae = document.activeElement;
+    var playing = !!(S && ((S.audio && !S.audio.paused) || (S.clock && S.clock.playing)));
+    var typing = !!ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA");
+    return !playing && !typing && !document.getElementById("auth-modal") && !(S && (S.editing || S.sending));
+  }
+  function applyUpdate() {
+    if (!newBuild || !updateIdle()) return;
+    try { if (sess && sess.audio) savePos(sess, true); } catch (e) {}
+    try { sessionStorage.setItem("ds_upd", newBuild); } catch (e) {}   /* 같은 버전으로 다시 불러오기를 되풀이하지 않게 */
+    location.reload();
+  }
+  function checkUpdate() {
+    if (!SITE || BUILD_ID.charAt(0) === "_" || location.protocol === "file:") return;
+    fetch("version.txt?x=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) {
+      t = (t || "").trim();
+      if (!/^[0-9a-f]{6,40}$/.test(t) || t === BUILD_ID) return;
+      var tried = ""; try { tried = sessionStorage.getItem("ds_upd") || ""; } catch (e) {}
+      if (tried === t) return;
+      newBuild = t; applyUpdate();
+    }).catch(function () {});
+  }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(checkUpdate, 600); });
+  addEventListener("pageshow", function () { setTimeout(checkUpdate, 600); });
+  setInterval(function () { if (!document.hidden) checkUpdate(); }, 600000);
+  setInterval(function () { if (newBuild && !document.hidden) applyUpdate(); }, 15000);
   watchKeyboard();
   addEventListener("hashchange", route);
   route();
