@@ -50,6 +50,16 @@ a { color: inherit; }
 .brand.bk .chev { flex: none; color: inherit; position: relative; top: 1px; }   /* 글자와 같은 색, 세로 중심은 글자에 맞춰 1px 내림(측정값) */
 .brand.bk span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lede { margin: 4px 0 20px; color: var(--muted); }
+.liveline { margin: -12px 0 18px; font-size: 14px; color: var(--muted); }
+.liveline:empty { display: none; }
+.liveline::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); margin-right: 7px; vertical-align: 1px; }
+.adm-sum { margin: 8px 0 2px; font-size: 16px; font-weight: 700; }
+.adm-live { font-size: 13px; color: var(--muted); }
+.adm-list { margin-top: 12px; max-height: 46vh; overflow-y: auto; border-top: 1px solid var(--line); }
+.adm-row { display: flex; gap: 8px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.adm-row .nm { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-row .rl { font-size: 12px; color: var(--brand); white-space: nowrap; }
+.adm-row .mt { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 h1, h2 { margin: 0; font-weight: 700; text-wrap: balance; }
 .btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 500 15px var(--font); cursor: pointer; }
 .btn.pri { background: var(--brand); border-color: var(--brand); color: var(--brand-fg); }
@@ -238,6 +248,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   var CFG = (D && D.supabase) || null;   /* 사이트 빌드에서만 들어오는 공개 연결 값(주소·공개 키) */
   var SB = SITE && !!CFG;                 /* 로그인·공유 댓글 모드 */
   var sb = null;                          /* Supabase 클라이언트 */
+  var LIVE_MIN = 3, live = { open: 0, playing: 0 }, liveCh = null, liveReady = false, liveSent = -1;   /* 지금 접속·재생 수(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
   var me = null;                          /* 로그인한 사람: {id, nick, host} */
   var srvPos = {};   /* 서버에 저장된 이어듣기 위치 {에피소드키: {sec, ms}} */
   var OTHER_APP = false; /* '다른 앱에서 듣기' 전환. 2026-11-16 사용자가 헷갈린다며 뺌. true로 바꾸면 되살아난다 */
@@ -424,6 +435,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     put(app,
       topbar(),
       el("p", { class: "lede", text: "함께 듣고, 서로 이어지는" }),
+      SB ? el("p", { class: "liveline", id: "live-line", "aria-live": "polite" }) : null,
       el("div", { class: "list" }, CH.slice().sort(function (a, b) {
         return (b.episodes[0] ? b.episodes[0].date : "").localeCompare(a.episodes[0] ? a.episodes[0].date : "");
       }).map(function (c) {
@@ -437,6 +449,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       CH.length ? null : el("p", { class: "note", text: "등록된 팟캐스트가 없어요." }),
       SITE ? null : el("p", { class: "foot", text: "시제품입니다. 댓글은 초대된 분만 쓸 수 있어요." })
     );
+    paintLive();
   }
 
   function showChannel(c) {
@@ -1198,6 +1211,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       try { history.replaceState(null, "", location.pathname); } catch (e) {}
     }
     if (!sb) return Promise.resolve();
+    startLive();
     sb.auth.onAuthStateChange(function (event) {
       /* 이 콜백 안에서 바로 서버를 부르면 멈출 수 있어 다음 틱으로 미룬다 */
       setTimeout(function () { if (event === "PASSWORD_RECOVERY") openAuth("reset"); loadMe(); }, 0);
@@ -1210,6 +1224,40 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         setTimeout(function () { if (me && !document.getElementById("auth-modal")) toast("이메일 인증이 끝났어요. 로그인되었어요."); }, 400);
       }
     });
+  }
+  /* ---- 지금 접속·재생 중인 수 (Realtime Presence) ----
+     화면(탭)마다 {p: 재생 중이면 1, 아니면 0} 만 알린다. 닉네임·계정은 싣지 않는다.
+     재생 중이 3명 이상이면 홈에 '지금 N명이 듣고 있어요'를 보이고, 관리자는 관리 화면에서 두 숫자를 본다. */
+  function isPlayingNow() { var S = sess; return !!(S && ((S.audio && !S.audio.paused) || (S.clock && S.clock.playing))); }
+  function liveRecount() {
+    if (!liveCh) return;
+    var st = {}; try { st = liveCh.presenceState() || {}; } catch (e) {}
+    var o = 0, p = 0;
+    Object.keys(st).forEach(function (k) { o++; if ((st[k] || []).some(function (m) { return m && m.p === 1; })) p++; });
+    live.open = o; live.playing = p; paintLive();
+  }
+  function paintLive() {
+    var a = document.getElementById("live-line");
+    if (a) a.textContent = live.playing >= LIVE_MIN ? "지금 " + live.playing + "명이 듣고 있어요" : "";
+    var b = document.getElementById("adm-live");
+    if (b) b.textContent = "지금 열어 둔 화면 " + live.open + " · 재생 중 " + live.playing;
+  }
+  function liveSend() {
+    if (!liveCh || !liveReady) return;
+    var v = isPlayingNow() ? 1 : 0;
+    if (v === liveSent) return;
+    liveSent = v;
+    try { liveCh.track({ p: v }).catch(function () { liveSent = -1; }); } catch (e) { liveSent = -1; }
+  }
+  function startLive() {
+    if (liveCh || !sb) return;
+    try {
+      var key = "v" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      liveCh = sb.channel("live", { config: { presence: { key: key, enabled: true } } });
+      liveCh.on("presence", { event: "sync" }, liveRecount)
+        .subscribe(function (st) { if (st === "SUBSCRIBED") { liveReady = true; liveSent = -1; liveSend(); } else if (st === "CLOSED" || st === "CHANNEL_ERROR" || st === "TIMED_OUT") { liveReady = false; } });
+      setInterval(liveSend, 3000);
+    } catch (e) { liveCh = null; }
   }
   async function loadMe() {
     try {
@@ -1269,7 +1317,34 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     document.body.append(wrap);
     draw(mode || "login");
 
+    function drawAdmin() {
+      var sum = el("div", { class: "adm-sum", text: "가입자" }), lv = el("div", { class: "adm-live", id: "adm-live" }), list = el("div", { class: "adm-list" });
+      put(card, el("h2", { text: "관리" }), sum, lv, list,
+        el("div", { class: "row" },
+          el("button", { class: "btn link", type: "button", text: "닉네임 변경", onclick: function () { draw("nick"); } }),
+          el("button", { class: "btn link", type: "button", text: "닫기", onclick: closeAuth })));
+      paintLive();
+      function ymd(s) { var t = Date.parse(s); return isNaN(t) ? "" : new Date(t + 9 * 3600000).toISOString().slice(2, 10).replace(/-/g, "."); }
+      function chName(id) { var c = CH.find(function (x) { return x.id === id; }); return c ? c.name : id; }
+      sb.rpc("admin_overview").then(function (r) {
+        if (!document.getElementById("adm-live")) return;
+        if (r.error || !r.data) { sum.textContent = "불러오지 못했어요."; return; }
+        var d = r.data;
+        sum.textContent = "가입자 " + d.total + "명" + (d.pending ? " · 인증 전 " + d.pending + "명" : "");
+        put(list, (d.members || []).map(function (u) {
+          var roles = [];
+          if (u.admin) roles.push("관리자");
+          (u.hosts || []).forEach(function (h) { roles.push(chName(h) + " 진행자"); });
+          if (!u.verified) roles.push("인증 전");
+          return el("div", { class: "adm-row" },
+            el("span", { class: "nm", text: u.nick }),
+            roles.length ? el("span", { class: "rl", text: roles.join(" · ") }) : null,
+            el("span", { class: "mt", text: ymd(u.joined) + " · 댓글 " + u.comments }));
+        }));
+      }, function () { if (document.getElementById("adm-live")) sum.textContent = "불러오지 못했어요."; });
+    }
     function draw(m) {
+      if (m === "admin") return drawAdmin();
       var msg = el("div", { class: "err", role: "alert" });
       var ok = el("div", { class: "okmsg", role: "status" });
       var email = el("input", { type: "email", id: "auth-email", autocomplete: "email", inputmode: "email", maxlength: "120" });
@@ -1309,6 +1384,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         m === "signup" ? el("p", { class: "fine", text: "받는 정보는 이메일·비밀번호·닉네임뿐이에요. 이메일은 로그인과 비밀번호 찾기에만 쓰고 공개하지 않아요." }) : null,
         el("div", { class: "row" },
           m === "login" ? [link("가입하기", "signup"), link("비밀번호를 잊으셨나요?", "forgot")] : ((m === "reset" || m === "nick") ? null : link("로그인으로", "login")),
+          (m === "nick" && me && me.admin) ? link("관리", "admin") : null,
           el("button", { class: "btn link", type: "button", text: "닫기", onclick: closeAuth })));
       var first = card.querySelector("input");
       if (first) setTimeout(function () { first.focus(); }, 50);
