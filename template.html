@@ -60,9 +60,9 @@ a { color: inherit; }
 .rk { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0; }
 .rkt { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 .rk ol { list-style: none; margin: 0; padding: 0; }
-.rk li { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; font-size: 15px; }
+.rk li { display: flex; gap: 8px; align-items: center; padding: 4px 0; font-size: 15px; }
 .rk .no { width: 1em; color: var(--brand); font-weight: 700; font-variant-numeric: tabular-nums; }
-.rk .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.rk .nm { min-width: 0; overflow-wrap: anywhere; font-weight: 500; line-height: 1.3; }
 .adm-sum { margin: 8px 0 2px; font-size: 16px; font-weight: 700; }
 .adm-live { font-size: 13px; color: var(--muted); }
 .adm-list { margin-top: 12px; max-height: 46vh; overflow-y: auto; border-top: 1px solid var(--line); }
@@ -140,6 +140,8 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .cm .who { font-size: 13px; color: var(--muted); }
 .cm .who b { color: var(--fg); font-weight: 500; }
 .cm .who .host { display: inline-block; margin-left: 4px; vertical-align: -2px; color: var(--brand); }
+.cm .who .tur, .rp .who .tur { display: inline-block; margin-left: 4px; vertical-align: -4px; }
+.rk .tur { flex: none; align-self: center; }
 .cm .who .listener { display: inline-block; margin-left: 4px; vertical-align: -2px; color: var(--muted); }
 .cm .tx { overflow-wrap: anywhere; white-space: pre-wrap; }
 .mask { display: inline-block; height: 14px; width: min(70%, 220px); background: var(--mask); border-radius: 4px; margin-top: 4px; }
@@ -470,7 +472,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (!cm.length && !rp.length) { slot.replaceChildren(); return; }
     function col(title, a) {
       return a.length ? el("div", { class: "rk" }, el("div", { class: "rkt", text: title }),
-        el("ol", null, a.map(function (r) { return el("li", null, el("span", { class: "no", text: r.rank }), el("span", { class: "nm", text: r.nickname })); }))) : null;
+        el("ol", null, a.map(function (r) { return el("li", null, el("span", { class: "no", text: r.rank }), el("span", { class: "nm", text: r.nickname }), turtleIcon()); }))) : null;
     }
     put(slot, el("div", { class: "rkh", text: "이번 달 순위" }), el("div", { class: "rkg" }, col("댓글", cm), col("답글", rp)));
   }
@@ -942,7 +944,23 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     }
     if (followNow) requestAnimationFrame(function () { if (sess === S) scrollToBottom(); });
   }
-  function roleIcon(isHost) { return isHost ? micIcon() : (SB ? headIcon() : null); }
+  function roleIcon(isHost, badge) { return isHost ? micIcon() : (badge ? turtleIcon() : (SB ? headIcon() : null)); }
+  /* 이번 달 순위 5명 표시: 샛노란 거북이(흰 배경에서도 보이게 얇은 어두운 테두리) */
+  function turtleIcon() {
+    var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("width", "17"); svg.setAttribute("height", "17");
+    svg.setAttribute("class", "tur"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", "이번 달 순위");
+    var t = document.createElementNS(ns, "title"); t.textContent = "이번 달 순위"; svg.appendChild(t);
+    function sh(tag, attrs) { var n = document.createElementNS(ns, tag); Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); }); svg.appendChild(n); }
+    var Y = "#FFD400", D = "#3a3a3a";
+    sh("rect", { x: "4.6", y: "15.6", width: "3.6", height: "4.4", rx: "1.5", fill: Y, stroke: D, "stroke-width": "1.1" });
+    sh("rect", { x: "12.2", y: "15.6", width: "3.6", height: "4.4", rx: "1.5", fill: Y, stroke: D, "stroke-width": "1.1" });
+    sh("circle", { cx: "20.4", cy: "13.4", r: "2.7", fill: Y, stroke: D, "stroke-width": "1.1" });
+    sh("circle", { cx: "21.2", cy: "12.8", r: "0.55", fill: D });
+    sh("path", { d: "M2.2 16.8C2.2 10.4 6.2 6.6 10.4 6.6s8.2 3.8 8.2 10.2z", fill: Y, stroke: D, "stroke-width": "1.1", "stroke-linejoin": "round" });
+    sh("path", { d: "M10.4 7v9.6M5.4 12.2h10", fill: "none", stroke: D, "stroke-width": "0.9", "stroke-linecap": "round" });
+    return svg;
+  }
   function headIcon() {
     var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
     svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("width", "14"); svg.setAttribute("height", "14");
@@ -975,7 +993,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     renderMarks(); renderFeed(true);
   }
   function whoEl(c) {
-    return el("div", { class: "who" }, el("b", { text: c.nick || "익명" }), roleIcon(c.host),
+    return el("div", { class: "who" }, el("b", { text: c.nick || "익명" }), roleIcon(c.host, c.badge),
       (SB ? (me && me.nick && c.nick === me.nick) : (c.uid && c.uid === caps.uid)) ? " · 나" : "");
   }
   function replyBtn(c) { return el("button", { class: "link2", type: "button", text: "답글", onclick: function () { startReply(c); } }); }
@@ -1080,7 +1098,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
   function commentRow(c, st, replies) {
     var S = sess, masked = st === "future" && !S.reveal;
-    var who = el("div", { class: "who" }, el("b", { text: c.nick || "익명" }), roleIcon(c.host),
+    var who = el("div", { class: "who" }, el("b", { text: c.nick || "익명" }), roleIcon(c.host, c.badge),
       (SB ? (me && me.nick && c.nick === me.nick) : (c.uid && c.uid === caps.uid)) ? " · 나" : "",
       c.plat && PLAT_SHORT[c.plat] ? " · " + PLAT_SHORT[c.plat] : "");
     return el("div", { class: "cm " + st },
@@ -1106,7 +1124,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     box.replaceChildren();
     if (SB) {
       put(box, me
-        ? el("div", { class: "nk" }, "닉네임 ", el("b", { text: me.nick || "(없음)" }), me.nick ? roleIcon(!!me.admin || (me.hosts || []).indexOf(chOf(S)) >= 0) : null, el("button", { class: "btn link", type: "button", text: "변경", onclick: function () { openAuth("nick"); } }))
+        ? el("div", { class: "nk" }, "닉네임 ", el("b", { text: me.nick || "(없음)" }), me.nick ? roleIcon(!!me.admin || (me.hosts || []).indexOf(chOf(S)) >= 0, me.badge) : null, el("button", { class: "btn link", type: "button", text: "변경", onclick: function () { openAuth("nick"); } }))
         : el("div", { class: "nk" }, el("button", { class: "btn", type: "button", text: "로그인하고 댓글 남기기", onclick: function () { openAuth("login"); } })));
       return;
     }
@@ -1299,7 +1317,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       else {
         var r = await sb.from("profiles").select("nickname").eq("user_id", user.id).maybeSingle();
         var rr = await sb.rpc("my_roles"), ro = (rr && rr.data) || {};
-        me = { id: user.id, nick: r && r.data ? r.data.nickname : null, admin: !!ro.admin, hosts: ro.hosts || [], host: !!(ro.admin || (ro.hosts && ro.hosts.length)) };
+        me = { id: user.id, nick: r && r.data ? r.data.nickname : null, admin: !!ro.admin, hosts: ro.hosts || [], host: !!(ro.admin || (ro.hosts && ro.hosts.length)), badge: !!ro.badge };
       }
     } catch (e) { me = null; }
     caps.isAdmin = !!(me && me.admin);
@@ -1314,7 +1332,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   function renderAuthBar(slot) {
     if (!SB) { slot.replaceChildren(); return; }
     if (!sb) { put(slot, el("span", { text: "로그인을 불러오지 못했어요" })); return; }
-    if (me) put(slot, me.nick ? el("button", { class: "nickbtn", type: "button", title: "닉네임 변경", onclick: function () { openAuth("nick"); }, text: me.nick }) : null, me.nick ? roleIcon(me.host) : null,
+    if (me) put(slot, me.nick ? el("button", { class: "nickbtn", type: "button", title: "닉네임 변경", onclick: function () { openAuth("nick"); }, text: me.nick }) : null, me.nick ? roleIcon(me.host, me.badge) : null,
       el("button", { class: "btn link", type: "button", text: "로그아웃", onclick: function () { sb.auth.signOut(); } }));
     else put(slot, el("button", { class: "btn", type: "button", text: "로그인 · 가입", onclick: function () { openAuth("login"); } }));
   }
@@ -1477,7 +1495,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   /* ---- 댓글 조회(몇 초마다). 앞으로 나올 댓글은 서버가 보내지 않는다 ---- */
   function startPolling(S) {
     S.map = {}; S.afterId = 0; S.prevUpto = -1; S.extra = 0; S.total = 0; S.polls = 0; S.lastFull = 0;
-    function norm(c) { return { id: c.id, sec: c.sec, text: c.body, nick: c.nickname, host: !!c.is_host, parent: c.parent_id || null, replyTo: c.reply_to_nick || "", mine: !!c.mine, edited: !!c.edited }; }
+    function norm(c) { return { id: c.id, sec: c.sec, text: c.body, nick: c.nickname, host: !!c.is_host, parent: c.parent_id || null, replyTo: c.reply_to_nick || "", mine: !!c.mine, edited: !!c.edited, badge: !!c.badge }; }
     async function poll(full) {
       if (sess !== S) return;
       if (S.polling) { S.again = true; if (full) S.wantFull = true; return; }
