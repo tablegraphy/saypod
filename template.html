@@ -820,10 +820,15 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var vv = window.visualViewport; if (!SITE || !vv) return;
     function fix() {
       var c = document.querySelector(".comp"); if (!c) return;
-      var off = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+      /* 입력줄은 평소에 화면 맨 아래에 그대로 고정한다. 키보드가 올라오는 글쓰기·수정 중에만 키보드 높이만큼 올린다.
+         (사파리가 스크롤 끝에서 주소창·하단 막대를 접고 펼 때 생기는 높이 변화를 키보드로 착각해 입력줄이 둥둥 뜨던 문제) */
+      var ae = document.activeElement, typing = !!ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA");
+      var off = typing ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0;
       c.style.transform = off > 2 ? "translateY(" + (-off) + "px)" : "";
     }
     vv.addEventListener("resize", fix); vv.addEventListener("scroll", fix);
+    document.addEventListener("focusin", function () { setTimeout(fix, 50); setTimeout(fix, 400); });
+    document.addEventListener("focusout", function () { setTimeout(fix, 50); setTimeout(fix, 400); });
   }
 
   /* ---- 듣는 곳(선택) ---- */
