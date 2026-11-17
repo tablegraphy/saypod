@@ -53,6 +53,16 @@ a { color: inherit; }
 .liveline { margin: -12px 0 18px; font-size: 14px; color: var(--muted); }
 .liveline:empty { display: none; }
 .liveline::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); margin-right: 7px; vertical-align: 1px; }
+.rank { margin-top: 22px; }
+.rank:empty { display: none; }
+.rkh { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.rkg { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rk { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0; }
+.rkt { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.rk ol { list-style: none; margin: 0; padding: 0; }
+.rk li { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; font-size: 15px; }
+.rk .no { width: 1em; color: var(--brand); font-weight: 700; font-variant-numeric: tabular-nums; }
+.rk .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .adm-sum { margin: 8px 0 2px; font-size: 16px; font-weight: 700; }
 .adm-live { font-size: 13px; color: var(--muted); }
 .adm-list { margin-top: 12px; max-height: 46vh; overflow-y: auto; border-top: 1px solid var(--line); }
@@ -248,7 +258,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   var CFG = (D && D.supabase) || null;   /* 사이트 빌드에서만 들어오는 공개 연결 값(주소·공개 키) */
   var SB = SITE && !!CFG;                 /* 로그인·공유 댓글 모드 */
   var sb = null;                          /* Supabase 클라이언트 */
-  var LIVE_MIN = 3, live = { open: 0, playing: 0 }, liveCh = null, liveReady = false, liveSent = -1;   /* 지금 접속·재생 수(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
+  var LIVE_MIN = 3, live = { open: 0, playing: 0 }, liveCh = null, liveReady = false, liveSent = -1, rankCache = null;   /* 지금 접속·재생 수·순위 캐시(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
   var me = null;                          /* 로그인한 사람: {id, nick, host} */
   var srvPos = {};   /* 서버에 저장된 이어듣기 위치 {에피소드키: {sec, ms}} */
   var OTHER_APP = false; /* '다른 앱에서 듣기' 전환. 2026-11-16 사용자가 헷갈린다며 뺌. true로 바꾸면 되살아난다 */
@@ -446,10 +456,32 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
             el("div", { class: "chs", text: c.tagline }),
             el("div", { class: "chx", text: "에피소드 " + c.episodes.length + "개 · 최근 " + dotDate(c.episodes[0].date) })));
       })),
+      SB ? el("section", { class: "rank", id: "rank-box" }) : null,
       CH.length ? null : el("p", { class: "note", text: "등록된 팟캐스트가 없어요." }),
       SITE ? null : el("p", { class: "foot", text: "시제품입니다. 댓글은 초대된 분만 쓸 수 있어요." })
     );
     paintLive();
+    loadRank();
+  }
+  /* 이번 달 댓글·답글 순위(닉네임과 순서만, 횟수 없음). 홈을 열 때 받고 2분간은 다시 받지 않는다 */
+  function paintRank(rows) {
+    var slot = document.getElementById("rank-box"); if (!slot) return;
+    var cm = rows.filter(function (r) { return r.kind === "comment"; }), rp = rows.filter(function (r) { return r.kind === "reply"; });
+    if (!cm.length && !rp.length) { slot.replaceChildren(); return; }
+    function col(title, a) {
+      return a.length ? el("div", { class: "rk" }, el("div", { class: "rkt", text: title }),
+        el("ol", null, a.map(function (r) { return el("li", null, el("span", { class: "no", text: r.rank }), el("span", { class: "nm", text: r.nickname })); }))) : null;
+    }
+    put(slot, el("div", { class: "rkh", text: "이번 달 순위" }), el("div", { class: "rkg" }, col("댓글", cm), col("답글", rp)));
+  }
+  function loadRank() {
+    if (!sb) return;
+    if (rankCache && Date.now() - rankCache.at < 120000) { paintRank(rankCache.rows); return; }
+    sb.rpc("monthly_rankings").then(function (r) {
+      if (r.error || !Array.isArray(r.data)) return;
+      rankCache = { at: Date.now(), rows: r.data };
+      paintRank(r.data);
+    }, function () {});
   }
 
   function showChannel(c) {
