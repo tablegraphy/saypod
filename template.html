@@ -1034,7 +1034,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       (SB ? (me && me.nick && c.nick === me.nick) : (c.uid && c.uid === caps.uid)) ? " · 나" : "",
       c.plat && PLAT_SHORT[c.plat] ? " · " + PLAT_SHORT[c.plat] : "");
     return el("div", { class: "cm " + st },
-      el("button", { class: "t", type: "button", "aria-label": fmt(c.sec) + "부터 재생", text: fmt(c.sec), onclick: function () { playFrom(c.sec); } }),
+      el("button", { class: "t", type: "button", "aria-label": fmt(c.sec) + " 10초 전부터 재생", text: fmt(c.sec), onclick: function () { playFrom(c.sec - 10); } }),   /* 듣다가 댓글을 쓰는 동안 시간이 흐르므로 10초 앞에서 시작 */
       el("div", null, who, masked ? el("span", { class: "mask", role: "img", "aria-label": "아직 가려진 댓글" }) : txEl(c, false), actionsRow(c, replies, masked)),
       (!SB && caps.isAdmin) ? delBtn(c) : el("span"));
   }
