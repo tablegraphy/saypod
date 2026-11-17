@@ -1324,7 +1324,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
       r = await sb.auth.signUp({ email: email, password: pw, options: { data: { nickname: nick, consent_privacy: (D && D.privacy ? D.privacy.version : ""), age14: true }, emailRedirectTo: location.origin + location.pathname } });
       if (r.error) return fail(authMsg(r.error));
       if (r.data && r.data.user && r.data.user.identities && r.data.user.identities.length === 0) return fail("이미 가입된 이메일이에요. 로그인해 주세요.");
-      ok.textContent = "이메일 인증을 완료하면 가입됩니다. 보낸 메일의 링크를 눌러 주세요. 메일이 안 보이면 스팸함도 확인해 주세요.";
+      ok.textContent = "이메일 인증을 마치면 가입이 완료됩니다. 받으신 메일의 링크를 눌러 주세요. 메일이 안 보이면 스팸함도 확인해 주세요.";
     } else if (m === "forgot") {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("이메일 주소를 확인해 주세요.");
       r = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
