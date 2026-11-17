@@ -197,7 +197,9 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .stick .bar { margin: 6px 0 0; }
 .stick .tot { text-align: right; font: 500 11px var(--mono); color: var(--muted); margin-top: 2px; }
 .stick .hint { margin: 2px 0 0; font-size: 12px; }
-.stick.compact .hd, .stick.compact .eptitle, .stick.compact .fh, .stick.compact .sync .bar, .stick.compact .sync .ctrl, .stick.compact .sync .hint, .stick.compact .sync .tot { display: none; }
+.stick.compact .hd, .stick.compact .eptitle, .stick.compact .fh, .stick.compact .sync .bar, .stick.compact .sync .ctrl, .stick.compact .sync .hint, .stick.compact .sync .tot,
+.stick.editing .hd, .stick.editing .eptitle, .stick.editing .fh, .stick.editing .sync .bar, .stick.editing .sync .ctrl, .stick.editing .sync .hint, .stick.editing .sync .tot { display: none; }
+html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더를 줄이고 아래 입력줄은 숨겨, 키보드가 올라와도 수정 입력칸이 보이게 한다 */
 @media (max-height: 620px) { .stick .th { display: none; } }
 .pwrap { margin-bottom: 8px; }
 .pwrap { display: flex; flex-direction: column; align-items: stretch; width: fit-content; margin-left: auto; }   /* 버튼과 펼침 목록을 같은 폭으로 화면 오른쪽에 붙인다 */
@@ -354,6 +356,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
   }
   function route() {
     leave();
+    document.documentElement.classList.remove("is-editing");
     scrollToTop();
     var h = location.hash, m, ch;
     if ((m = h.match(/^#e-([a-z0-9]+)-(\d+)$/))) {
@@ -879,10 +882,12 @@ button.t:hover, button.t:active { text-decoration: underline; }
     var hadFocus = !!(S.editing && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("edin"));
     S.noFollowOnce = false;
     put(S.r.fh, head);
+    S.r.stick.classList.toggle("editing", !!S.editing);
+    document.documentElement.classList.toggle("is-editing", !!S.editing);
     put(S.r.feed, body, (SITE && !SB) ? el("div", { class: "note", text: "시험판이라 댓글은 이 기기에만 저장돼요. 다른 분의 댓글은 아직 보이지 않아요." }) : null);
     if (S.editing && (hadFocus || S.focusEdit)) {
       var ei = S.r.feed.querySelector(".edin");
-      if (ei) { ei.focus(); try { ei.setSelectionRange(ei.value.length, ei.value.length); } catch (e) {} }
+      if (ei) { ei.focus(); try { ei.setSelectionRange(ei.value.length, ei.value.length); } catch (e) {} setTimeout(function () { try { ei.scrollIntoView({ block: "center" }); } catch (e) {} }, 350); }
       S.focusEdit = false;
     }
     if (followNow) requestAnimationFrame(function () { if (sess === S) scrollToBottom(); });
