@@ -200,7 +200,7 @@ SITE_HEAD = (
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
     '<meta name="referrer" content="no-referrer">\n'
     '<meta name="apple-mobile-web-app-title" content="듣는 사이">\n'
-    '<meta name="theme-color" content="#17707A">\n'
+    '<meta name="theme-color" content="#FAFAF9">\n'
     '<link rel="apple-touch-icon" href="icon-180.png">\n'
     '<link rel="icon" href="icon-180.png">\n'
     '<style>:root{color-scheme:light;padding-top:var(--st,env(safe-area-inset-top,0px));padding-bottom:env(safe-area-inset-bottom,0px)}'
