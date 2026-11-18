@@ -209,6 +209,11 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .rm-ib { position: absolute; top: 10px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .rm-ib.l { left: 10px; } .rm-ib.l2 { left: 54px; } .rm-ib.r { right: 10px; }
 .rm-ib svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rm-talk { position: relative; margin-top: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 40px 6px 14px; }
+.rm-talk[hidden] { display: none; }
+.rm-talk .who2 { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+.rm-talk .txt { font-size: 14.5px; line-height: 1.5; margin: 0 0 8px; white-space: pre-line; overflow-wrap: anywhere; }
+.rm-talk .x { position: absolute; top: 6px; right: 8px; width: 28px; height: 28px; border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; }
 .rm-cap { margin: 8px 2px 0; font-size: 13px; color: var(--muted); }
 .rm-send, .rm-hint { display: none; }
 .inroom .rm-send { display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px; margin-top: 6px; }
@@ -1505,7 +1510,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   function roomToTop() { scrollToTop(); requestAnimationFrame(scrollToTop); setTimeout(scrollToTop, 150); setTimeout(scrollToTop, 450); }
   function roomTeardown(S) {
     var R = S.room; if (!R) return;
-    clearInterval(R.timer);
+    clearInterval(R.timer); clearInterval(R.greetTimer);
     Object.keys(R.bubbles).forEach(function (u) { clearTimeout(R.bubbles[u].tm); });
     if (R.ch) { try { R.ch.untrack(); } catch (e) {} try { sb.removeChannel(R.ch); } catch (e) {} }
     S.room = null;
@@ -1608,25 +1613,25 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     rmk("path", { d: "M" + (sx - shr - 2.5) + " " + (scy - 1.5) + "Q" + sx + " " + (scy - 6.5) + " " + (sx + shr + 2.5) + " " + (scy - 1.5) + "Q" + sx + " " + (scy + 3.8) + " " + (sx - shr - 2.5) + " " + (scy - 1.5) + "Z", fill: "#2c3440" }, st);
     rGlasses(st, sx, scy + 1.5, ss);
     rChestLogo(st, sx, sy, ss);
-    rPill(st, sx + 6, 213, "스태프 " + cfg.staff, { dash: "3 2", stroke: "var(--fg)" });
+    rPill(st, sx, sy - 52 * ss, cfg.staff, { dash: "3 2", stroke: "var(--fg)" });   /* 객석 사람들처럼 머리 위(모자와 겹치지 않는 간격) */
     R.greetG = rmk("g", {}, st);
+    st.style.cursor = "pointer"; st.setAttribute("role", "button"); st.setAttribute("tabindex", "0"); st.setAttribute("aria-label", cfg.staff + "에게 말 걸기");
+    st.addEventListener("click", function () { roomTalk(S); });
+    st.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); roomTalk(S); } });
     R.gBub = rmk("g", {});   /* 말풍선 층: 항상 맨 위 */
-    /* 스태프 민턴의 말풍선: 관리 화면에 올려 둔 한마디(보이는 것 중 가장 최근 것). 없으면 기본 인사 */
-    R.staffSay = function () {
-      R.greetG.replaceChildren();
-      var line = (R.notices && R.notices[0] && R.notices[0].body) || "어서 오세요 :)";
-      rBubble(R.greetG, 78, 196, line.length > 42 ? line.slice(0, 41) + "…" : line, "greet");
-    };
-    R.staffSay();
+    var lines = ["어서 오세요 :)", "오늘은 " + S.ep.n + "화예요", "궁금하면 눌러 주세요"];
+    function greet() { R.greetG.replaceChildren(); rBubble(R.greetG, 54, 192, lines[R.greet % lines.length], "greet"); R.greet++; }
+    greet(); R.greetTimer = setInterval(greet, 4200);
     rmkRoot = null;
     R.svg = svg;
+    R.talk = el("div", { class: "rm-talk", hidden: true });
     var cam = el("button", { class: "rm-ib l", type: "button", "aria-label": "스튜디오 장면 사진으로 저장", title: "사진으로 저장", onclick: function () { roomSnap(S); } },
       svgIcon(["M4 8a2 2 0 0 1 2-2h2l1.2-2h5.6L16 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z", "M8.5 12.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0"]));
     var tix = el("button", { class: "rm-ib l2", type: "button", "aria-label": "공개방송 입장권 보기", title: "입장권", onclick: function () { roomTicket(S); } },
       svgIcon(["M3 9a2 2 0 0 0 0 6v2a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-2a2 2 0 0 1 0-6V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z", "M14 8v1.5M14 11.3v1.4M14 14.5V16"]));
     var out = el("button", { class: "rm-ib r", type: "button", "aria-label": "나가기", title: "나가기", onclick: leaveRoom },
       svgIcon(["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "M16 17l5-5-5-5", "M21 12H9"]));
-    put(S.r.stage, el("div", { class: "rm-wrap" }, el("div", { class: "rm-room" }, svg), cam, tix, out),
+    put(S.r.stage, el("div", { class: "rm-wrap" }, el("div", { class: "rm-room" }, svg), cam, tix, out), R.talk,
       el("p", { class: "rm-cap", text: "공개방송에서는 최신화만 들으실 수 있어요." }));
     roomAudience(S);
   }
@@ -1685,9 +1690,19 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     sb.rpc("room_notices", { p_channel: S.ch.id }).then(function (r) {
       if (sess !== S || S.room !== R || r.error || !Array.isArray(r.data)) return;
       R.notices = r.data;
-      if (R.staffSay) R.staffSay();
     }, function () {});
   }
+  /* 스태프 민턴을 누르면 아래 창이 열리고, 늘 한 문장만 보인다(관리 화면에 올려 둔 한마디 중 보이는 것의 가장 최근 것. 없으면 기본 문장) */
+  function roomTalk(S) {
+    var R = S.room; if (!R) return;
+    var line = (R.notices && R.notices[0] && R.notices[0].body) || "오늘도 함께 들어요 :)";
+    put(R.talk,
+      el("button", { class: "x", type: "button", "aria-label": "닫기", text: "×", onclick: function () { R.talk.hidden = true; } }),
+      el("div", { class: "who2", text: ROOM[S.ch.id].staff }),
+      el("p", { class: "txt", text: line }));
+    R.talk.hidden = false;
+  }
+
   /* ---- 사진으로 저장(카메라): 말풍선까지 지금 장면 그대로 PNG로 ---- */
   function roomSnap(S) {
     var R = S.room; if (!R || !R.svg) return;
@@ -2024,7 +2039,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     function drawAdmin() {
       var sum = el("div", { class: "adm-sum", text: "가입자" }), lv = el("div", { class: "adm-live", id: "adm-live" }), list = el("div", { class: "adm-list" });
       var nbox = el("div", { class: "adm-nt" });
-      put(card, xBtn(), el("h2", { text: "관리" }), sum, lv, el("div", { class: "adm-sec", text: "스태프 민턴의 한마디 · 거북목 라디오" }), el("div", { class: "adm-live", text: "보이는 한마디 중 가장 최근에 올리거나 고친 것이 민턴의 말풍선에 떠요(42자 이내). 없으면 '어서 오세요 :)'" }), nbox, list,
+      put(card, xBtn(), el("h2", { text: "관리" }), sum, lv, el("div", { class: "adm-sec", text: "민턴의 한마디 · 거북목 라디오" }), el("div", { class: "adm-live", text: "보이는 한마디 중 가장 최근에 올리거나 고친 한 줄이, 민턴을 눌렀을 때 열리는 창에 떠요(42자 이내). 없으면 '오늘도 함께 들어요 :)'" }), nbox, list,
         el("div", { class: "row" },
           el("button", { class: "btn link", type: "button", text: "닉네임 변경", onclick: function () { draw("nick"); } })));
       paintLive();
