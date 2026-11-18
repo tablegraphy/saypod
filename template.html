@@ -201,7 +201,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
 @media (prefers-reduced-motion: no-preference) { .join .lamp { animation: onair 1.4s ease-in-out infinite; } @keyframes onair { 0%, 100% { opacity: 1; } 50% { opacity: .2; } } }
 @media (max-width: 380px) { .fhead .join, .sec.erow .join { font-size: 11px; gap: 3px; letter-spacing: -.04em; } }
 .rm-stage:empty { display: none; }
-.rm-wrap { position: relative; margin-top: 8px; }
+.rm-wrap { position: relative; margin-top: 8px; --wall: #F3F1EA; --floor: #E9E6DB; --seat: #D9D5C7; --stage: #EFEBDD; --surface: #FFFFFF; --fg: #14161B; --line: #E8E8E4; --muted: #6A6E78; --soft: #F0F0EC; color-scheme: light; }   /* 공개방송 무대는 어두운 모드에서도 밝은 색 그대로(무대 안 글자·말풍선·버튼 포함) */
 .rm-room { border-radius: 20px; overflow: hidden; border: 1px solid var(--line); background: var(--wall); }
 .rm-room svg { display: block; width: 100%; height: auto; }
 .rm-room text { font-family: var(--font); }
@@ -1703,7 +1703,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     hide.forEach(function (n) { n.remove(); });
     var mark = document.createElementNS(SVGNS, "text");
     mark.setAttribute("x", "382"); mark.setAttribute("y", "343"); mark.setAttribute("text-anchor", "end"); mark.setAttribute("font-size", "9"); mark.setAttribute("font-weight", "600");
-    mark.setAttribute("fill", getComputedStyle(document.documentElement).getPropertyValue("--muted")); mark.setAttribute("font-family", '"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif');
+    mark.setAttribute("fill", "#6A6E78"); mark.setAttribute("font-family", '"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif');
     mark.textContent = "듣는 사이 · " + S.ch.name; clone.appendChild(mark);
     clone.setAttribute("xmlns", SVGNS); clone.setAttribute("width", "1170"); clone.setAttribute("height", "1050");
     rasterize(clone, 1170, 1050, function (blob) {
