@@ -67,7 +67,15 @@ a { color: inherit; }
 .rank { margin: 28px 0 32px; }   /* 아래 여백: 순위표와 에피소드 목록 사이 */
 .rank:empty { display: none; }
 .rkh { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }   /* 제목 옆 노란 거북이: 이 순위에 들면 닉네임 옆에 이 거북이가 붙는다 */
-.rkh .tur { width: 22px; height: 22px; }
+.rkh .trk { position: relative; flex: 1; min-width: 0; height: 26px; }
+.rkh .trk .tur { position: absolute; left: 0; top: 2px; width: 22px; height: 22px; }
+.rkh .trk.done .tur { left: calc(100% - 22px); }
+@media (prefers-reduced-motion: no-preference) {
+  .rkh .trk.walk .tur { animation: walk 4.5s cubic-bezier(.4, .1, .5, 1) both, bob .45s ease-in-out 10 alternate; }
+  @keyframes walk { from { left: 0; } to { left: calc(100% - 22px); } }
+  @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+}
+.rkh .trk.walk .tur { left: calc(100% - 22px); }   /* 움직임이 허용되면 위 애니메이션이 0에서 출발, 끝나면 이 자리에 선다 */
 .rkg { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .rk { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 14px 10px; min-width: 0; }
 .rkt { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
@@ -286,7 +294,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   var CFG = (D && D.supabase) || null;   /* 사이트 빌드에서만 들어오는 공개 연결 값(주소·공개 키) */
   var SB = SITE && !!CFG;                 /* 로그인·공유 댓글 모드 */
   var sb = null;                          /* Supabase 클라이언트 */
-  var LIVE_MIN = 3, live = { open: 0, playing: 0, users: 0 }, liveCh = null, liveReady = false, liveSent = "", liveUser = "", liveUid = "", rankCache = {};   /* 지금 접속·재생 수·순위 캐시(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
+  var LIVE_MIN = 3, live = { open: 0, playing: 0, users: 0 }, liveCh = null, liveReady = false, liveSent = "", liveUser = "", liveUid = "", rankCache = {}, rankWalked = false;   /* 지금 접속·재생 수·순위 캐시(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
   var me = null;                          /* 로그인한 사람: {id, nick, host} */
   var srvPos = {};   /* 서버에 저장된 이어듣기 위치 {에피소드키: {sec, ms}} */
   var OTHER_APP = false; /* '다른 앱에서 듣기' 전환. 2026-11-16 사용자가 헷갈린다며 뺌. true로 바꾸면 되살아난다 */
@@ -540,7 +548,11 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       return a.length ? el("div", { class: "rk" }, el("div", { class: "rkt", text: title }),
         el("ol", null, a.map(function (r) { return el("li", null, el("span", { class: "no", text: r.rank }), el("span", { class: "nm" }, el("span", { text: r.nickname }))); }))) : null;
     }
-    put(slot, el("div", { class: "rkh" }, "이번 달 순위", turtleIcon()), el("div", { class: "rkg" }, col("댓글", cm), col("답글", rp)));
+    /* 제목 옆 거북이: 앱을 연 뒤 처음 한 번만 왼쪽에서 오른쪽 끝까지 걸어가 서 있는다(이후엔 도착한 자리). 움직임 줄이기 설정이면 걷지 않고 제목 옆에 서 있다 */
+    var reduce = false; try { reduce = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) {}
+    var wcls = rankWalked ? "trk done" : (reduce ? "trk" : "trk walk");
+    rankWalked = true;
+    put(slot, el("div", { class: "rkh" }, el("span", { text: "이번 달 순위" }), el("span", { class: wcls, "aria-hidden": "true" }, turtleIcon())), el("div", { class: "rkg" }, col("댓글", cm), col("답글", rp)));
   }
   function loadRank(chId) {
     if (!sb) return;
