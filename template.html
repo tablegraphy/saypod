@@ -73,7 +73,9 @@ a { color: inherit; }
 .rkh { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }   /* 제목 옆 노란 거북이: 이 순위에 들면 닉네임 옆에 이 거북이가 붙는다 */
 .rkh .trk { position: relative; flex: 1; min-width: 0; height: 26px; }
 .rkh .trk .tur { position: absolute; left: 0; top: 2px; width: 22px; height: 22px; }
+.rkh .trk .tur.siot { width: 30px; height: 20px; top: 3px; overflow: visible; }
 .rkh .trk.done .tur { left: calc(100% - 22px); }
+.rkh .trk.done .tur.siot { left: calc(100% - 30px); }
 @media (prefers-reduced-motion: no-preference) {
   .rkh .trk.walk .tur { animation: walk 14s cubic-bezier(.35, .1, .5, 1) both, bob 1s ease-in-out 14 alternate; }   /* 아주 느리게 걷고, 걸음마다 1px만 까딱 */
   @keyframes walk { from { left: 0; } to { left: calc(100% - 22px); } }
@@ -81,11 +83,20 @@ a { color: inherit; }
   /* 아장아장: 앞다리·뒷다리가 엇갈려 앞뒤로 흔들리고 살짝 들린다(걷는 14초 동안만, 끝나면 제자리 0도) */
   .rkh .trk.walk .tur .lg { transform-box: fill-box; transform-origin: 50% 0; animation: step 1.4s ease-in-out 10; }
   .rkh .trk.walk .tur .lg.b { animation-delay: -0.7s; }
-  .rkh .trk.walk .tur.siot { animation: walk 14s cubic-bezier(.35, .1, .5, 1) both, hop .8s ease-in-out 18 alternate; }   /* 말풍선은 통통 튀며 */
+  /* 사이시옷 로고(세모·동그라미): 떨어진 채 번갈아 통통 튀며 걷다가 도착할 때 로고 모양으로 합쳐진다 */
+  .rkh .trk.walk .tur.siot { animation: walkS 14s cubic-bezier(.35, .1, .5, 1) both; }
+  @keyframes walkS { from { left: 0; } to { left: calc(100% - 30px); } }
+  .rkh .trk.walk .tur.siot .jt { animation: joinT 14s ease-in-out both; }
+  .rkh .trk.walk .tur.siot .jc { animation: joinC 14s ease-in-out both; }
+  @keyframes joinT { 0%, 86% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+  @keyframes joinC { 0%, 86% { transform: translateX(5px); } 100% { transform: translateX(0); } }
+  .rkh .trk.walk .tur.siot .hp { animation: hop .8s ease-in-out 17 alternate; }
+  .rkh .trk.walk .tur.siot .hp.c { animation-delay: -.8s; }
   @keyframes hop { from { transform: translateY(0); } to { transform: translateY(-3px); } }
   @keyframes step { 0%, 50%, 100% { transform: rotate(0) translateY(0); } 25% { transform: rotate(-24deg) translateY(-.5px); } 75% { transform: rotate(24deg) translateY(-.5px); } }
 }
-.rkh .trk.walk .tur { left: calc(100% - 22px); }   /* 움직임이 허용되면 위 애니메이션이 0에서 출발, 끝나면 이 자리에 선다 */
+.rkh .trk.walk .tur { left: calc(100% - 22px); }
+.rkh .trk.walk .tur.siot { left: calc(100% - 30px); }   /* 움직임이 허용되면 위 애니메이션이 0에서 출발, 끝나면 이 자리에 선다 */
 .rkg { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .rk { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 14px 10px; min-width: 0; }
 .rkt { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
@@ -560,7 +571,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var reduce = false; try { reduce = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) {}
     var wcls = rankWalked ? "trk done" : (reduce ? "trk" : "trk walk");
     rankWalked = true;
-    put(slot, el("div", { class: "rkh" }, el("span", { text: "이번 달 순위" }), el("span", { class: wcls, "aria-hidden": "true" }, badgeIcon(chId))), el("div", { class: "rkg" }, col("댓글", cm), col("답글", rp)));
+    put(slot, el("div", { class: "rkh" }, el("span", { text: "이번 달 순위" }), el("span", { class: wcls, "aria-hidden": "true" }, chId === "geobuk" ? turtleIcon() : siotWalker())), el("div", { class: "rkg" }, col("댓글", cm), col("답글", rp)));
   }
   function loadRank(chId) {
     if (!sb) return;
@@ -1081,6 +1092,17 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     sh("circle", { cx: "21.2", cy: "12.8", r: "0.55", fill: D });
     sh("path", { d: "M2.2 16.8C2.2 10.4 6.2 6.6 10.4 6.6s8.2 3.8 8.2 10.2z", fill: Y, stroke: D, "stroke-width": "1.1", "stroke-linejoin": "round" });
     sh("path", { d: "M10.4 7v9.6M5.4 12.2h10", fill: "none", stroke: D, "stroke-width": "0.9", "stroke-linecap": "round" });
+    return svg;
+  }
+  /* 순위 제목 옆을 걷는 사이시옷 로고: 회색 세모 + 청록 동그라미(표지 그대로). 합쳐진 모양이 기본 */
+  function siotWalker() {
+    var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 36 24"); svg.setAttribute("class", "tur siot"); svg.setAttribute("aria-hidden", "true");
+    function mk(tag, attrs, parent) { var n = document.createElementNS(ns, tag); Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); }); parent.appendChild(n); return n; }
+    var gc = mk("g", { "class": "jc" }, svg), hc = mk("g", { "class": "hp c" }, gc);
+    mk("circle", { cx: "22.4", cy: "10.2", r: "6", fill: "#3f8a85" }, hc);
+    var gt = mk("g", { "class": "jt" }, svg), ht = mk("g", { "class": "hp" }, gt);
+    mk("path", { d: "M14.4 7.1L22 19.5H7z", style: "fill:var(--fg);stroke:var(--fg)", "stroke-width": "1.6", "stroke-linejoin": "round" }, ht);   /* 세모는 글자색을 따라 어두운 모드에서도 보인다 */
     return svg;
   }
   function headIcon() {
