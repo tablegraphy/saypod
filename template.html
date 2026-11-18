@@ -11,7 +11,6 @@
   --sig: #FFD000; --on-sig: #14161B; --mark: #FFE45C; --dim: rgba(20, 22, 27, .45);
   --brand: #14161B; --brand-fg: #FAFAF9; --brand-soft: #F0F0EC;   /* 옛 이름(글자색 강조=잉크). 조작 색은 --sig */
   --rec: #FFD000; --rec-text: #14161B; --mask: #ECECE8; --err: #B3261E;
-  --wm-bg: linear-gradient(transparent 56%, #FFD000 56%, #FFD000 92%, transparent 92%); --wm-fg: #14161B; --wm-pad: 2px;   /* 워드마크 '사이': 밝게=형광펜 밑줄 */
   --font: "Pretendard Variable", Pretendard, system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
   --mono: "Pretendard Variable", Pretendard, system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;   /* 시간·순위 숫자: 같은 글꼴에 자리 맞춤(tabular) 숫자 */
 }
@@ -21,7 +20,6 @@
     --sig: #FFD000; --on-sig: #14161B; --mark: #4A4210; --dim: rgba(0, 0, 0, .6);
     --brand: #F3F3F0; --brand-fg: #0F1013; --brand-soft: #22232A;
     --rec: #FFD000; --rec-text: #F3F3F0; --mask: #26272E; --err: #FF8A80;
-    --wm-bg: #FFD000; --wm-fg: #14161B; --wm-pad: 6px;   /* 어둡게=노란 바탕에 어두운 글자 */
     color-scheme: dark;
   }
 }
@@ -30,7 +28,6 @@
   --sig: #FFD000; --on-sig: #14161B; --mark: #4A4210; --dim: rgba(0, 0, 0, .6);
   --brand: #F3F3F0; --brand-fg: #0F1013; --brand-soft: #22232A;
   --rec: #FFD000; --rec-text: #F3F3F0; --mask: #26272E; --err: #FF8A80;
-  --wm-bg: #FFD000; --wm-fg: #14161B; --wm-pad: 6px;
   color-scheme: dark;
 }
 body {
@@ -56,7 +53,7 @@ a { color: inherit; }
 .tgl svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .top > .brand { align-self: flex-start; }
 .brand { font: 900 38px/1.1 var(--font); text-decoration: none; letter-spacing: -0.045em; }
-.brand em { font-style: normal; background: var(--wm-bg); color: var(--wm-fg); padding: 0 var(--wm-pad); margin: 0 calc(-1 * var(--wm-pad)); border-radius: 8px; }   /* '사이' 밑줄(형광펜) */
+.brand em { font-style: normal; background: linear-gradient(transparent 56%, var(--sig) 56%, var(--sig) 92%, transparent 92%); padding: 0 2px; margin: 0 -2px; }   /* 밝게·어둡게 똑같이 형광펜 밑줄 */   /* '사이' 밑줄(형광펜) */
 .brand.bk { display: inline-flex; align-items: center; min-height: 44px; min-width: 0; margin-left: -8px; padding-right: 8px; font-size: 16px; font-weight: 500; letter-spacing: -0.01em; }
 .brand.bk .chev { flex: none; color: inherit; position: relative; top: 1px; }   /* 글자와 같은 색, 세로 중심은 글자에 맞춰 1px 내림(측정값) */
 .brand.bk span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -287,7 +284,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   var CFG = (D && D.supabase) || null;   /* 사이트 빌드에서만 들어오는 공개 연결 값(주소·공개 키) */
   var SB = SITE && !!CFG;                 /* 로그인·공유 댓글 모드 */
   var sb = null;                          /* Supabase 클라이언트 */
-  var LIVE_MIN = 3, live = { open: 0, playing: 0 }, liveCh = null, liveReady = false, liveSent = -1, rankCache = {};   /* 지금 접속·재생 수·순위 캐시(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
+  var LIVE_MIN = 3, live = { open: 0, playing: 0, users: 0 }, liveCh = null, liveReady = false, liveSent = "", liveUser = "", liveUid = "", rankCache = {};   /* 지금 접속·재생 수·순위 캐시(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
   var me = null;                          /* 로그인한 사람: {id, nick, host} */
   var srvPos = {};   /* 서버에 저장된 이어듣기 위치 {에피소드키: {sec, ms}} */
   var OTHER_APP = false; /* '다른 앱에서 듣기' 전환. 2026-11-16 사용자가 헷갈린다며 뺌. true로 바꾸면 되살아난다 */
@@ -1354,22 +1351,46 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   function liveRecount() {
     if (!liveCh) return;
     var st = {}; try { st = liveCh.presenceState() || {}; } catch (e) {}
-    var o = 0, p = 0;
-    Object.keys(st).forEach(function (k) { o++; if ((st[k] || []).some(function (m) { return m && m.p === 1; })) p++; });
-    live.open = o; live.playing = p; paintLive();
+    var o = 0, p = 0, u = {};
+    Object.keys(st).forEach(function (k) {
+      o++;
+      (st[k] || []).forEach(function (m) { if (m && m.u) u[m.u] = 1; });
+      if ((st[k] || []).some(function (m) { return m && m.p === 1; })) p++;
+    });
+    live.open = o; live.playing = p; live.users = Object.keys(u).length; paintLive();
   }
+  /* 모두에게 보이는 문구: 지금 접속해 있는 '로그인한 사람' 수(멈추고 댓글만 보는 사람 포함). 3명 이상일 때만 보인다 */
   function paintLive() {
     var a = document.getElementById("live-line");
-    if (a) a.textContent = live.playing >= LIVE_MIN ? "지금 " + live.playing + "명이 듣고 있어요" : "";
+    if (a) a.textContent = live.users >= LIVE_MIN ? "지금 " + live.users + "명이 듣고 있어요" : "";
     var b = document.getElementById("adm-live");
-    if (b) b.textContent = "지금 열어 둔 화면 " + live.open + " · 재생 중 " + live.playing;
+    if (b) b.textContent = "지금 로그인 " + live.users + "명 · 열어 둔 화면 " + live.open + " · 재생 중 " + live.playing;
   }
   function liveSend() {
     if (!liveCh || !liveReady) return;
-    var v = isPlayingNow() ? 1 : 0;
-    if (v === liveSent) return;
-    liveSent = v;
-    try { liveCh.track({ p: v }).catch(function () { liveSent = -1; }); } catch (e) { liveSent = -1; }
+    var v = isPlayingNow() ? 1 : 0, sig = v + "|" + liveUser;
+    if (sig === liveSent) return;
+    liveSent = sig;
+    try { liveCh.track({ p: v, u: liveUser }).catch(function () { liveSent = ""; }); } catch (e) { liveSent = ""; }
+  }
+  /* 로그인한 사람을 알아볼 수 있게 계정 번호를 한 방향으로 섞은 값만 올린다(닉네임·계정 번호 자체는 올리지 않는다). 같은 사람의 여러 화면은 같은 값 → 1명으로 센다 */
+  function hashUid(uid) {
+    var txt = "ds-live:" + uid;
+    if (window.crypto && crypto.subtle && window.TextEncoder) {
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(txt)).then(function (buf) {
+        return Array.prototype.map.call(new Uint8Array(buf).slice(0, 8), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+      });
+    }
+    var h1 = 0x811c9dc5, h2 = 0x1b873593, i;
+    for (i = 0; i < txt.length; i++) { h1 = Math.imul(h1 ^ txt.charCodeAt(i), 16777619) >>> 0; h2 = Math.imul(h2 + txt.charCodeAt(i), 0x85ebca6b) >>> 0; }
+    return Promise.resolve(("0000000" + h1.toString(16)).slice(-8) + ("0000000" + h2.toString(16)).slice(-8));
+  }
+  function setLiveUser(uid) {
+    uid = uid || "";
+    if (uid === liveUid) return;
+    liveUid = uid;
+    if (!uid) { liveUser = ""; liveSend(); return; }
+    hashUid(uid).then(function (h) { if (liveUid === uid) { liveUser = h; liveSend(); } });
   }
   function startLive() {
     if (liveCh || !sb) return;
@@ -1377,7 +1398,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       var key = "v" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
       liveCh = sb.channel("live", { config: { presence: { key: key, enabled: true } } });
       liveCh.on("presence", { event: "sync" }, liveRecount)
-        .subscribe(function (st) { if (st === "SUBSCRIBED") { liveReady = true; liveSent = -1; liveSend(); } else if (st === "CLOSED" || st === "CHANNEL_ERROR" || st === "TIMED_OUT") { liveReady = false; } });
+        .subscribe(function (st) { if (st === "SUBSCRIBED") { liveReady = true; liveSent = ""; liveSend(); } else if (st === "CLOSED" || st === "CHANNEL_ERROR" || st === "TIMED_OUT") { liveReady = false; } });
       setInterval(liveSend, 3000);
     } catch (e) { liveCh = null; }
   }
@@ -1393,6 +1414,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       }
     } catch (e) { me = null; }
     caps.isAdmin = !!(me && me.admin);
+    setLiveUser(me ? me.id : "");
     refreshAuthUI();
     loadServerPositions();
     if (sess && sess.poll) sess.poll(true);   /* 로그인·로그아웃으로 '내 댓글' 표시가 달라지므로 다시 받는다 */
