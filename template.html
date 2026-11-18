@@ -81,10 +81,8 @@ a { color: inherit; }
   /* 아장아장: 앞다리·뒷다리가 엇갈려 앞뒤로 흔들리고 살짝 들린다(걷는 14초 동안만, 끝나면 제자리 0도) */
   .rkh .trk.walk .tur .lg { transform-box: fill-box; transform-origin: 50% 0; animation: step 1.4s ease-in-out 10; }
   .rkh .trk.walk .tur .lg.b { animation-delay: -0.7s; }
-  .rkh .trk.walk .tur.siot .lg { animation-name: stepS; }
-  @keyframes stepS { 0%, 50%, 100% { transform: rotate(0); } 25% { transform: rotate(-11deg); } 75% { transform: rotate(11deg); } }
-  .rkh .trk.walk .tur.siot .lg.a { transform-origin: 100% 0; }
-  .rkh .trk.walk .tur.siot .lg.b { transform-origin: 0 0; }
+  .rkh .trk.walk .tur.siot { animation: walk 14s cubic-bezier(.35, .1, .5, 1) both, hop .8s ease-in-out 18 alternate; }   /* 말풍선은 통통 튀며 */
+  @keyframes hop { from { transform: translateY(0); } to { transform: translateY(-3px); } }
   @keyframes step { 0%, 50%, 100% { transform: rotate(0) translateY(0); } 25% { transform: rotate(-24deg) translateY(-.5px); } 75% { transform: rotate(24deg) translateY(-.5px); } }
 }
 .rkh .trk.walk .tur { left: calc(100% - 22px); }   /* 움직임이 허용되면 위 애니메이션이 0에서 출발, 끝나면 이 자리에 선다 */
@@ -1058,22 +1056,15 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   function roleIcon(isHost, badge, chId) { return isHost ? micIcon() : (badge ? badgeIcon(chId || (sess ? chOf(sess) : "")) : (SB ? headIcon() : null)); }
   /* 이번 달 순위 배지: 거북목 라디오는 거북이, 그 밖의 프로그램(사이시옷)은 노란 ㅅ */
   function badgeIcon(chId) { return chId === "geobuk" ? turtleIcon() : siotIcon(); }
-  /* 사이시옷의 ㅅ: 두 획이 두 다리처럼 걷는다(꼭짓점을 축으로 엇갈려 흔들림). 거북이와 같은 노랑·얇은 테두리 */
+  /* 사이시옷의 말풍선(대화): 거북이와 같은 노랑·얇은 테두리. 순위 제목 옆에서는 통통 튀며 걷는다 */
   function siotIcon() {
     var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
     svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("width", "17"); svg.setAttribute("height", "17");
     svg.setAttribute("class", "tur siot"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", "이번 달 순위");
     var t = document.createElementNS(ns, "title"); t.textContent = "이번 달 순위"; svg.appendChild(t);
-    function leg(cls, x2) {
-      var g = document.createElementNS(ns, "g"); g.setAttribute("class", "lg " + cls);
-      [["#3a3a3a", "6.4"], ["#FFD400", "4"]].forEach(function (s) {
-        var l = document.createElementNS(ns, "line");
-        [["x1", "12"], ["y1", "5.5"], ["x2", x2], ["y2", "19.5"], ["stroke", s[0]], ["stroke-width", s[1]], ["stroke-linecap", "round"]].forEach(function (a) { l.setAttribute(a[0], a[1]); });
-        g.appendChild(l);
-      });
-      svg.appendChild(g);
-    }
-    leg("a", "5.6"); leg("b", "18.4");
+    function sh(tag, attrs) { var n = document.createElementNS(ns, tag); Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); }); svg.appendChild(n); }
+    sh("path", { d: "M5.5 3.8h13a3 3 0 0 1 3 3v7.4a3 3 0 0 1-3 3H11l-4.6 3.9v-3.9h-.9a3 3 0 0 1-3-3V6.8a3 3 0 0 1 3-3z", fill: "#FFD400", stroke: "#3a3a3a", "stroke-width": "1.1", "stroke-linejoin": "round" });
+    [8, 12, 16].forEach(function (x) { sh("circle", { cx: x, cy: "10.5", r: "1.15", fill: "#3a3a3a" }); });
     return svg;
   }
   /* 이번 달 순위 5명 표시: 샛노란 거북이(흰 배경에서도 보이게 얇은 어두운 테두리) */
