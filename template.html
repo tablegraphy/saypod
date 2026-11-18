@@ -74,6 +74,10 @@ a { color: inherit; }
   .rkh .trk.walk .tur { animation: walk 14s cubic-bezier(.35, .1, .5, 1) both, bob 1s ease-in-out 14 alternate; }   /* 아주 느리게 걷고, 걸음마다 1px만 까딱 */
   @keyframes walk { from { left: 0; } to { left: calc(100% - 22px); } }
   @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-1px); } }
+  /* 아장아장: 앞다리·뒷다리가 엇갈려 앞뒤로 흔들리고 살짝 들린다(걷는 14초 동안만, 끝나면 제자리 0도) */
+  .rkh .trk.walk .tur .lg { transform-box: fill-box; transform-origin: 50% 0; animation: step 1.4s ease-in-out 10; }
+  .rkh .trk.walk .tur .lg.b { animation-delay: -0.7s; }
+  @keyframes step { 0%, 50%, 100% { transform: rotate(0) translateY(0); } 25% { transform: rotate(-24deg) translateY(-.5px); } 75% { transform: rotate(24deg) translateY(-.5px); } }
 }
 .rkh .trk.walk .tur { left: calc(100% - 22px); }   /* 움직임이 허용되면 위 애니메이션이 0에서 출발, 끝나면 이 자리에 선다 */
 .rkg { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -1047,8 +1051,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var t = document.createElementNS(ns, "title"); t.textContent = "이번 달 순위"; svg.appendChild(t);
     function sh(tag, attrs) { var n = document.createElementNS(ns, tag); Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); }); svg.appendChild(n); }
     var Y = "#FFD400", D = "#3a3a3a";
-    sh("rect", { x: "4.6", y: "15.6", width: "3.6", height: "4.4", rx: "1.5", fill: Y, stroke: D, "stroke-width": "1.1" });
-    sh("rect", { x: "12.2", y: "15.6", width: "3.6", height: "4.4", rx: "1.5", fill: Y, stroke: D, "stroke-width": "1.1" });
+    sh("rect", { class: "lg a", x: "4.6", y: "15.6", width: "3.6", height: "4.4", rx: "1.5", fill: Y, stroke: D, "stroke-width": "1.1" });
+    sh("rect", { class: "lg b", x: "12.2", y: "15.6", width: "3.6", height: "4.4", rx: "1.5", fill: Y, stroke: D, "stroke-width": "1.1" });
     sh("circle", { cx: "20.4", cy: "13.4", r: "2.7", fill: Y, stroke: D, "stroke-width": "1.1" });
     sh("circle", { cx: "21.2", cy: "12.8", r: "0.55", fill: D });
     sh("path", { d: "M2.2 16.8C2.2 10.4 6.2 6.6 10.4 6.6s8.2 3.8 8.2 10.2z", fill: Y, stroke: D, "stroke-width": "1.1", "stroke-linejoin": "round" });
