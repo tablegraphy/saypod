@@ -11,6 +11,7 @@
   --sig: #FFD000; --on-sig: #14161B; --mark: #FFE45C; --dim: rgba(20, 22, 27, .45);
   --brand: #14161B; --brand-fg: #FAFAF9; --brand-soft: #F0F0EC;   /* 옛 이름(글자색 강조=잉크). 조작 색은 --sig */
   --rec: #FFD000; --rec-text: #14161B; --mask: #ECECE8; --err: #B3261E;
+  --wall: #F3F1EA; --floor: #E9E6DB; --seat: #D9D5C7; --stage: #EFEBDD;   /* 공개방송 무대 */
   --font: "Pretendard Variable", Pretendard, system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
   --mono: "Pretendard Variable", Pretendard, system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;   /* 시간·순위 숫자: 같은 글꼴에 자리 맞춤(tabular) 숫자 */
 }
@@ -20,6 +21,7 @@
     --sig: #FFD000; --on-sig: #14161B; --mark: #4A4210; --dim: rgba(0, 0, 0, .6);
     --brand: #F3F3F0; --brand-fg: #0F1013; --brand-soft: #22232A;
     --rec: #FFD000; --rec-text: #F3F3F0; --mask: #26272E; --err: #FF8A80;
+    --wall: #1A1B20; --floor: #14151A; --seat: #2A2B33; --stage: #22232A;
     color-scheme: dark;
   }
 }
@@ -28,6 +30,7 @@
   --sig: #FFD000; --on-sig: #14161B; --mark: #4A4210; --dim: rgba(0, 0, 0, .6);
   --brand: #F3F3F0; --brand-fg: #0F1013; --brand-soft: #22232A;
   --rec: #FFD000; --rec-text: #F3F3F0; --mask: #26272E; --err: #FF8A80;
+  --wall: #1A1B20; --floor: #14151A; --seat: #2A2B33; --stage: #22232A;
   color-scheme: dark;
 }
 body {
@@ -161,7 +164,7 @@ input:disabled { opacity: .55; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { min-height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 500 14px var(--font); cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--bg); }
-.fhead { display: grid; grid-template-columns: 36px auto 36px; justify-content: center; align-items: center; gap: 6px; margin: 0; padding: 8px 0; border-bottom: 1px solid var(--line); }   /* 선 아래부터 댓글이 스크롤. 구간 선택은 가운데 */
+.fhead { display: grid; grid-template-columns: auto 36px; justify-content: start; align-items: center; gap: 6px; margin: 0; padding: 8px 0; border-bottom: 1px solid var(--line); }   /* 선 아래부터 댓글이 스크롤. 구간 선택은 가운데 */
 .seg { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
 .seg button { min-height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--muted); font: 500 13.5px var(--font); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
@@ -186,6 +189,57 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .edited { color: var(--muted); font-size: 12px; }
 .del { min-height: 32px; padding: 0 8px; border: 0; background: none; color: var(--muted); font: 13px var(--font); cursor: pointer; text-decoration: underline; }
 .pad { height: 150px; }
+/* ---- 공개방송(거북목 라디오 최신화): 입장 버튼·무대·스태프·입력줄 ---- */
+.fhead { position: relative; }
+.fhead > span:first-child { display: none; }   /* 함께 듣기·스포일러 보기는 왼쪽 정렬, 공개방송 입장은 오른쪽 끝 */
+.join { min-height: 44px; padding: 0; border: 0; background: none; color: var(--fg); font: 600 12.5px var(--font); letter-spacing: -.02em; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.fhead .join { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
+.sec.erow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sec.erow .lb { margin-bottom: 0; }
+.sec.erow .join { min-height: 36px; margin: -6px 0; }
+.join .lamp { width: 8px; height: 8px; border-radius: 50%; background: var(--sig); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sig) 30%, transparent); }
+@media (prefers-reduced-motion: no-preference) { .join .lamp { animation: onair 1.4s ease-in-out infinite; } @keyframes onair { 0%, 100% { opacity: 1; } 50% { opacity: .2; } } }
+@media (max-width: 380px) { .fhead .join, .sec.erow .join { font-size: 11px; gap: 3px; letter-spacing: -.04em; } }
+.rm-stage:empty { display: none; }
+.rm-wrap { position: relative; margin-top: 8px; }
+.rm-room { border-radius: 20px; overflow: hidden; border: 1px solid var(--line); background: var(--wall); }
+.rm-room svg { display: block; width: 100%; height: auto; }
+.rm-room text { font-family: var(--font); }
+.rm-ib { position: absolute; top: 10px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.rm-ib.l { left: 10px; } .rm-ib.l2 { left: 54px; } .rm-ib.r { right: 10px; }
+.rm-ib svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rm-talk { position: relative; margin-top: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+.rm-talk .who2 { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+.rm-talk .txt { font-size: 14.5px; line-height: 1.5; margin: 0 0 10px; white-space: pre-line; overflow-wrap: anywhere; }
+.rm-talk .txt + .txt { margin-top: -2px; }
+.rm-talk .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.rm-talk .opts button { height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--soft); color: var(--fg); font: 600 13px var(--font); cursor: pointer; }
+.rm-talk .opts button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.rm-talk .x { position: absolute; top: 6px; right: 8px; width: 28px; height: 28px; border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+.rm-cap { margin: 8px 2px 0; font-size: 13px; color: var(--muted); }
+.rm-send, .rm-hint { display: none; }
+.inroom .rm-send { display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px; margin-top: 6px; }
+.inroom .rm-hint { display: block; margin: 4px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
+.inroom .comp .send { display: none; }
+.rmb { height: 44px; border-radius: 22px; font: 600 14.5px var(--font); display: inline-flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; }
+.rmb:disabled { opacity: .4; cursor: default; }
+.rmb svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rmb.rec { border: 0; background: var(--sig); color: var(--on-sig); }
+.rmb.say { border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.inroom .pad { height: 250px; }
+.tk-card { text-align: center; }
+.tk-card h2 { margin: 0 0 4px; font-size: 18px; }
+.tk-img { display: block; width: min(100%, 290px); height: auto; margin: 10px auto 14px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0, 0, 0, .2); }
+.tk-card .row { justify-content: center; }
+.adm-sec { margin: 14px 0 4px; font-size: 14px; font-weight: 700; }
+.adm-nt { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.adm-nt textarea { width: 100%; min-height: 64px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--fg); padding: 10px 12px; font: 400 14px/1.5 var(--font); }
+.adm-nt .nrow { border-top: 1px solid var(--line); padding: 10px 0 2px; font-size: 14px; }
+.adm-nt .nrow .nb { white-space: pre-line; overflow-wrap: anywhere; }
+.adm-nt .nrow.off .nb { color: var(--muted); }
+.adm-nt .nrow .nbtn { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.adm-nt .nrow .nbtn button { min-height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--soft); color: var(--fg); font: 600 12.5px var(--font); cursor: pointer; }
+
 .comp { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--bg); border-top: 1px solid var(--line);
   padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
 .comp .in { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 4px; }
@@ -303,6 +357,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   var sb = null;                          /* Supabase 클라이언트 */
   var LIVE_MIN = 1, live = { open: 0, playing: 0, users: 0 }, liveCh = null, liveReady = false, liveSent = "", liveUser = "", liveUid = "", rankCache = {}, rankWalked = false, wmDrawn = false;   /* 지금 접속·재생 수·순위 캐시(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
   var me = null;                          /* 로그인한 사람: {id, nick, host} */
+  var wantRoom = "";                      /* 프로그램 페이지의 '공개방송 입장'을 눌렀을 때: 최신화 화면이 열리면 바로 무대로 들어간다 */
   var srvPos = {};   /* 서버에 저장된 이어듣기 위치 {에피소드키: {sec, ms}} */
   var OTHER_APP = false; /* '다른 앱에서 듣기' 전환. 2026-11-16 사용자가 헷갈린다며 뺌. true로 바꾸면 되살아난다 */
   var NEAR = 30;    /* 방금 지난 댓글 강조 범위(초) · 서버에서 미리 받아 두는 폭 */
@@ -411,6 +466,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     clearInterval(sess.timer); clearInterval(sess.pollTimer); clearTimeout(sess.lt);
     if (sess.unsub) { try { sess.unsub(); } catch (e) {} }
     if (sess.rt) { try { sb.removeChannel(sess.rt); } catch (e) {} }
+    if (sess.room) roomTeardown(sess);
+    closeTicket();
     if (sess.audio) {
       savePos(sess, true);
       try { sess.audio.pause(); sess.audio.removeAttribute("src"); sess.audio.load(); } catch (e) {}
@@ -581,7 +638,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         el("div", { class: "chhead" }, cover(c, true),
           el("div", { class: "chm" }, el("h1", { text: c.name }), el("div", { class: "chs", text: c.tagline }))),
         platMenu(c),
-        el("div", { class: "sec" }, el("div", { class: "lb", text: "에피소드 " + c.episodes.length + "개" }))),
+        el("div", { class: "sec" + (SB && ROOM[c.id] ? " erow" : "") }, el("div", { class: "lb", text: "에피소드 " + c.episodes.length + "개" }), roomChannelBtn(c))),
       SB ? el("section", { class: "rank", id: "rank-box" }) : null,
       c.episodes.map(function (e) {
         return el("a", { class: "er", href: "#e-" + c.id + "-" + e.n, "data-ch": c.id, "data-n": e.n },
@@ -708,9 +765,14 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       var has = r.msg.value.trim().length > 0;
       if (has && S.stamp == null && isSynced()) S.stamp = pos();
       if (!has) S.stamp = null;
-      updateStampLabel();
+      updateStampLabel(); updateSay();
     });
-    r.comp = el("div", { class: "comp" }, el("div", { class: "in" }, r.rep, el("div", { class: "meta" }, r.nick, r.stamp), r.form, r.err));
+    r.stage = el("div", { class: "rm-stage" });   /* 공개방송 무대(입장했을 때만 채워진다) */
+    r.rec = el("button", { class: "rmb rec", type: "button", onclick: function () { send(); } }, svgIcon(["M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0", "M12 7v5l3 2"]), "방송 댓글로 남기기");
+    r.say = el("button", { class: "rmb say", type: "button", onclick: function () { roomSay(); } }, svgIcon(["M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"]), "말하기");
+    r.rbtns = el("div", { class: "rm-send" }, r.rec, r.say);
+    r.rhint = el("p", { class: "rm-hint", text: "댓글은 방송에 저장돼요 · 말하기는 잠깐 떴다 사라져요" });
+    r.comp = el("div", { class: "comp" }, el("div", { class: "in" }, r.rep, el("div", { class: "meta" }, r.nick, r.stamp), r.form, r.rbtns, r.rhint, r.err));
 
     r.stick = el("div", { class: "stick" },
       el("h1", { class: "eptitle", text: ep.title }),
@@ -719,10 +781,11 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       r.sync, r.fh);
     r.msg.addEventListener("focus", function () { r.stick.classList.add("compact"); });   /* 글 쓸 때는 키보드가 화면을 차지하므로 고정 영역을 줄인다 */
     r.msg.addEventListener("blur", function () { r.stick.classList.remove("compact"); });
-    put(app, topbar({ href: "#c-" + ch.id, label: ch.name }), r.mode, r.stick, r.plat, r.feed, el("div", { class: "pad" }), r.comp);
+    put(app, topbar({ href: "#c-" + ch.id, label: ch.name }), r.mode, r.stage, r.stick, r.plat, r.feed, el("div", { class: "pad" }), r.comp);
     renderMode(); renderSync(); renderPlat(); renderNick(); updateComposer(); renderMarks(); renderFeed(true);
     S.timer = setInterval(tick, 500);
     tick();
+    if (wantRoom === ch.id) { wantRoom = ""; if (roomAvail(S)) enterRoom(); } else wantRoom = "";
 
     S.lt = setTimeout(function () {
       if (sess === S && S.loadState === "loading") { S.loadState = "slow"; renderFeed(true); }
@@ -1025,7 +1088,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       el("div", { class: "seg", role: "group", "aria-label": "댓글 범위" },
         el("button", { type: "button", text: "함께 듣기", "aria-pressed": S.mode === "near" ? "true" : "false", onclick: function () { setFeedMode("near"); } }),
         el("button", { type: "button", text: "스포일러 보기", "aria-pressed": S.mode === "all" ? "true" : "false", onclick: function () { setFeedMode("all"); } })),
-      S.threadIds.length ? el("button", { class: "gt", type: "button", "aria-label": "답글 모두 펼치기·접기", title: "답글 모두 펼치기·접기", onclick: toggleAllThreads }, chev(allOpenNow)) : el("span")
+      S.threadIds.length ? el("button", { class: "gt", type: "button", "aria-label": "답글 모두 펼치기·접기", title: "답글 모두 펼치기·접기", onclick: toggleAllThreads }, chev(allOpenNow)) : el("span"),
+      roomJoinBtn(S)
     );
 
     var body;
@@ -1278,7 +1342,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     else if (caps.canWrite === false) why = "댓글은 초대된 분만 쓸 수 있어요";
     r.msg.disabled = !!why || S.sending; r.send.disabled = !!why || S.sending;
     r.msg.placeholder = why || (S.replyTo ? "답글 달기" : "함께 대화 나누기");
-    updateStampLabel();
+    r.rec.disabled = r.send.disabled;
+    updateStampLabel(); updateSay();
   }
   function updateStampLabel() {
     var S = sess; if (!S) return;
@@ -1310,6 +1375,445 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     } finally {
       if (sess === S) { S.sending = false; updateComposer(); }
     }
+  }
+
+
+  /* =====================================================================
+     공개방송: 거북목 라디오 '최신화'에서만 입장 버튼이 보인다.
+     · 입장하면 무대(진행자 3명·객석·스태프)가 열리고, 같은 방에 들어온 로그인한 사람이 닉네임과 함께 객석에 앉는다.
+       (Realtime 채널 'room:프로그램'. 입장해 있는 동안만 닉네임·접속 표시를 나누고, 나가면 지운다.)
+     · '말하기': 글자 40자 이내, 내 머리 위에 3초 떴다 사라진다. 서버에 저장하지 않는다. 같은 사람이 다시 말하면 이전 풍선은 바로 사라진다.
+     · '방송 댓글로 남기기': 기존 댓글 보내기(send)와 같다. 듣는 시각 그대로 댓글 줄에 저장된다.
+     · 스태프(민턴)는 사람이 아니라 안내 캐릭터라 접속 인원에 세지 않는다. 공지는 관리자가 관리 화면에서 올린다.
+     ===================================================================== */
+  var ROOM = { geobuk: { staff: "민턴", hosts: [["강원", "gangwon"], ["희북", "huibuk"], ["주환", "juhwan"]] } };
+  var SAY_MAX = 40, SAY_MS = 3000, SAY_GAP = 1500;
+  var SEATS = [[128, 252], [186, 252], [244, 252], [302, 252], [356, 252], [100, 322], [160, 322], [220, 322], [280, 322], [340, 322]];
+  var SVGNS = "http://www.w3.org/2000/svg", rmkRoot = null;
+  function rmk(tag, attrs, parent) {
+    var n = document.createElementNS(SVGNS, tag);
+    Object.keys(attrs).forEach(function (k) { var v = attrs[k]; if (typeof v === "string" && v.indexOf("var(") === 0) n.style.setProperty(k, v); else n.setAttribute(k, v); });
+    (parent || rmkRoot).appendChild(n); return n;
+  }
+  function roomAvail(S) { return !!(SB && S && ROOM[S.ch.id] && S.ch.episodes[0] && S.ch.episodes[0].n === S.ep.n); }
+  function roomChannelBtn(c) {
+    if (!SB || !ROOM[c.id] || !c.episodes[0]) return null;
+    return el("button", { class: "join", type: "button", "aria-label": "공개방송 입장", onclick: function () { wantRoom = c.id; location.hash = "#e-" + c.id + "-" + c.episodes[0].n; } }, el("i", { class: "lamp" }), "공개방송 입장");
+  }
+  function roomJoinBtn(S) {
+    if (S.room || !roomAvail(S)) return null;
+    return el("button", { class: "join", type: "button", "aria-label": "공개방송 입장", onclick: enterRoom }, el("i", { class: "lamp" }), "공개방송 입장");
+  }
+
+  /* ---- 그림: 사람·가슴 로고·진행자 모습·말풍선 ---- */
+  var INK = "#3a3a3a", RIB = "#4b4b54", BODY = "#2b2b30";
+  function rPerson(g, x, y, o) {
+    var s = o.s || 1, hr = 11 * s, cy = y - 28 * s, skin = o.skin || "#F2C9A0";
+    rmk("ellipse", { cx: x, cy: y - 9 * s, rx: 15 * s, ry: 12 * s, fill: o.body }, g);
+    if (o.neck === "turtle") {
+      rmk("rect", { x: x - 7.5 * s, y: y - 24 * s, width: 15 * s, height: 13 * s, rx: 4 * s, fill: "#3a3a41" }, g);
+      [-14.2, -11.6].forEach(function (d) { rmk("path", { d: "M" + (x - 6.5 * s) + " " + (y + d * s) + "h" + 13 * s, stroke: RIB, "stroke-width": .8, fill: "none" }, g); });
+    } else if (o.neck === "crew") {
+      rmk("path", { d: "M" + (x - 6.5 * s) + " " + (y - 19 * s) + "Q" + x + " " + (y - 9.5 * s) + " " + (x + 6.5 * s) + " " + (y - 19 * s) + "Z", fill: skin, stroke: RIB, "stroke-width": 1.2 }, g);
+    }
+    rmk("circle", { cx: x, cy: cy, r: hr, fill: skin }, g);
+    if (o.front) {
+      rmk("circle", { cx: x - 4 * s, cy: cy + 1 * s, r: 1.3 * s, fill: INK }, g); rmk("circle", { cx: x + 4 * s, cy: cy + 1 * s, r: 1.3 * s, fill: INK }, g);
+      rmk("path", { d: "M" + (x - 3 * s) + " " + (cy + 6 * s) + "q" + 3 * s + " " + 2.6 * s + " " + 6 * s + " 0", fill: "none", stroke: INK, "stroke-width": 1.3 * s, "stroke-linecap": "round" }, g);
+      if (!o.nocups) { rmk("circle", { cx: x - hr, cy: cy, r: 3 * s, fill: INK }, g); rmk("circle", { cx: x + hr, cy: cy, r: 3 * s, fill: INK }, g); }
+    } else {
+      rmk("path", { d: "M" + (x - hr) + " " + (cy - 2 * s) + "a" + hr + " " + hr + " 0 0 1 " + 2 * hr + " 0v" + 3 * s + "a" + hr + " " + (hr * .9) + " 0 0 1 -" + 2 * hr + " 0z", fill: o.hair || "#4a3b32" }, g);
+    }
+  }
+  function rChestLogo(g, x, y, s) {   /* 거북목 라디오 표지의 거북이 얼굴(머리 윤곽 + 눈 두 점) */
+    var W = "#FFFFFF", c = y - 8.5 * s, k = 0.8 * s;
+    rmk("path", { d: "M" + (x - 3.4 * k) + " " + (c + 3.4 * k) + "C" + (x - 4.8 * k) + " " + (c - 1 * k) + " " + (x - 3.4 * k) + " " + (c - 5.2 * k) + " " + x + " " + (c - 5.2 * k) + "C" + (x + 3.6 * k) + " " + (c - 5.2 * k) + " " + (x + 5 * k) + " " + (c - 1.6 * k) + " " + (x + 4 * k) + " " + (c + 2 * k), fill: "none", stroke: W, "stroke-width": .9, "stroke-linecap": "round" }, g);
+    rmk("path", { d: "M" + (x - 3.4 * k) + " " + (c + 3.4 * k) + "q" + 1.4 * k + " " + 2 * k + " " + 3.2 * k + " " + .3 * k, fill: "none", stroke: W, "stroke-width": .9, "stroke-linecap": "round" }, g);
+    rmk("circle", { cx: x + 0.6 * k, cy: c - 1.4 * k, r: .6, fill: W }, g); rmk("circle", { cx: x + 2.8 * k, cy: c - 1.4 * k, r: .6, fill: W }, g);
+  }
+  function rGlasses(g, x, cy, s) {
+    [-4, 4].forEach(function (d) { rmk("circle", { cx: x + d * s, cy: cy + 1 * s, r: 3.7 * s, fill: "none", stroke: INK, "stroke-width": 1.1 }, g); });
+    rmk("path", { d: "M" + (x - .4 * s) + " " + (cy + 1 * s) + "h" + .8 * s, stroke: INK, "stroke-width": 1, fill: "none" }, g);
+  }
+  function rHostLook(g, x, y, s, look) {
+    var hr = 11 * s, cy = y - 28 * s;
+    if (look === "huibuk") {   /* 짧은 머리·옆으로 넘긴 앞머리·작은 귀걸이·흰 줄 이어폰 */
+      rmk("path", { d: "M" + (x - hr - 1) + " " + (cy - 1) + "A" + (hr + 1) + " " + (hr + 1) + " 0 0 1 " + (x + hr + 1) + " " + (cy - 1) + "L" + (x + hr + 1) + " " + (cy + 2) + "Q" + (x + 2) + " " + (cy - hr * 0.1) + " " + (x - hr - 1) + " " + (cy - 5) + "Z", fill: "#1f1b1a" }, g);
+      rmk("circle", { cx: x + hr, cy: cy + 7, r: 1.5, fill: "#D9B84A" }, g);
+      [-1, 1].forEach(function (d) {
+        rmk("circle", { cx: x + d * hr, cy: cy + 3, r: 2.2 * s, fill: "#FFFFFF", stroke: INK, "stroke-width": .7 }, g);
+        rmk("path", { d: "M" + (x + d * hr) + " " + (cy + 5 * s) + "C" + (x + d * (hr + 3)) + " " + (cy + 14 * s) + " " + (x + d * 9 * s) + " " + (y - 14 * s) + " " + (x + d * 5 * s) + " " + (y - 3 * s), fill: "none", stroke: "#FFFFFF", "stroke-width": 1.3, "stroke-linecap": "round" }, g);
+      });
+    } else if (look === "juhwan") {   /* 삭발·동그란 안경·수염 */
+      rGlasses(g, x, cy, s);
+      rmk("path", { d: "M" + (x - 4.5 * s) + " " + (cy + 7.2 * s) + "q" + 4.5 * s + " " + 6.2 * s + " " + 9 * s + " 0q-" + 4.5 * s + " " + 1.2 * s + " -" + 9 * s + " 0z", fill: "#4a3b32", opacity: .85 }, g);
+    } else {   /* gangwon: 조금 긴 부스스한 머리·옅은 수염 */
+      rmk("path", { d: "M" + (x - hr - 2) + " " + (cy + 7) + "L" + (x - hr - 2) + " " + (cy - 2) + "A" + (hr + 2) + " " + (hr + 2) + " 0 0 1 " + (x + hr + 2) + " " + (cy - 2) + "L" + (x + hr + 2) + " " + (cy + 7) + "L" + (x + hr - 1) + " " + (cy + 1) + "L" + (x + hr - 3) + " " + (cy - 4) + "L" + (x + 3) + " " + (cy - 2) + "L" + (x - 2) + " " + (cy - 5) + "L" + (x - hr + 3) + " " + (cy - 2) + "L" + (x - hr + 1) + " " + (cy + 1) + "Z", fill: "#1f1b1a" }, g);
+      rmk("path", { d: "M" + (x - 5 * s) + " " + (cy + 6.8 * s) + "q" + 5 * s + " " + 4.5 * s + " " + 10 * s + " 0q-" + 5 * s + " " + 5.5 * s + " -" + 10 * s + " 0z", fill: "#4a3b32", opacity: .45 }, g);
+    }
+    rChestLogo(g, x, y, s);
+  }
+  function rPill(g, x, y, text, o) {
+    o = o || {}; var w = Math.max(34, text.length * 11.2 + 18);
+    rmk("rect", { x: x - w / 2, y: y - 11, width: w, height: 20, rx: 10, fill: o.fill || "var(--surface)", stroke: o.stroke || "var(--line)", "stroke-dasharray": o.dash || "" }, g);
+    rmk("text", { x: x, y: y + 3.4, "text-anchor": "middle", "font-size": 11, "font-weight": o.me ? 700 : 600, fill: "var(--fg)" }, g).textContent = text;
+  }
+  /* 말풍선: 14자씩 줄바꿈(최대 3줄), 화면 밖으로 나가지 않게 가운데를 옮기고 꼬리는 말하는 사람 쪽 */
+  function rBubble(parent, x, y, text, cls) {
+    var lines = [], i; for (i = 0; i < text.length && lines.length < 3; i += 14) lines.push(text.slice(i, i + 14));
+    var mx = 0; lines.forEach(function (l) { mx = Math.max(mx, l.length); });
+    var w = Math.max(44, mx * 11.8 + 20), h = lines.length * 15 + 10;
+    var bx = Math.max(4, Math.min(386 - w, x - w / 2)), by = y - h - 7, tx = Math.max(bx + 14, Math.min(bx + w - 14, x));
+    var g = rmk("g", { "class": cls || "bb" }, parent);
+    rmk("rect", { x: bx, y: by, width: w, height: h, rx: 10, fill: "var(--surface)", stroke: "var(--fg)", "stroke-width": 1.1 }, g);
+    rmk("path", { d: "M" + (tx - 5) + " " + (by + h - 0.5) + "L" + tx + " " + (by + h + 7) + "L" + (tx + 5) + " " + (by + h - 0.5), fill: "var(--surface)", stroke: "var(--fg)", "stroke-width": 1.1, "stroke-linejoin": "round" }, g);
+    rmk("rect", { x: tx - 4, y: by + h - 2, width: 8, height: 3, fill: "var(--surface)" }, g);
+    lines.forEach(function (l, k) { rmk("text", { x: bx + w / 2, y: by + 14 + k * 15, "text-anchor": "middle", "font-size": 11.5, "font-weight": 600, fill: "var(--fg)" }, g).textContent = l; });
+    return g;
+  }
+
+  /* ---- 입장·나가기 ---- */
+  function enterRoom() {
+    var S = sess; if (!S || S.room || !roomAvail(S) || !sb) return;
+    var R = S.room = { t: Date.now(), ch: null, ready: false, sig: "", lastSay: 0, bubbles: {}, seatPos: {}, notices: [], talkKey: "", greet: 0 };
+    app.classList.add("inroom");
+    roomDraw(S);
+    roomJoinChannel(S);
+    roomLoadNotices(S);
+    R.timer = setInterval(function () { roomTrack(S); }, 3000);
+    S.sig = ""; renderFeed(true); updateComposer();
+    scrollToTop(); requestAnimationFrame(scrollToTop);
+  }
+  function roomTeardown(S) {
+    var R = S.room; if (!R) return;
+    clearInterval(R.timer); clearInterval(R.greetTimer);
+    Object.keys(R.bubbles).forEach(function (u) { clearTimeout(R.bubbles[u].tm); });
+    if (R.ch) { try { R.ch.untrack(); } catch (e) {} try { sb.removeChannel(R.ch); } catch (e) {} }
+    S.room = null;
+    app.classList.remove("inroom");
+  }
+  function leaveRoom() {
+    var S = sess; if (!S || !S.room) return;
+    roomTeardown(S);
+    put(S.r.stage);
+    S.sig = ""; renderFeed(true); updateComposer();
+  }
+  function roomJoinChannel(S) {
+    var R = S.room, chId = S.ch.id;
+    try {
+      var key = "r" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      R.ch = sb.channel("room:" + chId, { config: { presence: { key: key, enabled: true }, broadcast: { self: true } } });
+      R.ch.on("presence", { event: "sync" }, function () { if (sess === S && S.room === R) roomAudience(S); })
+        .on("broadcast", { event: "say" }, function (m) {
+          var p = (m && m.payload) || {};
+          if (sess !== S || S.room !== R || typeof p.u !== "string" || typeof p.t !== "string") return;
+          roomBubble(S, p.u, p.t.slice(0, SAY_MAX));
+        })
+        .subscribe(function (st) {
+          if (sess !== S || S.room !== R) return;
+          if (st === "SUBSCRIBED") { R.ready = true; R.sig = ""; roomTrack(S); updateSay(); }
+          else if (st === "CLOSED" || st === "CHANNEL_ERROR" || st === "TIMED_OUT") { R.ready = false; updateSay(); }
+        });
+    } catch (e) { R.ch = null; }
+  }
+  /* 로그인한 사람만 객석에 앉는다(닉네임·섞은 계정값·입장 시각만 올림). 로그아웃하면 자리를 비운다 */
+  function roomTrack(S) {
+    var R = S.room; if (!R || !R.ch || !R.ready) return;
+    var on = !!(me && me.nick && liveUser), sig = on ? (liveUser + "|" + me.nick) : "off";
+    if (sig === R.sig) return;
+    R.sig = sig;
+    if (on && !R.checkin && (R.ckTry || 0) < 3) {   /* 공개방송 출석: 이 회차에 처음 들어온 시각만 서버에 남긴다(이미 있으면 첫 기록 그대로) */
+      R.ckTry = (R.ckTry || 0) + 1;
+      R.checkin = Promise.resolve(sb.rpc("room_checkin", { p_episode_key: S.key })).then(function (r) { if (r && !r.error && r.data) { R.firstAt = r.data; return R.firstAt; } R.checkin = null; return null; }, function () { R.checkin = null; return null; });
+    }
+    try {
+      if (on) R.ch.track({ u: liveUser, n: me.nick, t: R.t }).catch(function () { R.sig = ""; });
+      else R.ch.untrack().catch(function () { R.sig = ""; });
+    } catch (e) { R.sig = ""; }
+  }
+  function updateSay() {
+    var S = sess; if (!S || !S.r.say) return;
+    var R = S.room, t = S.r.msg.value.trim(), tooLong = t.length > SAY_MAX;
+    S.r.say.disabled = !(R && R.ready && me && me.nick && liveUser) || !t || tooLong || S.r.msg.disabled;
+    S.r.rhint.textContent = tooLong ? "말하기는 " + SAY_MAX + "자까지예요" : "댓글은 방송에 저장돼요 · 말하기는 잠깐 떴다 사라져요";
+  }
+  function roomSay() {
+    var S = sess, R = S && S.room; if (!R || !R.ch || !R.ready || !me || !me.nick || !liveUser) return;
+    var t = S.r.msg.value.trim(); if (!t || t.length > SAY_MAX) return;
+    var now = Date.now(); if (now - R.lastSay < SAY_GAP) return;   /* 연속 전송 막기 */
+    R.lastSay = now;
+    try { R.ch.send({ type: "broadcast", event: "say", payload: { u: liveUser, t: t } }); } catch (e) { return; }
+    S.r.msg.value = ""; S.stamp = null; updateStampLabel(); updateSay();
+  }
+  /* 말풍선: 같은 사람이 다시 말하면 이전 풍선은 바로 사라지고, 새 풍선이 맨 위에 그려진다. 3초 뒤 사라진다 */
+  function roomBubble(S, u, text) {
+    var R = S.room; if (!R || !R.gBub) return;
+    var pos = R.seatPos[u]; if (!pos) return;
+    var old = R.bubbles[u]; if (old) { clearTimeout(old.tm); old.g.remove(); }
+    var g = rBubble(R.gBub, pos[0], pos[1], text, "mine");
+    var tm = setTimeout(function () { g.remove(); if (R.bubbles[u] && R.bubbles[u].g === g) delete R.bubbles[u]; }, SAY_MS);
+    R.bubbles[u] = { g: g, tm: tm };
+  }
+
+  /* ---- 무대 그리기 ---- */
+  function roomDraw(S) {
+    var R = S.room, cfg = ROOM[S.ch.id];
+    var svg = document.createElementNS(SVGNS, "svg");
+    svg.setAttribute("viewBox", "0 0 390 350"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", S.ch.name + " 공개방송 무대: 진행자와 객석");
+    rmkRoot = svg;
+    rmk("rect", { x: 0, y: 0, width: 390, height: 350, fill: "var(--wall)" });
+    rmk("rect", { x: 0, y: 176, width: 390, height: 174, fill: "var(--floor)" });
+    rmk("rect", { x: 26, y: 70, width: 338, height: 98, rx: 10, fill: "var(--stage)" });
+    rmk("rect", { x: 26, y: 156, width: 338, height: 14, rx: 4, fill: "var(--seat)" });
+    var sign = rmk("g", {});
+    rmk("rect", { x: 135, y: 18, width: 120, height: 24, rx: 12, fill: "var(--surface)", stroke: "var(--line)" }, sign);
+    rmk("circle", { cx: 153, cy: 30, r: 4, fill: "var(--sig)" }, sign);
+    rmk("text", { x: 162, y: 34.5, "font-size": 11.5, "font-weight": 700, fill: "var(--fg)" }, sign).textContent = "ON AIR · " + S.ep.n + "화";
+    var xs = [96, 195, 294];
+    cfg.hosts.forEach(function (h, i) {
+      var g = rmk("g", {}), look = h[1], x = xs[i];
+      rPerson(g, x, 140, { body: BODY, neck: look === "huibuk" ? "turtle" : "crew", front: true, s: 1.12, nocups: look === "huibuk" });
+      rHostLook(g, x, 140, 1.12, look);
+      if (look !== "huibuk") rmk("path", { d: "M" + (x - 11) + " 108a11 11 0 0 1 22 0", fill: "none", stroke: INK, "stroke-width": 2.2, "stroke-linecap": "round" }, g);
+      rPill(svg, x, 74, h[0], { fill: "var(--sig)", stroke: "#E6B800" });
+    });
+    rmk("rect", { x: 46, y: 140, width: 298, height: 16, rx: 6, fill: "var(--seat)" });
+    xs.forEach(function (x) { rmk("rect", { x: x + 22.5, y: 128, width: 3, height: 12, fill: INK }); rmk("circle", { cx: x + 24, cy: 126, r: 4, fill: INK }); });
+    R.gAud = rmk("g", {});
+    /* 스태프: 모자·동그란 안경·같은 유니폼. 누르면 말을 건다 */
+    var st = R.staffG = rmk("g", { "class": "staff" });
+    var sx = 44, sy = 262, ss = 1.05, shr = 11 * ss, scy = sy - 28 * ss;
+    rPerson(st, sx, sy, { body: BODY, neck: "crew", front: true, s: ss, nocups: true });
+    rmk("path", { d: "M" + (sx - shr - 0.5) + " " + (scy - 2) + "C" + (sx - shr - 0.5) + " " + (scy - shr * 1.35) + " " + (sx + shr + 0.5) + " " + (scy - shr * 1.35) + " " + (sx + shr + 0.5) + " " + (scy - 2) + "Z", fill: "#39424F" }, st);
+    rmk("circle", { cx: sx, cy: scy - shr * 1.02, r: 1.5, fill: "#2c3440" }, st);
+    rmk("path", { d: "M" + (sx - shr - 2.5) + " " + (scy - 1.5) + "Q" + sx + " " + (scy - 6.5) + " " + (sx + shr + 2.5) + " " + (scy - 1.5) + "Q" + sx + " " + (scy + 3.8) + " " + (sx - shr - 2.5) + " " + (scy - 1.5) + "Z", fill: "#2c3440" }, st);
+    rGlasses(st, sx, scy + 1.5, ss);
+    rChestLogo(st, sx, sy, ss);
+    var nm = "스태프 " + cfg.staff, pw = nm.length * 11.2 + 18 + 14, px = sx + 6;   /* 이름표 안 맨 앞에 새 소식 점 자리(점이 없어도 자리는 둔다) */
+    rmk("rect", { x: px - pw / 2, y: 203, width: pw, height: 20, rx: 10, fill: "var(--surface)", stroke: "var(--fg)", "stroke-dasharray": "3 2" }, st);
+    R.dot = rmk("circle", { cx: px - pw / 2 + 13, cy: 213, r: 4, fill: "var(--sig)", stroke: "var(--fg)", "stroke-width": .8, "class": "ndot" }, st);
+    R.dot.style.display = "none";
+    rmk("text", { x: px + 7, y: 216.4, "text-anchor": "middle", "font-size": 11, "font-weight": 600, fill: "var(--fg)" }, st).textContent = nm;
+    R.greetG = rmk("g", {}, st);
+    st.style.cursor = "pointer"; st.setAttribute("role", "button"); st.setAttribute("tabindex", "0"); st.setAttribute("aria-label", "스태프 " + cfg.staff + "에게 말 걸기");
+    st.addEventListener("click", function () { roomTalk(S, "새 소식"); });
+    st.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); roomTalk(S, "새 소식"); } });
+    R.gBub = rmk("g", {});   /* 말풍선 층: 항상 맨 위 */
+    var lines = ["어서 오세요 :)", "오늘은 " + S.ep.n + "화예요", "궁금하면 눌러 주세요"];
+    function greet() { R.greetG.replaceChildren(); rBubble(R.greetG, 78, 196, lines[R.greet % lines.length], "greet"); R.greet++; }
+    greet(); R.greetTimer = setInterval(greet, 4200);
+    rmkRoot = null;
+    R.svg = svg;
+    var cam = el("button", { class: "rm-ib l", type: "button", "aria-label": "스튜디오 장면 사진으로 저장", title: "사진으로 저장", onclick: function () { roomSnap(S); } },
+      svgIcon(["M4 8a2 2 0 0 1 2-2h2l1.2-2h5.6L16 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z", "M8.5 12.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0"]));
+    var tix = el("button", { class: "rm-ib l2", type: "button", "aria-label": "공개방송 입장권 보기", title: "입장권", onclick: function () { roomTicket(S); } },
+      svgIcon(["M3 9a2 2 0 0 0 0 6v2a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-2a2 2 0 0 1 0-6V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z", "M14 8v1.5M14 11.3v1.4M14 14.5V16"]));
+    var out = el("button", { class: "rm-ib r", type: "button", "aria-label": "나가기", title: "나가기", onclick: leaveRoom },
+      svgIcon(["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "M16 17l5-5-5-5", "M21 12H9"]));
+    R.talk = el("div", { class: "rm-talk", hidden: true });
+    put(S.r.stage, el("div", { class: "rm-wrap" }, el("div", { class: "rm-room" }, svg), cam, tix, out), R.talk,
+      el("p", { class: "rm-cap", text: "공개방송에서는 최신화만 들으실 수 있어요." }));
+    roomAudience(S);
+  }
+  function hash6(u) { var n = parseInt(String(u).slice(0, 6), 16); return isNaN(n) ? 0 : n; }
+  function roomMembers(S) {
+    var R = S.room, st = {}; try { st = R.ch.presenceState() || {}; } catch (e) {}
+    var seen = {}, out = [];
+    Object.keys(st).forEach(function (k) {
+      (st[k] || []).forEach(function (m) {
+        if (m && typeof m.u === "string" && m.u && typeof m.n === "string" && m.n && !seen[m.u]) { seen[m.u] = 1; out.push({ u: m.u, n: m.n.slice(0, 12), t: +m.t || 0 }); }
+      });
+    });
+    out.sort(function (a, b) { return a.t - b.t || (a.u < b.u ? -1 : 1); });
+    return out;
+  }
+  function roomAudience(S) {
+    var R = S.room; if (!R || !R.gAud || !R.ch) return;
+    R.gAud.replaceChildren(); R.seatPos = {};
+    var used = {}, placed = [], list = roomMembers(S);
+    list.forEach(function (m) {
+      var idx = hash6(m.u) % SEATS.length;
+      for (var k = 0; k < SEATS.length && used[idx]; k++) idx = (idx + 1) % SEATS.length;
+      if (used[idx]) return;
+      used[idx] = 1; placed.push([m, idx]);
+    });
+    placed.sort(function (a, b) { return SEATS[a[1]][1] - SEATS[b[1]][1]; });
+    var cols = ["#C9D8E6", "#D9CBE3", "#CFE3CF", "#E6D3C9", "#E3DFC4", "#D0DAD9"], hairs = ["#3a2e2a", "#222222", "#6b4a35", "#8a6a4a"];
+    rmkRoot = R.svg;
+    placed.forEach(function (pi) {
+      var m = pi[0], s = SEATS[pi[1]], sc = s[1] > 300 ? 1.12 : 1, mine = m.u === liveUser, h = hash6(m.u), g = rmk("g", {}, R.gAud);
+      rPerson(g, s[0], s[1], { body: cols[h % cols.length], s: sc, hair: hairs[(h >> 3) % 4] });
+      rPill(g, s[0], s[1] - 52 * sc, m.n.length > 6 ? m.n.slice(0, 6) + "…" : m.n, { me: mine, fill: mine ? "var(--sig)" : "var(--surface)", stroke: mine ? "#E6B800" : "var(--line)" });
+      R.seatPos[m.u] = [s[0], s[1] - 52 * sc - 13];
+    });
+    if (list.length > placed.length) rmk("text", { x: 382, y: 16, "text-anchor": "end", "font-size": 11, "font-weight": 600, fill: "var(--muted)" }, R.gAud).textContent = "+" + (list.length - placed.length) + "명";
+    rmkRoot = null;
+  }
+
+  /* ---- 스태프 공지·안내 ---- */
+  function noticeSeenKey(S) { return "ds_notice_seen_" + S.ch.id; }
+  function roomLoadNotices(S) {
+    var R = S.room;
+    sb.rpc("room_notices", { p_channel: S.ch.id }).then(function (r) {
+      if (sess !== S || S.room !== R || r.error || !Array.isArray(r.data)) return;
+      R.notices = r.data;
+      var seen = +(store.get(noticeSeenKey(S)) || 0), top = 0;
+      R.notices.forEach(function (n) { top = Math.max(top, Date.parse(n.updated_at) || 0); });
+      R.top = top;
+      R.dot.style.display = (top > seen) ? "" : "none";
+    }, function () {});
+  }
+  function roomTalk(S, key) {
+    var R = S.room; if (!R) return;
+    var staff = ROOM[S.ch.id].staff;
+    var body = [];
+    if (key === "새 소식") {
+      if (R.top) store.set(noticeSeenKey(S), String(R.top));
+      R.dot.style.display = "none";
+      body = R.notices.length ? R.notices.slice(0, 3).map(function (n) { return n.body; }) : ["아직 새 소식이 없어요."];
+    } else if (key === "이용 방법") {
+      body = ["댓글은 방송에 저장돼요 · 말하기는 잠깐 떴다 사라져요"];
+    } else {
+      body = ["[" + S.ep.n + "화] " + S.ep.title.replace(/^\s*\[[^\]]*\]\s*/, "")];
+    }
+    put(R.talk,
+      el("button", { class: "x", type: "button", "aria-label": "닫기", text: "×", onclick: function () { R.talk.hidden = true; } }),
+      el("div", { class: "who2", text: "스태프 " + staff }),
+      body.map(function (b) { return el("p", { class: "txt", text: b }); }),
+      el("div", { class: "opts" }, ["새 소식", "이용 방법", "이번 화 소개"].map(function (k) {
+        return el("button", { type: "button", text: k, "aria-pressed": k === key ? "true" : "false", onclick: function () { roomTalk(S, k); } });
+      })));
+    R.talk.hidden = false;
+  }
+
+  /* ---- 사진으로 저장(카메라): 말풍선까지 지금 장면 그대로 PNG로 ---- */
+  function roomSnap(S) {
+    var R = S.room; if (!R || !R.svg) return;
+    var src = R.svg, clone = src.cloneNode(true);
+    var a = src.querySelectorAll("*"), b = clone.querySelectorAll("*"), i, hide = [];
+    for (i = 0; i < a.length; i++) {
+      if (a[i].style && a[i].style.display === "none") hide.push(b[i]);   /* 숨겨 둔 것(새 소식 점 등)은 사진에도 넣지 않는다 */   /* 색 변수를 실제 색으로 풀어, 그림 파일 안에서도 같은 색이 나오게 한다 */
+      var cs = getComputedStyle(a[i]);
+      ["fill", "stroke"].forEach(function (k) { if (a[i].style && a[i].style.getPropertyValue(k)) b[i].setAttribute(k, cs.getPropertyValue(k)); });
+      if (b[i].tagName === "text") b[i].setAttribute("font-family", '"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif');
+      if (b[i].style) b[i].removeAttribute("style");
+    }
+    hide.forEach(function (n) { n.remove(); });
+    var mark = document.createElementNS(SVGNS, "text");
+    mark.setAttribute("x", "382"); mark.setAttribute("y", "343"); mark.setAttribute("text-anchor", "end"); mark.setAttribute("font-size", "9"); mark.setAttribute("font-weight", "600");
+    mark.setAttribute("fill", getComputedStyle(document.documentElement).getPropertyValue("--muted")); mark.setAttribute("font-family", '"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif');
+    mark.textContent = "듣는 사이 · " + S.ch.name; clone.appendChild(mark);
+    clone.setAttribute("xmlns", SVGNS); clone.setAttribute("width", "1170"); clone.setAttribute("height", "1050");
+    rasterize(clone, 1170, 1050, function (blob) {
+      if (!blob) { toast("사진을 만들지 못했어요. 다시 눌러 주세요."); return; }
+      var d = new Date();
+      savePng(blob, S.ch.name.replace(/\s/g, "") + "_공개방송_" + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "_" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + ".png");
+    });
+  }
+  /* SVG 그림을 PNG 파일(blob)로 만든다(그림 안의 이미지는 data: 주소여야 한다) */
+  function rasterize(svgEl, w, h, cb) {
+    svgEl.setAttribute("xmlns", SVGNS); svgEl.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink"); svgEl.setAttribute("width", String(w)); svgEl.setAttribute("height", String(h));
+    var url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(svgEl));
+    var img = new Image();
+    img.onload = function () {
+      var cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      try { cv.toBlob(function (blob) { cb(blob); }, "image/png"); } catch (e) { cb(null); }
+    };
+    img.onerror = function () { cb(null); };
+    img.src = url;
+  }
+  /* 폰에서는 공유 창(여기서 '이미지 저장' → 앨범), 그 밖에는 파일 내려받기 */
+  function savePng(blob, nm) {
+    var file = null; try { file = new File([blob], nm, { type: "image/png" }); } catch (e) {}
+    function download() {
+      var u = URL.createObjectURL(blob), l = document.createElement("a"); l.href = u; l.download = nm; document.body.append(l); l.click(); l.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 8000); toast("사진을 저장했어요");
+    }
+    if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+      navigator.share({ files: [file] }).catch(function (e) { if (!e || e.name !== "AbortError") download(); });
+    } else download();
+  }
+
+  /* ---- 입장권: 그 회차의 공개방송 입장권. 최신화에서만 받을 수 있다. 사진으로 저장 ---- */
+  var TK_FONT = '"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif';
+  function kstText(iso) {
+    var ms = Date.parse(iso); if (isNaN(ms)) return "";
+    var d = new Date(ms + 9 * 3600000);
+    return d.getUTCFullYear() + "." + pad(d.getUTCMonth() + 1) + "." + pad(d.getUTCDate()) + " " + pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes());
+  }
+  function ticketSvg(S, nick, firstAt) {
+    var svg = document.createElementNS(SVGNS, "svg"); svg.setAttribute("viewBox", "0 0 360 560");
+    rmkRoot = svg;
+    var INKC = "#14161B", MUT = "#6A6E78", PAPER = "#FFFDF5", YEL = "#FFD000", LN = "#E6E0CC";
+    function tx(x, y, size, weight, fill, s, extra) { var a = { x: x, y: y, "font-size": size, "font-weight": weight, fill: fill, "font-family": TK_FONT }; if (extra) Object.keys(extra).forEach(function (k) { a[k] = extra[k]; }); rmk("text", a, svg).textContent = s; }
+    var shape = "M20 0H340A20 20 0 0 1 360 20V406A14 14 0 0 0 360 434V540A20 20 0 0 1 340 560H20A20 20 0 0 1 0 540V434A14 14 0 0 0 0 406V20A20 20 0 0 1 20 0Z";
+    var defs = rmk("defs", {}, svg), cp = rmk("clipPath", { id: "tkc" }, defs); rmk("path", { d: shape }, cp);
+    rmk("path", { d: shape, fill: PAPER }, svg);
+    var g = rmk("g", { "clip-path": "url(#tkc)" }, svg);
+    rmk("rect", { x: 0, y: 0, width: 360, height: 112, fill: YEL }, g);
+    rmk("circle", { cx: 330, cy: -10, r: 70, fill: "#FFE04D" }, g); rmk("circle", { cx: 300, cy: 120, r: 46, fill: "#FFE04D", opacity: .7 }, g);
+    tx(24, 38, 12, 700, INKC, "공개방송 입장권", { "letter-spacing": 1.5 });
+    rmk("circle", { cx: 266, cy: 34, r: 4, fill: INKC }, g); tx(274, 38, 11, 800, INKC, "ON AIR", { "letter-spacing": 1 });
+    tx(24, 80, 25, 800, INKC, S.ch.name);
+    /* 방송 섬네일(둥근 모서리 + 흰 테두리) */
+    var thumb = S.ep.thumb || S.ch.cover, ok = typeof thumb === "string" && thumb.indexOf("data:") === 0;
+    rmk("rect", { x: 202, y: 88, width: 136, height: 136, rx: 20, fill: "#FFFFFF" }, svg);
+    if (ok) {
+      var cp2 = rmk("clipPath", { id: "tkt" }, defs); rmk("rect", { x: 207, y: 93, width: 126, height: 126, rx: 16 }, cp2);
+      var im = rmk("image", { x: 207, y: 93, width: 126, height: 126, preserveAspectRatio: "xMidYMid slice", "clip-path": "url(#tkt)" }, svg);
+      im.setAttribute("href", thumb); im.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", thumb);
+    } else rmk("rect", { x: 207, y: 93, width: 126, height: 126, rx: 16, fill: YEL }, svg);
+    /* 회차 */
+    var n = String(S.ep.n), big = n.length >= 3 ? 66 : 88;
+    tx(24, 152, 11, 700, MUT, "EPISODE", { "letter-spacing": 2 });
+    tx(22, 226, big, 800, INKC, n, { "letter-spacing": -3 });
+    tx(26 + n.length * (big * 0.56), 226, 30, 800, INKC, "화");
+    /* 제목(앞의 [N화] 는 덜어내고 최대 3줄) */
+    var title = String(S.ep.title).replace(/^\s*\[[^\]]*\]\s*/, ""), lines = [], i;
+    for (i = 0; i < title.length && lines.length < 3; i += 15) lines.push(title.slice(i, i + 15));
+    if (title.length > 45) lines[2] = lines[2].slice(0, 14) + "…";
+    lines.forEach(function (l, k) { tx(24, 270 + k * 27, 21, 700, INKC, l); });
+    tx(24, 372, 12.5, 500, MUT, "방송 " + dotDate(S.ep.date) + (S.ep.sec ? " · " + durText(S.ep.sec) : ""));
+    /* 절취선 */
+    rmk("path", { d: "M24 420H336", stroke: "#CFC8AE", "stroke-width": 1.5, "stroke-dasharray": "4 5", fill: "none" }, svg);
+    rmk("path", { d: shape, fill: "none", stroke: LN, "stroke-width": 1.5 }, svg);
+    /* 입장자·입장 시각 */
+    tx(24, 454, 11, 700, MUT, "입장자", { "letter-spacing": 1 });
+    tx(24, 484, 24, 800, INKC, nick.length > 8 ? nick.slice(0, 8) + "…" : nick);
+    if (firstAt) tx(24, 508, 12.5, 600, INKC, "입장 " + kstText(firstAt));
+    /* 장식 바코드(회차·닉네임으로 정해지는 모양) */
+    var seed = 7, str = S.key + "|" + nick, x = 214;
+    for (i = 0; i < str.length; i++) seed = (seed * 31 + str.charCodeAt(i)) >>> 0;
+    for (i = 0; i < 30 && x < 336; i++) { seed = (seed * 1103515245 + 12345) >>> 0; var w = 1 + (seed >> 16) % 4; rmk("rect", { x: x, y: 448, width: w, height: 50, fill: INKC }, svg); x += w + 1.5 + ((seed >> 8) % 2); }
+    tx(180, 540, 9.5, 500, MUT, "듣는 사이 · 공개방송은 최신화에서만 입장할 수 있어요", { "text-anchor": "middle" });
+    rmkRoot = null;
+    return svg;
+  }
+  function closeTicket() { var m = document.getElementById("ticket-modal"); if (m) { var u = m.getAttribute("data-url"); if (u) URL.revokeObjectURL(u); m.remove(); } }
+  function roomTicket(S) {
+    var R = S.room; if (!R) return;
+    if (!me || !me.nick) { toast("로그인하면 입장권을 받을 수 있어요"); return; }
+    var nick = me.nick, wait = Promise.race([R.checkin || Promise.resolve(null), new Promise(function (res) { setTimeout(function () { res(null); }, 2500); })]);
+    wait.then(function (first) {
+      if (sess !== S || S.room !== R) return;
+      var svg = ticketSvg(S, nick, first || R.firstAt || "");
+      rasterize(svg, 1080, 1680, function (blob) {
+        if (!blob) { toast("입장권을 만들지 못했어요. 다시 눌러 주세요."); return; }
+        closeTicket();
+        var u = URL.createObjectURL(blob);
+        var wrap = el("div", { class: "modal", id: "ticket-modal", role: "dialog", "aria-modal": "true", "aria-label": "공개방송 입장권", "data-url": u }),
+          card = el("div", { class: "card tk-card" },
+            el("button", { class: "xbtn", type: "button", "aria-label": "닫기", onclick: closeTicket }, xIcon()),
+            el("h2", { text: "공개방송 입장권" }),
+            el("img", { class: "tk-img", src: u, alt: S.ch.name + " " + S.ep.n + "화 공개방송 입장권" }),
+            el("div", { class: "row" }, el("button", { class: "btn pri", type: "button", text: "사진으로 저장", onclick: function () { savePng(blob, S.ch.name.replace(/\s/g, "") + "_" + S.ep.n + "화_입장권.png"); } })));
+        wrap.append(card);
+        wrap.addEventListener("click", function (e) { if (e.target === wrap) closeTicket(); });
+        wrap.addEventListener("keydown", function (e) { if (e.key === "Escape") closeTicket(); });
+        document.body.append(wrap);
+      });
+    });
   }
 
   /* ---- 서버 이어듣기 위치 ---- */
@@ -1517,10 +2021,47 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     function xBtn() { return el("button", { class: "xbtn", type: "button", "aria-label": "닫기", onclick: closeAuth }, xIcon()); }
     function drawAdmin() {
       var sum = el("div", { class: "adm-sum", text: "가입자" }), lv = el("div", { class: "adm-live", id: "adm-live" }), list = el("div", { class: "adm-list" });
-      put(card, xBtn(), el("h2", { text: "관리" }), sum, lv, list,
+      var nbox = el("div", { class: "adm-nt" });
+      put(card, xBtn(), el("h2", { text: "관리" }), sum, lv, el("div", { class: "adm-sec", text: "스태프 공지 · 거북목 라디오" }), nbox, list,
         el("div", { class: "row" },
           el("button", { class: "btn link", type: "button", text: "닉네임 변경", onclick: function () { draw("nick"); } })));
       paintLive();
+      function noticeErr(e) { return e && e.message && /not_allowed/.test(e.message) ? "권한이 없어요." : "저장하지 못했어요. 다시 눌러 주세요."; }
+      function drawNotices() {
+        sb.rpc("admin_notices", { p_channel: "geobuk" }).then(function (r) {
+          if (!document.getElementById("adm-live")) return;
+          if (r.error || !Array.isArray(r.data)) { put(nbox, el("div", { class: "err", text: "공지를 불러오지 못했어요." })); return; }
+          var msg = el("div", { class: "err", role: "alert" });
+          var ta = el("textarea", { id: "adm-nt-new", maxlength: "300", placeholder: "스태프 민턴이 전할 공지 (300자 이내)", "aria-label": "새 공지" });
+          var addBtn = el("button", { class: "btn pri", type: "button", text: "공지 추가", onclick: function () {
+            var v = ta.value.trim(); if (!v) return; addBtn.disabled = true;
+            sb.rpc("admin_save_notice", { p_id: null, p_channel: "geobuk", p_body: v, p_active: true }).then(function (x) { if (x.error) { msg.textContent = noticeErr(x.error); addBtn.disabled = false; } else drawNotices(); }, function () { msg.textContent = noticeErr(); addBtn.disabled = false; });
+          } });
+          function row(n) {
+            var body = el("div", { class: "nb", text: n.body }), box = el("div", { class: "nrow" + (n.active ? "" : " off") });
+            function save(active, text) {
+              sb.rpc("admin_save_notice", { p_id: n.id, p_channel: "geobuk", p_body: text, p_active: active }).then(function (x) { if (x.error) msg.textContent = noticeErr(x.error); else drawNotices(); }, function () { msg.textContent = noticeErr(); });
+            }
+            var delArm = false;
+            var btns = el("div", { class: "nbtn" },
+              el("button", { type: "button", "aria-pressed": n.active ? "true" : "false", text: n.active ? "보이는 중 · 숨기기" : "숨김 · 보이기", onclick: function () { save(!n.active, n.body); } }),
+              el("button", { type: "button", text: "수정", onclick: function () {
+                var e = el("textarea", { maxlength: "300", "aria-label": "공지 수정" }); e.value = n.body;
+                put(box, e, el("div", { class: "nbtn" },
+                  el("button", { type: "button", text: "저장", onclick: function () { var v = e.value.trim(); if (v) save(n.active, v); } }),
+                  el("button", { type: "button", text: "취소", onclick: function () { drawNotices(); } })));
+                e.focus();
+              } }),
+              el("button", { type: "button", text: "삭제", onclick: function (ev) {
+                if (!delArm) { delArm = true; ev.target.textContent = "정말 삭제"; setTimeout(function () { delArm = false; ev.target.textContent = "삭제"; }, 3000); return; }
+                sb.rpc("admin_delete_notice", { p_id: n.id }).then(function (x) { if (x.error) msg.textContent = noticeErr(x.error); else drawNotices(); }, function () { msg.textContent = noticeErr(); });
+              } }));
+            put(box, body, btns); return box;
+          }
+          put(nbox, ta, el("div", { class: "row" }, addBtn), msg, r.data.length ? r.data.map(row) : el("div", { class: "note", text: "올린 공지가 없어요." }));
+        }, function () { put(nbox, el("div", { class: "err", text: "공지를 불러오지 못했어요." })); });
+      }
+      drawNotices();
       function ymd(s) { var t = Date.parse(s); return isNaN(t) ? "" : new Date(t + 9 * 3600000).toISOString().slice(2, 10).replace(/-/g, "."); }
       function chName(id) { var c = CH.find(function (x) { return x.id === id; }); return c ? c.name : id; }
       sb.rpc("admin_overview").then(function (r) {
