@@ -1591,11 +1591,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     rmk("path", { d: "M" + (sx - shr - 2.5) + " " + (scy - 1.5) + "Q" + sx + " " + (scy - 6.5) + " " + (sx + shr + 2.5) + " " + (scy - 1.5) + "Q" + sx + " " + (scy + 3.8) + " " + (sx - shr - 2.5) + " " + (scy - 1.5) + "Z", fill: "#2c3440" }, st);
     rGlasses(st, sx, scy + 1.5, ss);
     rChestLogo(st, sx, sy, ss);
-    var nm = "스태프 " + cfg.staff, pw = nm.length * 11.2 + 18 + 14, px = sx + 6;   /* 이름표 안 맨 앞에 새 소식 점 자리(점이 없어도 자리는 둔다) */
-    rmk("rect", { x: px - pw / 2, y: 203, width: pw, height: 20, rx: 10, fill: "var(--surface)", stroke: "var(--fg)", "stroke-dasharray": "3 2" }, st);
-    R.dot = rmk("circle", { cx: px - pw / 2 + 13, cy: 213, r: 4, fill: "var(--sig)", stroke: "var(--fg)", "stroke-width": .8, "class": "ndot" }, st);
-    R.dot.style.display = "none";
-    rmk("text", { x: px + 7, y: 216.4, "text-anchor": "middle", "font-size": 11, "font-weight": 600, fill: "var(--fg)" }, st).textContent = nm;
+    rPill(st, sx + 6, 213, "스태프 " + cfg.staff, { dash: "3 2", stroke: "var(--fg)" });
     R.greetG = rmk("g", {}, st);
     st.style.cursor = "pointer"; st.setAttribute("role", "button"); st.setAttribute("tabindex", "0"); st.setAttribute("aria-label", "스태프 " + cfg.staff + "에게 말 걸기");
     st.addEventListener("click", function () { roomTalk(S, "새 소식"); });
@@ -1653,16 +1649,11 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
 
   /* ---- 스태프 공지·안내 ---- */
-  function noticeSeenKey(S) { return "ds_notice_seen_" + S.ch.id; }
   function roomLoadNotices(S) {
     var R = S.room;
     sb.rpc("room_notices", { p_channel: S.ch.id }).then(function (r) {
       if (sess !== S || S.room !== R || r.error || !Array.isArray(r.data)) return;
       R.notices = r.data;
-      var seen = +(store.get(noticeSeenKey(S)) || 0), top = 0;
-      R.notices.forEach(function (n) { top = Math.max(top, Date.parse(n.updated_at) || 0); });
-      R.top = top;
-      R.dot.style.display = (top > seen) ? "" : "none";
     }, function () {});
   }
   function roomTalk(S, key) {
@@ -1670,8 +1661,6 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var staff = ROOM[S.ch.id].staff;
     var body = [];
     if (key === "새 소식") {
-      if (R.top) store.set(noticeSeenKey(S), String(R.top));
-      R.dot.style.display = "none";
       body = R.notices.length ? R.notices.slice(0, 3).map(function (n) { return n.body; }) : ["아직 새 소식이 없어요."];
     } else if (key === "이용 방법") {
       body = ["댓글은 방송에 저장돼요 · 말하기는 잠깐 떴다 사라져요"];
