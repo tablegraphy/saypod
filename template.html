@@ -1103,7 +1103,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     } else {
       body = el("div", { class: "fbody" }, tops.map(function (x) { return commentRow(x.c, x.st, reps[x.c.id] || []); }));
     }
-    var followNow = S.mode === "near" && S.follow !== false && vis.length > 0 && !S.noFollowOnce && !S.editing;
+    var followNow = S.mode === "near" && S.follow !== false && vis.length > 0 && !S.noFollowOnce && !S.editing && !S.room;   /* 공개방송 중에는 댓글 쪽으로 자동으로 내려가지 않는다(무대가 위에 있어야 해서) */
     var hadFocus = !!(S.editing && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("edin"));
     S.noFollowOnce = false;
     put(S.r.fh, head);
@@ -1482,8 +1482,10 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     roomLoadNotices(S);
     R.timer = setInterval(function () { roomTrack(S); }, 3000);
     S.sig = ""; renderFeed(true); updateComposer();
-    scrollToTop(); requestAnimationFrame(scrollToTop);
+    roomToTop();
   }
+  /* 입장하면 맨 위(무대)부터 보이게: 댓글 목록이 다시 그려지며 화면이 밀리는 경우까지 몇 번 더 맞춘다 */
+  function roomToTop() { scrollToTop(); requestAnimationFrame(scrollToTop); setTimeout(scrollToTop, 150); setTimeout(scrollToTop, 450); }
   function roomTeardown(S) {
     var R = S.room; if (!R) return;
     clearInterval(R.timer); clearInterval(R.greetTimer);
