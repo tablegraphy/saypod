@@ -66,12 +66,13 @@ a { color: inherit; }
 @media (prefers-reduced-motion: no-preference) { .liveline::before { animation: breathe 2.4s ease-in-out infinite; } @keyframes breathe { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--sig) 10%, transparent); } } }
 .rank { margin: 28px 0 32px; }   /* 아래 여백: 순위표와 에피소드 목록 사이 */
 .rank:empty { display: none; }
-.rkh { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }
+.rkh { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }   /* 제목 옆 노란 거북이: 이 순위에 들면 닉네임 옆에 이 거북이가 붙는다 */
+.rkh .tur { width: 22px; height: 22px; }
 .rkg { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .rk { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 14px 10px; min-width: 0; }
 .rkt { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
 .rk ol { list-style: none; margin: 0; padding: 0; }
-.rk li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 0; font-size: 14.5px; }
+.rk li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; align-items: center; padding: 6px 0; font-size: 14.5px; }
 .rk .no { font: 500 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 .rk .nm { min-width: 0; overflow-wrap: anywhere; font-weight: 500; line-height: 1.3; }
 .rk li:first-child .nm span { background: linear-gradient(transparent 58%, var(--mark) 58%); padding: 0 2px; margin: 0 -2px; }
@@ -158,7 +159,6 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .cm .who b { color: var(--fg); font-weight: 500; }
 .cm .who .host { display: inline-block; margin-left: 4px; vertical-align: -2px; color: var(--muted); }
 .cm .who .tur, .rp .who .tur { display: inline-block; width: 15px; height: 15px; margin-left: 4px; vertical-align: -3px; }
-.rk .tur { flex: none; align-self: center; }
 .cm .who .listener { display: inline-block; margin-left: 4px; vertical-align: -2px; color: var(--muted); }
 .cm .tx { overflow-wrap: anywhere; white-space: pre-wrap; }
 .mask { display: inline-block; height: 14px; width: min(70%, 220px); background: var(--mask); border-radius: 4px; margin-top: 4px; }
@@ -538,9 +538,9 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (!cm.length && !rp.length) { slot.replaceChildren(); return; }
     function col(title, a) {
       return a.length ? el("div", { class: "rk" }, el("div", { class: "rkt", text: title }),
-        el("ol", null, a.map(function (r) { return el("li", null, el("span", { class: "no", text: r.rank }), el("span", { class: "nm" }, el("span", { text: r.nickname })), turtleIcon()); }))) : null;
+        el("ol", null, a.map(function (r) { return el("li", null, el("span", { class: "no", text: r.rank }), el("span", { class: "nm" }, el("span", { text: r.nickname }))); }))) : null;
     }
-    put(slot, el("div", { class: "rkh", text: "이번 달 순위" }), el("div", { class: "rkg" }, col("댓글", cm), col("답글", rp)));
+    put(slot, el("div", { class: "rkh" }, "이번 달 순위", turtleIcon()), el("div", { class: "rkg" }, col("댓글", cm), col("답글", rp)));
   }
   function loadRank(chId) {
     if (!sb) return;
