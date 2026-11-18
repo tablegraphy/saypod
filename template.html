@@ -225,7 +225,7 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .rmb:disabled { opacity: .4; cursor: default; }
 .rmb svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .rmb.rec { border: 0; background: var(--sig); color: var(--on-sig); }
-.rmb.say { border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.rmb.say { border: 0; background: var(--sig); color: var(--on-sig); }
 .inroom .pad { height: 250px; }
 .tk-card { text-align: center; }
 .tk-card h2 { margin: 0 0 4px; font-size: 18px; }
@@ -768,7 +768,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       updateStampLabel(); updateSay();
     });
     r.stage = el("div", { class: "rm-stage" });   /* 공개방송 무대(입장했을 때만 채워진다) */
-    r.rec = el("button", { class: "rmb rec", type: "button", onclick: function () { send(); } }, svgIcon(["M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0", "M12 7v5l3 2"]), "방송 댓글로 남기기");
+    r.rec = el("button", { class: "rmb rec", type: "button", onclick: function () { send(); } }, svgIcon(["M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0", "M12 7v5l3 2"]), "댓글로 남기기");
     r.say = el("button", { class: "rmb say", type: "button", onclick: function () { roomSay(); } }, svgIcon(["M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"]), "말하기");
     r.rbtns = el("div", { class: "rm-send" }, r.rec, r.say);
     r.rhint = el("p", { class: "rm-hint", text: "댓글은 방송에 저장돼요 · 말하기는 잠깐 떴다 사라져요" });
