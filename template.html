@@ -55,7 +55,11 @@ a { color: inherit; }
 .tgl svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .top > .brand { align-self: flex-start; }
 .brand { font: 900 38px/1.1 var(--font); text-decoration: none; letter-spacing: -0.045em; }
-.brand em { font-style: normal; background: linear-gradient(transparent 56%, var(--sig) 56%, var(--sig) 92%, transparent 92%); padding: 0 2px; margin: 0 -2px; }   /* 밝게·어둡게 똑같이 형광펜 밑줄 */   /* '사이' 밑줄(형광펜) */
+.brand em { font-style: normal; background: linear-gradient(transparent 56%, var(--sig) 56%, var(--sig) 92%, transparent 92%) no-repeat 0 0 / 100% 100%; padding: 0 2px; margin: 0 -2px; }   /* 밝게·어둡게 똑같이 형광펜 밑줄 */
+@media (prefers-reduced-motion: no-preference) {
+  .brand.draw em { animation: hl-draw .9s cubic-bezier(.3, .1, .2, 1) .35s both; }   /* 첫 홈에서 한 번, 왼쪽→오른쪽으로 쓱 그어진다 */
+  @keyframes hl-draw { from { background-size: 0% 100%; } to { background-size: 100% 100%; } }
+}   /* '사이' 밑줄(형광펜) */
 .brand.bk { display: inline-flex; align-items: center; min-height: 44px; min-width: 0; margin-left: -8px; padding-right: 8px; font-size: 16px; font-weight: 500; letter-spacing: -0.01em; }
 .brand.bk .chev { flex: none; color: inherit; position: relative; top: 1px; }   /* 글자와 같은 색, 세로 중심은 글자에 맞춰 1px 내림(측정값) */
 .brand.bk span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -298,7 +302,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   var CFG = (D && D.supabase) || null;   /* 사이트 빌드에서만 들어오는 공개 연결 값(주소·공개 키) */
   var SB = SITE && !!CFG;                 /* 로그인·공유 댓글 모드 */
   var sb = null;                          /* Supabase 클라이언트 */
-  var LIVE_MIN = 3, live = { open: 0, playing: 0, users: 0 }, liveCh = null, liveReady = false, liveSent = "", liveUser = "", liveUid = "", rankCache = {}, rankWalked = false;   /* 지금 접속·재생 수·순위 캐시(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
+  var LIVE_MIN = 3, live = { open: 0, playing: 0, users: 0 }, liveCh = null, liveReady = false, liveSent = "", liveUser = "", liveUid = "", rankCache = {}, rankWalked = false, wmDrawn = false;   /* 지금 접속·재생 수·순위 캐시(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
   var me = null;                          /* 로그인한 사람: {id, nick, host} */
   var srvPos = {};   /* 서버에 저장된 이어듣기 위치 {에피소드키: {sec, ms}} */
   var OTHER_APP = false; /* '다른 앱에서 듣기' 전환. 2026-11-16 사용자가 헷갈린다며 뺌. true로 바꾸면 되살아난다 */
@@ -473,7 +477,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (SB) renderAuthBar(slot);
     return el("div", { class: "top" }, el("div", { class: "tools" }, themeBtn(), slot),
       back ? el("a", { class: "brand bk", href: back.href, "aria-label": "뒤로, " + back.label }, chevron(), el("span", { text: back.label }))
-           : el("a", { class: "brand", href: "#", "aria-label": "듣는 사이" }, "듣는 ", el("em", { text: "사이" })));
+           : el("a", { class: "brand" + (wmDrawn ? "" : " draw"), href: "#", "aria-label": "듣는 사이", onclick: function () { wmDrawn = true; } }, "듣는 ", el("em", { text: "사이" })));
   }
   /* ---- 밝게/어둡게: 기본은 기기 설정, 해/달 버튼으로 고르면 기억(기기별)하고 이후로는 그 선택을 따른다 ---- */
   function themeNow() {
@@ -542,6 +546,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       SITE ? null : el("p", { class: "foot", text: "시제품입니다. 댓글은 초대된 분만 쓸 수 있어요." })
     );
     paintLive();
+    wmDrawn = true;   /* 워드마크 밑줄은 앱을 연 뒤 첫 홈에서만 그어진다 */
   }
   /* 이번 달 댓글·답글 순위(프로그램별, 닉네임과 순서만, 횟수 없음). 프로그램 페이지를 열 때 받고 2분간은 다시 받지 않는다 */
   function paintRank(rows) {
