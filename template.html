@@ -1308,7 +1308,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     box.replaceChildren();
     if (SB) {
       put(box, me
-        ? el("div", { class: "nk" }, "닉네임 ", el("b", { text: me.nick || "(없음)" }), me.nick ? roleIcon(!!me.admin || (me.hosts || []).indexOf(chOf(S)) >= 0, (me.badges || []).indexOf(chOf(S)) >= 0) : null, el("button", { class: "btn link", type: "button", text: "변경", onclick: function () { openAuth("nick"); } }))
+        ? el("div", { class: "nk" }, "닉네임 ", el("b", { text: me.nick || "(없음)" }), me.nick ? roleIcon(!!me.admin || (me.hosts || []).indexOf(chOf(S)) >= 0, (me.badges || []).indexOf(chOf(S)) >= 0) : null)
         : el("div", { class: "nk" }, el("button", { class: "btn", type: "button", text: "로그인하고 댓글 남기기", onclick: function () { openAuth("login"); } })));
       return;
     }
