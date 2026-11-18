@@ -1791,9 +1791,9 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var g = rmk("g", { "clip-path": "url(#tkc)" }, svg);
     rmk("rect", { x: 0, y: 0, width: 360, height: 112, fill: YEL }, g);
     rmk("circle", { cx: 330, cy: -10, r: 70, fill: "#FFE04D" }, g); rmk("circle", { cx: 300, cy: 120, r: 46, fill: "#FFE04D", opacity: .7 }, g);
-    tx(24, 38, 12, 700, INKC, "공개방송 입장권", { "letter-spacing": 1.5 });
-    rmk("circle", { cx: 266, cy: 34, r: 4.5, fill: "#E5322D" }, g); tx(275, 38, 11, 800, INKC, "ON AIR", { "letter-spacing": 1 });
-    tx(24, 80, 25, 800, INKC, S.ch.name);
+    tx(24, 34, 12, 700, INKC, "공개방송 입장권", { "letter-spacing": 1.5 });
+    rmk("circle", { cx: 266, cy: 30, r: 4.5, fill: "#E5322D" }, g); tx(275, 34, 11, 800, INKC, "ON AIR", { "letter-spacing": 1 });
+    tx(24, 83, 31, 900, INKC, S.ch.name, { stroke: INKC, "stroke-width": 1, "stroke-linejoin": "round", "letter-spacing": -0.5 });   /* 프로그램 이름: 더 크고 두껍게(스트로크로 굵기 보강) */
     /* 방송 섬네일(둥근 모서리 + 흰 테두리) */
     var thumb = S.ep.thumb || S.ch.cover, ok = typeof thumb === "string" && thumb.indexOf("data:") === 0;
     rmk("rect", { x: 202, y: 88, width: 136, height: 136, rx: 20, fill: "#FFFFFF" }, svg);
