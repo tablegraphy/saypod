@@ -42,6 +42,7 @@ html.framed, html.framed body { height: 100%; overflow: hidden; padding: 0; }
 html.framed #scroller { position: fixed; top: var(--st); right: 0; bottom: 0; left: 0; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
   padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
 html.framed .top { padding-top: 0; }
+html.playing, html.playing body { overscroll-behavior-y: none; }   /* 재생 중에는 아래로 당겨 새로고침(재생이 멈춤)되지 않게 */
 * { box-sizing: border-box; touch-action: manipulation; }   /* 빈 곳을 두 번 눌러도 확대되지 않게 */
 html { -webkit-text-size-adjust: 100%; }
 html, body { touch-action: manipulation; }
@@ -62,7 +63,7 @@ a { color: inherit; }
 .liveline:empty { display: none; }
 .liveline::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--sig); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sig) 30%, transparent); margin-right: 10px; vertical-align: 0; }
 @media (prefers-reduced-motion: no-preference) { .liveline::before { animation: breathe 2.4s ease-in-out infinite; } @keyframes breathe { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--sig) 10%, transparent); } } }
-.rank { margin-top: 28px; }
+.rank { margin: 28px 0 32px; }   /* 아래 여백: 순위표와 에피소드 목록 사이 */
 .rank:empty { display: none; }
 .rkh { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }
 .rkg { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -403,7 +404,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
   function route() {
     leave();
-    document.documentElement.classList.remove("is-editing");
+    document.documentElement.classList.remove("is-editing", "playing");
     scrollToTop();
     var h = location.hash, m, ch;
     if ((m = h.match(/^#e-([a-z0-9]+)-(\d+)$/))) {
@@ -490,6 +491,16 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", themeNow() === "dark" ? "#0F1013" : "#FAFAF9");
   }
   try { var mq = window.matchMedia("(prefers-color-scheme: dark)"); if (mq.addEventListener) mq.addEventListener("change", syncTheme); else if (mq.addListener) mq.addListener(syncTheme); } catch (e) {}
+  /* 재생 중 당겨서 새로고침 막기: 재생 중(html.playing)이고 맨 위에서 아래로 당기는 터치만 막는다(창·목록 안쪽 스크롤은 그대로) */
+  var pullY0 = 0;
+  document.addEventListener("touchstart", function (e) { if (e.touches && e.touches[0]) pullY0 = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener("touchmove", function (e) {
+    if (!document.documentElement.classList.contains("playing") || !e.touches || !e.touches[0]) return;
+    if (e.touches[0].clientY - pullY0 <= 0) return;
+    if (e.target && e.target.closest && e.target.closest(".modal")) return;
+    var f = framedEl(), top = f ? f.scrollTop : (window.pageYOffset || document.documentElement.scrollTop || 0);
+    if (top <= 0 && e.cancelable) e.preventDefault();
+  }, { passive: false });
   function xIcon() { return svgIcon(["M6 6l12 12M18 6L6 18"]); }
   function sendIcon() { return svgIcon(["M12 19V5M5.5 11.5L12 5l6.5 6.5"]); }
   function cover(c, big) {
@@ -793,6 +804,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     }
     renderFeed(false);
     updateStampLabel();
+    document.documentElement.classList.toggle("playing", isPlayingNow());
   }
 
   /* ---- 에피소드: 사이트 안 재생 ---- */
