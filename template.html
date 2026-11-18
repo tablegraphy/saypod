@@ -50,8 +50,9 @@ a { color: inherit; }
 .wrap { max-width: 640px; margin: 0 auto; }
 .top { display: flex; flex-direction: column; align-items: stretch; padding: 8px 0 6px; }   /* 1줄: 해/달 버튼·로그인 정보, 2줄: 제목 */
 .tools { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 40px; }
-.tgl { flex: none; width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); display: inline-grid; place-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.tgl svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tgl { flex: none; width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 0; background: none; color: var(--muted); display: inline-grid; place-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }   /* 조용한 아이콘(테두리 없음). 누르는 영역은 40px */
+.tgl:active { background: var(--soft); color: var(--fg); }
+.tgl svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .top > .brand { align-self: flex-start; }
 .brand { font: 900 38px/1.1 var(--font); text-decoration: none; letter-spacing: -0.045em; }
 .brand em { font-style: normal; background: linear-gradient(transparent 56%, var(--sig) 56%, var(--sig) 92%, transparent 92%); padding: 0 2px; margin: 0 -2px; }   /* 밝게·어둡게 똑같이 형광펜 밑줄 */   /* '사이' 밑줄(형광펜) */
