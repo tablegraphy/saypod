@@ -120,8 +120,8 @@ input:disabled { opacity: .55; }
 .hp.fx { color: #14161B; }
 .hp .hn { margin: 0; max-width: 58%; font-size: 36px; font-weight: 900; letter-spacing: -0.04em; line-height: 1.1; }
 .hp .hl { margin: 0 0 8px; max-width: 58%; font-size: 14px; line-height: 1.3; font-weight: 600; opacity: .78; }   /* 진행자 줄: 이름 위. 시즌 줄은 줄 간격을 좁게 */
-.hp .hs { margin: 8px 0 0; max-width: 58%; font-size: 14px; line-height: 1.4; opacity: .78; overflow-wrap: anywhere; }
-.hp .hx { margin: 6px 0 0; font-size: 12.5px; opacity: .66; font-variant-numeric: tabular-nums; }
+.hp .hs { margin: 8px 0 0; max-width: 58%; font-size: 14px; line-height: 20px; opacity: .78; overflow-wrap: anywhere; }
+.hp .hx { position: absolute; right: 22px; bottom: 20px; margin: 0; text-align: right; font-size: 12.5px; line-height: 20px; opacity: .66; font-variant-numeric: tabular-nums; }   /* 오른쪽 아래(로고 오른쪽 끝에 맞춰 우측정렬), 왼쪽 글의 마지막 줄과 같은 아랫선 */
 .hp .hl span { display: block; }
 .hp .art { position: absolute; right: 22px; top: 28px; width: 134px; height: 134px; border-radius: 28px; object-fit: cover; box-shadow: 0 10px 28px rgba(0, 0, 0, .14); background: var(--surface); display: grid; place-items: center; font-weight: 800; font-size: 34px; color: var(--muted); }
 .hp:focus-visible { outline: 3px solid var(--fg); outline-offset: -3px; }
