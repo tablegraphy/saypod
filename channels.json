@@ -11,6 +11,12 @@
         "apple": "https://podcasts.apple.com/kr/podcast/%EC%82%AC%EC%9D%B4%EC%8B%9C%EC%98%B7/id1809160765",
         "podbbang": "https://www.podbbang.com/channels/1792439",
         "youtube": "https://www.youtube.com/@saysiot"
+      },
+      "home": {
+        "lines": [
+          "시즌1 슬기 · 주환",
+          "시즌2 준비 중"
+        ]
       }
     },
     {
@@ -92,7 +98,13 @@
           "youtube": "https://youtu.be/WxNsfoAaWSM"
         }
       },
-      "youtubePlaylist": "PLQCVdJAnj2R5xxghFveCPsLzeFkFcYV1i"
+      "youtubePlaylist": "PLQCVdJAnj2R5xxghFveCPsLzeFkFcYV1i",
+      "home": {
+        "bg": "#FFF24D",
+        "lines": [
+          "희북 · 강원 · 주환"
+        ]
+      }
     }
   ]
 }

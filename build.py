@@ -188,7 +188,7 @@ def build_channel(ch):
     eps.sort(key=lambda e: e["date"] + "%05d" % e["n"], reverse=True)
     links = {k: v for k, v in ch.get("links", {}).items() if v}
     return {
-        "id": ch["id"], "name": ch["name"], "tagline": ch.get("tagline", ""),
+        "id": ch["id"], "name": ch["name"], "tagline": ch.get("tagline", ""), "home": ch.get("home") or {},   # 홈 패널용(배경색·진행자 줄)
         "links": links,
         "cover": cover_cached(ch["id"], img.get("href") if img is not None else ""),
         "episodes": eps,
