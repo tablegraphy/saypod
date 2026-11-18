@@ -1788,7 +1788,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var seed = 7, str = S.key + "|" + nick, x = 214;
     for (i = 0; i < str.length; i++) seed = (seed * 31 + str.charCodeAt(i)) >>> 0;
     for (i = 0; i < 30 && x < 336; i++) { seed = (seed * 1103515245 + 12345) >>> 0; var w = 1 + (seed >> 16) % 4; rmk("rect", { x: x, y: 448, width: w, height: 50, fill: INKC }, svg); x += w + 1.5 + ((seed >> 8) % 2); }
-    tx(180, 540, 9.5, 500, MUT, "듣는 사이 · 공개방송은 최신화에서만 입장할 수 있어요", { "text-anchor": "middle" });
+    tx(180, 540, 10, 600, MUT, "듣는 사이 · saypod.saysiot.com", { "text-anchor": "middle", "letter-spacing": 0.3 });
     rmkRoot = null;
     return svg;
   }
