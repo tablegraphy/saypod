@@ -205,17 +205,10 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .rm-room { border-radius: 20px; overflow: hidden; border: 1px solid var(--line); background: var(--wall); }
 .rm-room svg { display: block; width: 100%; height: auto; }
 .rm-room text { font-family: var(--font); }
+@keyframes rmslide { 0%, 18% { transform: translateX(0); } 82%, 100% { transform: translateX(var(--sd)); } }
 .rm-ib { position: absolute; top: 10px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .rm-ib.l { left: 10px; } .rm-ib.l2 { left: 54px; } .rm-ib.r { right: 10px; }
 .rm-ib svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.rm-talk { position: relative; margin-top: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
-.rm-talk .who2 { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
-.rm-talk .txt { font-size: 14.5px; line-height: 1.5; margin: 0 0 10px; white-space: pre-line; overflow-wrap: anywhere; }
-.rm-talk .txt + .txt { margin-top: -2px; }
-.rm-talk .opts { display: flex; flex-wrap: wrap; gap: 6px; }
-.rm-talk .opts button { height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--soft); color: var(--fg); font: 600 13px var(--font); cursor: pointer; }
-.rm-talk .opts button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-.rm-talk .x { position: absolute; top: 6px; right: 8px; width: 28px; height: 28px; border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; }
 .rm-cap { margin: 8px 2px 0; font-size: 13px; color: var(--muted); }
 .rm-send, .rm-hint { display: none; }
 .inroom .rm-send { display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px; margin-top: 6px; }
@@ -1453,10 +1446,33 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     }
     rChestLogo(g, x, y, s);
   }
+  var pillSeq = 0;
   function rPill(g, x, y, text, o) {
-    o = o || {}; var w = Math.max(34, text.length * 11.2 + 18);
+    o = o || {};
+    var MAXC = 6, reduce = false; try { reduce = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) {}
+    var long = !!o.slide && text.length > MAXC, slide = long && !reduce;
+    var shown = (long && reduce) ? text.slice(0, MAXC) + "…" : text;
+    var w = Math.max(34, (slide ? MAXC : shown.length) * 11.2 + 18);
     var rect = rmk("rect", { x: x - w / 2, y: y - 11, width: w, height: 20, rx: 10, fill: o.fill || "var(--surface)", stroke: o.stroke || "var(--line)", "stroke-dasharray": o.dash || "" }, g);
-    rmk("text", { x: x, y: y + 3.4, "text-anchor": "middle", "font-size": 11, "font-weight": o.me ? 700 : 600, fill: "var(--fg)" }, g).textContent = text;
+    var attrs = { y: y + 3.4, "font-size": 11, "font-weight": o.me ? 700 : 600, fill: "var(--fg)" };
+    if (!slide) {
+      attrs.x = x; attrs["text-anchor"] = "middle";
+      rmk("text", attrs, g).textContent = shown;
+      return rect;
+    }
+    /* 긴 닉네임: 이름표 안에서 옆으로 천천히 흘렀다가 돌아온다(양 끝에서 잠깐 멈춤) */
+    var id = "rmc" + (++pillSeq), clip = rmk("clipPath", { id: id }, g);
+    rmk("rect", { x: x - w / 2 + 8, y: y - 11, width: w - 16, height: 20 }, clip);
+    var holder = rmk("g", { "clip-path": "url(#" + id + ")" }, g);
+    attrs.x = x - w / 2 + 8;
+    var tx = rmk("text", attrs, holder); tx.textContent = text;
+    var len = 0; try { len = tx.getComputedTextLength(); } catch (e) {}
+    if (!len) len = text.length * 11;
+    var dist = len - (w - 16);
+    if (dist > 1) {
+      tx.style.setProperty("--sd", (-(dist + 2)) + "px");
+      tx.style.animation = "rmslide " + Math.max(4, dist / 9 + 2.5).toFixed(1) + "s ease-in-out infinite alternate";
+    } else { tx.setAttribute("x", x); tx.setAttribute("text-anchor", "middle"); }
     return rect;
   }
   /* 말풍선: 14자씩 줄바꿈(최대 3줄), 화면 밖으로 나가지 않게 가운데를 옮기고 꼬리는 말하는 사람 쪽 */
@@ -1489,7 +1505,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   function roomToTop() { scrollToTop(); requestAnimationFrame(scrollToTop); setTimeout(scrollToTop, 150); setTimeout(scrollToTop, 450); }
   function roomTeardown(S) {
     var R = S.room; if (!R) return;
-    clearInterval(R.timer); clearInterval(R.greetTimer);
+    clearInterval(R.timer);
     Object.keys(R.bubbles).forEach(function (u) { clearTimeout(R.bubbles[u].tm); });
     if (R.ch) { try { R.ch.untrack(); } catch (e) {} try { sb.removeChannel(R.ch); } catch (e) {} }
     S.room = null;
@@ -1594,13 +1610,14 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     rChestLogo(st, sx, sy, ss);
     rPill(st, sx + 6, 213, "스태프 " + cfg.staff, { dash: "3 2", stroke: "var(--fg)" });
     R.greetG = rmk("g", {}, st);
-    st.style.cursor = "pointer"; st.setAttribute("role", "button"); st.setAttribute("tabindex", "0"); st.setAttribute("aria-label", "스태프 " + cfg.staff + "에게 말 걸기");
-    st.addEventListener("click", function () { roomTalk(S, "새 소식"); });
-    st.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); roomTalk(S, "새 소식"); } });
     R.gBub = rmk("g", {});   /* 말풍선 층: 항상 맨 위 */
-    var lines = ["어서 오세요 :)", "오늘은 " + S.ep.n + "화예요", "궁금하면 눌러 주세요"];
-    function greet() { R.greetG.replaceChildren(); rBubble(R.greetG, 78, 196, lines[R.greet % lines.length], "greet"); R.greet++; }
-    greet(); R.greetTimer = setInterval(greet, 4200);
+    /* 스태프 민턴의 말풍선: 관리 화면에 올려 둔 한마디(보이는 것 중 가장 최근 것). 없으면 기본 인사 */
+    R.staffSay = function () {
+      R.greetG.replaceChildren();
+      var line = (R.notices && R.notices[0] && R.notices[0].body) || "어서 오세요 :)";
+      rBubble(R.greetG, 78, 196, line.length > 42 ? line.slice(0, 41) + "…" : line, "greet");
+    };
+    R.staffSay();
     rmkRoot = null;
     R.svg = svg;
     var cam = el("button", { class: "rm-ib l", type: "button", "aria-label": "스튜디오 장면 사진으로 저장", title: "사진으로 저장", onclick: function () { roomSnap(S); } },
@@ -1609,8 +1626,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       svgIcon(["M3 9a2 2 0 0 0 0 6v2a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-2a2 2 0 0 1 0-6V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z", "M14 8v1.5M14 11.3v1.4M14 14.5V16"]));
     var out = el("button", { class: "rm-ib r", type: "button", "aria-label": "나가기", title: "나가기", onclick: leaveRoom },
       svgIcon(["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "M16 17l5-5-5-5", "M21 12H9"]));
-    R.talk = el("div", { class: "rm-talk", hidden: true });
-    put(S.r.stage, el("div", { class: "rm-wrap" }, el("div", { class: "rm-room" }, svg), cam, tix, out), R.talk,
+    put(S.r.stage, el("div", { class: "rm-wrap" }, el("div", { class: "rm-room" }, svg), cam, tix, out),
       el("p", { class: "rm-cap", text: "공개방송에서는 최신화만 들으실 수 있어요." }));
     roomAudience(S);
   }
@@ -1656,7 +1672,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     placed.forEach(function (pi) {
       var m = pi[0], s = SEATS[pi[1]], sc = s[1] > 300 ? 1.12 : 1, mine = m.u === liveUser, h = hash6(m.u), g = rmk("g", {}, R.gAud);
       rPerson(g, s[0], s[1], { body: cols[h % cols.length], s: sc, hair: hairs[(h >> 3) % 4] });
-      rPill(g, s[0], s[1] - 52 * sc, m.n.length > 6 ? m.n.slice(0, 6) + "…" : m.n, { me: mine, fill: mine ? "var(--sig)" : "var(--surface)", stroke: mine ? "#E6B800" : "var(--line)" });
+      rPill(g, s[0], s[1] - 52 * sc, m.n, { slide: true, me: mine, fill: mine ? "var(--sig)" : "var(--surface)", stroke: mine ? "#E6B800" : "var(--line)" });
       R.seatPos[m.u] = [s[0], s[1] - 52 * sc - 13];
     });
     if (list.length > placed.length) rmk("text", { x: 382, y: 16, "text-anchor": "end", "font-size": 11, "font-weight": 600, fill: "var(--muted)" }, R.gAud).textContent = "+" + (list.length - placed.length) + "명";
@@ -1669,29 +1685,9 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     sb.rpc("room_notices", { p_channel: S.ch.id }).then(function (r) {
       if (sess !== S || S.room !== R || r.error || !Array.isArray(r.data)) return;
       R.notices = r.data;
+      if (R.staffSay) R.staffSay();
     }, function () {});
   }
-  function roomTalk(S, key) {
-    var R = S.room; if (!R) return;
-    var staff = ROOM[S.ch.id].staff;
-    var body = [];
-    if (key === "새 소식") {
-      body = R.notices.length ? R.notices.slice(0, 3).map(function (n) { return n.body; }) : ["아직 새 소식이 없어요."];
-    } else if (key === "이용 방법") {
-      body = ["댓글은 방송에 저장돼요 · 말하기는 잠깐 떴다 사라져요"];
-    } else {
-      body = ["[" + S.ep.n + "화] " + S.ep.title.replace(/^\s*\[[^\]]*\]\s*/, "")];
-    }
-    put(R.talk,
-      el("button", { class: "x", type: "button", "aria-label": "닫기", text: "×", onclick: function () { R.talk.hidden = true; } }),
-      el("div", { class: "who2", text: "스태프 " + staff }),
-      body.map(function (b) { return el("p", { class: "txt", text: b }); }),
-      el("div", { class: "opts" }, ["새 소식", "이용 방법", "이번 화 소개"].map(function (k) {
-        return el("button", { type: "button", text: k, "aria-pressed": k === key ? "true" : "false", onclick: function () { roomTalk(S, k); } });
-      })));
-    R.talk.hidden = false;
-  }
-
   /* ---- 사진으로 저장(카메라): 말풍선까지 지금 장면 그대로 PNG로 ---- */
   function roomSnap(S) {
     var R = S.room; if (!R || !R.svg) return;
@@ -2028,7 +2024,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     function drawAdmin() {
       var sum = el("div", { class: "adm-sum", text: "가입자" }), lv = el("div", { class: "adm-live", id: "adm-live" }), list = el("div", { class: "adm-list" });
       var nbox = el("div", { class: "adm-nt" });
-      put(card, xBtn(), el("h2", { text: "관리" }), sum, lv, el("div", { class: "adm-sec", text: "스태프 공지 · 거북목 라디오" }), nbox, list,
+      put(card, xBtn(), el("h2", { text: "관리" }), sum, lv, el("div", { class: "adm-sec", text: "스태프 민턴의 한마디 · 거북목 라디오" }), el("div", { class: "adm-live", text: "보이는 한마디 중 가장 최근에 올리거나 고친 것이 민턴의 말풍선에 떠요(42자 이내). 없으면 '어서 오세요 :)'" }), nbox, list,
         el("div", { class: "row" },
           el("button", { class: "btn link", type: "button", text: "닉네임 변경", onclick: function () { draw("nick"); } })));
       paintLive();
@@ -2036,10 +2032,10 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       function drawNotices() {
         sb.rpc("admin_notices", { p_channel: "geobuk" }).then(function (r) {
           if (!document.getElementById("adm-live")) return;
-          if (r.error || !Array.isArray(r.data)) { put(nbox, el("div", { class: "err", text: "공지를 불러오지 못했어요." })); return; }
+          if (r.error || !Array.isArray(r.data)) { put(nbox, el("div", { class: "err", text: "한마디를 불러오지 못했어요." })); return; }
           var msg = el("div", { class: "err", role: "alert" });
-          var ta = el("textarea", { id: "adm-nt-new", maxlength: "300", placeholder: "스태프 민턴이 전할 공지 (300자 이내)", "aria-label": "새 공지" });
-          var addBtn = el("button", { class: "btn pri", type: "button", text: "공지 추가", onclick: function () {
+          var ta = el("textarea", { id: "adm-nt-new", maxlength: "42", placeholder: "민턴이 할 한마디 (42자 이내)", "aria-label": "새 한마디" });
+          var addBtn = el("button", { class: "btn pri", type: "button", text: "한마디 추가", onclick: function () {
             var v = ta.value.trim(); if (!v) return; addBtn.disabled = true;
             sb.rpc("admin_save_notice", { p_id: null, p_channel: "geobuk", p_body: v, p_active: true }).then(function (x) { if (x.error) { msg.textContent = noticeErr(x.error); addBtn.disabled = false; } else drawNotices(); }, function () { msg.textContent = noticeErr(); addBtn.disabled = false; });
           } });
@@ -2052,7 +2048,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
             var btns = el("div", { class: "nbtn" },
               el("button", { type: "button", "aria-pressed": n.active ? "true" : "false", text: n.active ? "보이는 중 · 숨기기" : "숨김 · 보이기", onclick: function () { save(!n.active, n.body); } }),
               el("button", { type: "button", text: "수정", onclick: function () {
-                var e = el("textarea", { maxlength: "300", "aria-label": "공지 수정" }); e.value = n.body;
+                var e = el("textarea", { maxlength: "42", "aria-label": "한마디 수정" }); e.value = n.body;
                 put(box, e, el("div", { class: "nbtn" },
                   el("button", { type: "button", text: "저장", onclick: function () { var v = e.value.trim(); if (v) save(n.active, v); } }),
                   el("button", { type: "button", text: "취소", onclick: function () { drawNotices(); } })));
@@ -2064,7 +2060,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
               } }));
             put(box, body, btns); return box;
           }
-          put(nbox, ta, el("div", { class: "row" }, addBtn), msg, r.data.length ? r.data.map(row) : el("div", { class: "note", text: "올린 공지가 없어요." }));
+          put(nbox, ta, el("div", { class: "row" }, addBtn), msg, r.data.length ? r.data.map(row) : el("div", { class: "note", text: "올린 한마디가 없어요." }));
         }, function () { put(nbox, el("div", { class: "err", text: "공지를 불러오지 못했어요." })); });
       }
       drawNotices();
