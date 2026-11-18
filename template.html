@@ -1399,7 +1399,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
   /* ---- 지금 접속·재생 중인 수 (Realtime Presence) ----
      화면(탭)마다 {p: 재생 중이면 1, 아니면 0} 만 알린다. 닉네임·계정은 싣지 않는다.
-     재생 중이 3명 이상이면 홈에 '지금 N명이 듣고 있어요'를 보이고, 관리자는 관리 화면에서 두 숫자를 본다. */
+     재생 중이 3명 이상이면 홈에 '지금 N명이 함께 듣고 있어요'를 보이고, 관리자는 관리 화면에서 두 숫자를 본다. */
   function isPlayingNow() { var S = sess; return !!(S && ((S.audio && !S.audio.paused) || (S.clock && S.clock.playing))); }
   function liveRecount() {
     if (!liveCh) return;
@@ -1415,7 +1415,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   /* 모두에게 보이는 문구: 지금 접속해 있는 '로그인한 사람' 수(멈추고 댓글만 보는 사람 포함). 3명 이상일 때만 보인다 */
   function paintLive() {
     var a = document.getElementById("live-line");
-    if (a) a.textContent = live.users >= LIVE_MIN ? "지금 " + live.users + "명이 듣고 있어요" : "";
+    if (a) a.textContent = live.users >= LIVE_MIN ? "지금 " + live.users + "명이 함께 듣고 있어요" : "";
     var b = document.getElementById("adm-live");
     if (b) b.textContent = "지금 로그인 " + live.users + "명 · 열어 둔 화면 " + live.open + " · 재생 중 " + live.playing;
   }
