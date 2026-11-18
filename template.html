@@ -1490,7 +1490,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     rmk("rect", { x: bx, y: by, width: w, height: h, rx: 10, fill: "var(--surface)", stroke: "var(--fg)", "stroke-width": 1.1 }, g);
     rmk("path", { d: "M" + (tx - 5) + " " + (by + h - 0.5) + "L" + tx + " " + (by + h + 7) + "L" + (tx + 5) + " " + (by + h - 0.5), fill: "var(--surface)", stroke: "var(--fg)", "stroke-width": 1.1, "stroke-linejoin": "round" }, g);
     rmk("rect", { x: tx - 4, y: by + h - 2, width: 8, height: 3, fill: "var(--surface)" }, g);
-    lines.forEach(function (l, k) { rmk("text", { x: bx + w / 2, y: by + 14 + k * 15, "text-anchor": "middle", "font-size": 11.5, "font-weight": 600, fill: "var(--fg)" }, g).textContent = l; });
+    lines.forEach(function (l, k) { rmk("text", { x: bx + w / 2, y: by + 16.6 + k * 15, "text-anchor": "middle", "font-size": 11.5, "font-weight": 600, fill: "var(--fg)" }, g).textContent = l; });
     return g;
   }
 
