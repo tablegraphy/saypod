@@ -119,7 +119,9 @@ input:disabled { opacity: .55; }
 .hp { position: relative; display: flex; flex-direction: column; justify-content: flex-end; padding: 22px 20px 20px; overflow: hidden; text-decoration: none; color: var(--fg); background: var(--soft); min-height: 264px; }
 .hp.fx { color: #14161B; }
 .hp .hn { margin: 0; max-width: 58%; font-size: 36px; font-weight: 900; letter-spacing: -0.04em; line-height: 1.1; }
-.hp .hl { margin: 8px 0 0; max-width: 58%; font-size: 14.5px; line-height: 1.3; opacity: .78; }   /* 시즌 줄은 줄 간격을 좁게 */
+.hp .hl { margin: 0 0 8px; max-width: 58%; font-size: 14px; line-height: 1.3; font-weight: 600; opacity: .78; }   /* 진행자 줄: 이름 위. 시즌 줄은 줄 간격을 좁게 */
+.hp .hs { margin: 8px 0 0; max-width: 58%; font-size: 14px; line-height: 1.4; opacity: .78; overflow-wrap: anywhere; }
+.hp .hx { margin: 6px 0 0; font-size: 12.5px; opacity: .66; font-variant-numeric: tabular-nums; }
 .hp .hl span { display: block; }
 .hp .art { position: absolute; right: 22px; top: 28px; width: 134px; height: 134px; border-radius: 28px; object-fit: cover; box-shadow: 0 10px 28px rgba(0, 0, 0, .14); background: var(--surface); display: grid; place-items: center; font-weight: 800; font-size: 34px; color: var(--muted); }
 .hp:focus-visible { outline: 3px solid var(--fg); outline-offset: -3px; }
@@ -604,8 +606,10 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         var hm = c.home || {};
         return el("a", { class: "hp" + (hm.bg ? " fx" : ""), href: "#c-" + c.id, "aria-label": c.name, style: hm.bg ? "background:" + hm.bg : null },
           c.cover ? el("img", { class: "art", src: c.cover, alt: "" }) : el("div", { class: "art", text: c.name.slice(0, 1) }),
+          (hm.lines && hm.lines.length) ? el("p", { class: "hl" }, hm.lines.map(function (l) { return el("span", { text: l }); })) : null,
           el("h2", { class: "hn", text: c.name }),
-          (hm.lines && hm.lines.length) ? el("p", { class: "hl" }, hm.lines.map(function (l) { return el("span", { text: l }); })) : null);
+          c.tagline ? el("p", { class: "hs", text: c.tagline }) : null,
+          el("p", { class: "hx", text: "에피소드 " + c.episodes.length + "개" }));
       })),
       CH.length ? null : el("p", { class: "note", text: "등록된 팟캐스트가 없어요." }),
       SITE ? null : el("p", { class: "foot", text: "시제품입니다. 댓글은 초대된 분만 쓸 수 있어요." })
