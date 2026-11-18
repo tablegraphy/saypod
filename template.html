@@ -1387,7 +1387,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
      · 스태프(민턴)는 사람이 아니라 안내 캐릭터라 접속 인원에 세지 않는다. 공지는 관리자가 관리 화면에서 올린다.
      ===================================================================== */
   var ROOM = { geobuk: { staff: "민턴", hosts: [["강원", "gangwon"], ["희북", "huibuk"], ["주환", "juhwan"]] } };
-  var SAY_MAX = 40, SAY_MS = 3000, SAY_GAP = 1500;
+  var SAY_MAX = 40, SAY_MS = 3000, SAY_GAP = 1500, HOST_XS = [96, 195, 294];
   var SEATS = [[128, 252], [186, 252], [244, 252], [302, 252], [356, 252], [100, 322], [160, 322], [220, 322], [280, 322], [340, 322]];
   var SVGNS = "http://www.w3.org/2000/svg", rmkRoot = null;
   function rmk(tag, attrs, parent) {
@@ -1459,11 +1459,11 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     rmk("text", { x: x, y: y + 3.4, "text-anchor": "middle", "font-size": 11, "font-weight": o.me ? 700 : 600, fill: "var(--fg)" }, g).textContent = text;
   }
   /* 말풍선: 14자씩 줄바꿈(최대 3줄), 화면 밖으로 나가지 않게 가운데를 옮기고 꼬리는 말하는 사람 쪽 */
-  function rBubble(parent, x, y, text, cls) {
+  function rBubble(parent, x, y, text, cls, lim) {
     var lines = [], i; for (i = 0; i < text.length && lines.length < 3; i += 14) lines.push(text.slice(i, i + 14));
     var mx = 0; lines.forEach(function (l) { mx = Math.max(mx, l.length); });
     var w = Math.max(44, mx * 11.8 + 20), h = lines.length * 15 + 10;
-    var bx = Math.max(4, Math.min(386 - w, x - w / 2)), by = y - h - 7, tx = Math.max(bx + 14, Math.min(bx + w - 14, x));
+    var lo = lim ? lim[0] : 4, hi = lim ? lim[1] : 386, bx = Math.max(lo, Math.min(hi - w, x - w / 2)), by = Math.max(4, y - h - 7), tx = Math.max(bx + 14, Math.min(bx + w - 14, x));
     var g = rmk("g", { "class": cls || "bb" }, parent);
     rmk("rect", { x: bx, y: by, width: w, height: h, rx: 10, fill: "var(--surface)", stroke: "var(--fg)", "stroke-width": 1.1 }, g);
     rmk("path", { d: "M" + (tx - 5) + " " + (by + h - 0.5) + "L" + tx + " " + (by + h + 7) + "L" + (tx + 5) + " " + (by + h - 0.5), fill: "var(--surface)", stroke: "var(--fg)", "stroke-width": 1.1, "stroke-linejoin": "round" }, g);
@@ -1552,7 +1552,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var R = S.room; if (!R || !R.gBub) return;
     var pos = R.seatPos[u]; if (!pos) return;
     var old = R.bubbles[u]; if (old) { clearTimeout(old.tm); old.g.remove(); }
-    var g = rBubble(R.gBub, pos[0], pos[1], text, "mine");
+    var g = rBubble(R.gBub, pos[0], pos[1], text, "mine", pos[1] === 62 ? [104, 346] : null);   /* 무대 위(진행자) 말풍선은 위쪽 버튼(카메라·입장권·나가기)과 겹치지 않게 */
     var tm = setTimeout(function () { g.remove(); if (R.bubbles[u] && R.bubbles[u].g === g) delete R.bubbles[u]; }, SAY_MS);
     R.bubbles[u] = { g: g, tm: tm };
   }
@@ -1571,7 +1571,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     rmk("rect", { x: 135, y: 18, width: 120, height: 24, rx: 12, fill: "var(--surface)", stroke: "var(--line)" }, sign);
     rmk("circle", { cx: 153, cy: 30, r: 4, fill: "var(--sig)" }, sign);
     rmk("text", { x: 162, y: 34.5, "font-size": 11.5, "font-weight": 700, fill: "var(--fg)" }, sign).textContent = "ON AIR · " + S.ep.n + "화";
-    var xs = [96, 195, 294];
+    var xs = HOST_XS;
     cfg.hosts.forEach(function (h, i) {
       var g = rmk("g", {}), look = h[1], x = xs[i];
       rPerson(g, x, 140, { body: BODY, neck: look === "huibuk" ? "turtle" : "crew", front: true, s: 1.12, nocups: look === "huibuk" });
@@ -1628,7 +1628,14 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   function roomAudience(S) {
     var R = S.room; if (!R || !R.gAud || !R.ch) return;
     R.gAud.replaceChildren(); R.seatPos = {};
-    var used = {}, placed = [], list = roomMembers(S);
+    var used = {}, placed = [], all = roomMembers(S), hostNames = ROOM[S.ch.id].hosts.map(function (h) { return h[0]; });
+    /* 진행자(닉네임이 무대 진행자와 같은 사람)가 입장하면 객석에 앉지 않는다. 말풍선은 무대 위 자기 자리에서 뜬다 */
+    var list = all.filter(function (m) {
+      var hi = hostNames.indexOf(m.n);
+      if (hi < 0) return true;
+      R.seatPos[m.u] = [HOST_XS[hi], 62];
+      return false;
+    });
     list.forEach(function (m) {
       var idx = hash6(m.u) % SEATS.length;
       for (var k = 0; k < SEATS.length && used[idx]; k++) idx = (idx + 1) % SEATS.length;
