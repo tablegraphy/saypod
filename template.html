@@ -1628,7 +1628,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var cam = el("button", { class: "rm-ib l", type: "button", "aria-label": "스튜디오 장면 사진으로 저장", title: "사진으로 저장", onclick: function () { roomSnap(S); } },
       svgIcon(["M4 8a2 2 0 0 1 2-2h2l1.2-2h5.6L16 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z", "M8.5 12.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0"]));
     var tix = el("button", { class: "rm-ib l2", type: "button", "aria-label": "공개방송 입장권 보기", title: "입장권", onclick: function () { roomTicket(S); } },
-      svgIcon(["M3 9a2 2 0 0 0 0 6v2a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-2a2 2 0 0 1 0-6V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z", "M14 8v1.5M14 11.3v1.4M14 14.5V16"]));
+      tixIcon());
     var out = el("button", { class: "rm-ib r", type: "button", "aria-label": "나가기", title: "나가기", onclick: leaveRoom },
       svgIcon(["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "M16 17l5-5-5-5", "M21 12H9"]));
     put(S.r.stage, el("div", { class: "rm-wrap" }, el("div", { class: "rm-room" }, svg), cam, tix, out), R.talk,
@@ -1752,6 +1752,12 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     } else download();
   }
 
+  /* 입장권 아이콘: 양쪽이 둥글게 펀칭된 티켓 + 점선 절취선, 살짝 기울임 */
+  function tixIcon() {
+    var s = svgIcon(["M3 7H21V9.6a2.4 2.4 0 0 0 0 4.8V17H3V14.4a2.4 2.4 0 0 0 0-4.8Z", "M14.5 8.6v1.5M14.5 11.3v1.4M14.5 13.9v1.5"]);
+    s.querySelectorAll("path").forEach(function (p) { p.setAttribute("transform", "rotate(-14 12 12)"); });
+    return s;
+  }
   /* ---- 입장권: 그 회차의 공개방송 입장권. 최신화에서만 받을 수 있다. 사진으로 저장 ---- */
   var TK_FONT = '"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif';
   function kstText(iso) {
