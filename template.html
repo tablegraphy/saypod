@@ -182,6 +182,8 @@ input:disabled { opacity: .55; }
 .fhead { display: grid; grid-template-columns: auto 36px; justify-content: start; align-items: center; gap: 6px; margin: 0; padding: 8px 0; border-bottom: 1px solid var(--line); }   /* 선 아래부터 댓글이 스크롤. 구간 선택은 가운데 */
 .seg { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
 .seg button { min-height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--muted); font: 500 13.5px var(--font); cursor: pointer; }
+.seg button.upto { display: inline-flex; align-items: center; gap: 4px; }
+.seg button.upto svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; margin-left: -3px; }
 .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
 .note { color: var(--muted); font-size: 14px; padding: 14px 0; overflow-wrap: anywhere; }
 .note .btn.link { font-size: 14px; }
@@ -1100,7 +1102,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
 
     var head = el("div", { class: "fhead" }, el("span"),
       el("div", { class: "seg", role: "group", "aria-label": "댓글 범위" },
-        el("button", { type: "button", text: "여기까지 댓글", "aria-pressed": S.mode === "near" ? "true" : "false", onclick: function () { setFeedMode("near"); } }),
+        el("button", { type: "button", class: "upto", "aria-pressed": S.mode === "near" ? "true" : "false", onclick: function () { setFeedMode("near"); } }, svgIcon(["M12 19V6", "M6.5 11.5L12 6l5.5 5.5"]), "여기까지 댓글"),   /* 위쪽 화살표: 위의 재생 막대(타임라인) 지점까지 */
         el("button", { type: "button", text: "전체 댓글", "aria-pressed": S.mode === "all" ? "true" : "false", onclick: function () { setFeedMode("all"); } })),
       S.threadIds.length ? el("button", { class: "gt", type: "button", "aria-label": "답글 모두 펼치기·접기", title: "답글 모두 펼치기·접기", onclick: toggleAllThreads }, chev(allOpenNow)) : el("span"),
       roomJoinBtn(S)
