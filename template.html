@@ -206,7 +206,8 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .pad { height: 150px; }
 /* ---- 공개방송(거북목 라디오 최신화): 입장 버튼·무대·스태프·입력줄 ---- */
 .fhead { position: relative; }
-.fhead > span:first-child { display: none; }   /* 함께 듣기·스포일러 보기는 왼쪽 정렬, 공개방송 입장은 오른쪽 끝 */
+.allnote { margin: 10px 0 2px; font-size: 12.5px; color: var(--muted); }
+.fhead > span:first-child { display: none; }   /* 함께 듣기·전체 보기는 왼쪽 정렬, 공개방송 입장은 오른쪽 끝 */
 .join { min-height: 44px; padding: 0; border: 0; background: none; color: var(--fg); font: 600 12.5px var(--font); letter-spacing: -.02em; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
 .fhead .join { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .sec.erow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -766,7 +767,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     r.sync = el("section", { class: "sync", "aria-label": "재생 위치" });
     r.plat = el("div", { class: "sec" });
     r.feed = el("div", { "aria-live": "polite" });
-    r.fh = el("div", { class: "fh" });   /* 함께 듣기·스포일러 보기 줄: 고정 영역 맨 아래(선 아래부터 댓글이 스크롤) */
+    r.fh = el("div", { class: "fh" });   /* 함께 듣기·전체 보기 줄: 고정 영역 맨 아래(선 아래부터 댓글이 스크롤) */
     r.nick = el("div");
     r.rep = el("div", { class: "repbar" });
     r.stamp = el("div", { class: "stamp" });
@@ -1100,7 +1101,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var head = el("div", { class: "fhead" }, el("span"),
       el("div", { class: "seg", role: "group", "aria-label": "댓글 범위" },
         el("button", { type: "button", text: "함께 듣기", "aria-pressed": S.mode === "near" ? "true" : "false", onclick: function () { setFeedMode("near"); } }),
-        el("button", { type: "button", text: "스포일러 보기", "aria-pressed": S.mode === "all" ? "true" : "false", onclick: function () { setFeedMode("all"); } })),
+        el("button", { type: "button", text: "전체 보기", "aria-pressed": S.mode === "all" ? "true" : "false", onclick: function () { setFeedMode("all"); } })),
       S.threadIds.length ? el("button", { class: "gt", type: "button", "aria-label": "답글 모두 펼치기·접기", title: "답글 모두 펼치기·접기", onclick: toggleAllThreads }, chev(allOpenNow)) : el("span"),
       roomJoinBtn(S)
     );
@@ -1115,6 +1116,9 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       body = el("div", { class: "note", text: S.mode === "near" ? "내가 들은 지점까지의 댓글만 보여요." : "아직 댓글이 없어요. 첫 댓글을 남겨 보세요." });
     } else {
       body = el("div", { class: "fbody" }, tops.map(function (x) { return commentRow(x.c, x.st, reps[x.c.id] || []); }));
+    }
+    if (S.mode === "all" && body.classList.contains("fbody")) {   /* 전체 보기에는 앞으로 나올 댓글도 보인다는 안내(스포방지 약속을 말로 남김) */
+      body = el("div", null, el("p", { class: "allnote", text: "다음 장면의 댓글까지 보여요" }), body);
     }
     var followNow = S.mode === "near" && S.follow !== false && vis.length > 0 && !S.noFollowOnce && !S.editing && !S.room;   /* 공개방송 중에는 댓글 쪽으로 자동으로 내려가지 않는다(무대가 위에 있어야 해서) */
     var hadFocus = !!(S.editing && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("edin"));
@@ -1187,7 +1191,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
   function setFeedMode(m) {
     var S = sess; if (!S || S.mode === m) return;
-    S.mode = m; S.reveal = (m === "all");   /* 스포일러 보기 = 앞으로 나올 댓글까지 전부 */
+    S.mode = m; S.reveal = (m === "all");   /* 전체 보기(옛 이름 스포일러 보기) = 앞으로 나올 댓글까지 전부 */
     if (S.poll) S.poll(true);
     renderMarks(); renderFeed(true);
   }
