@@ -1648,9 +1648,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     st.addEventListener("click", function () { roomTalk(S); });
     st.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); roomTalk(S); } });
     R.gBub = rmk("g", {});   /* 말풍선 층: 항상 맨 위 */
-    var lines = ["어서 오세요 :)", "오늘은 " + S.ep.n + "화예요", "궁금하면 눌러 주세요"];
-    function greet() { R.greetG.replaceChildren(); rBubble(R.greetG, 54, 192, lines[R.greet % lines.length], "greet"); R.greet++; }
-    greet(); R.greetTimer = setInterval(greet, 4200);
+    /* 민턴 말풍선은 하나만: 눌러 보게 유도한다(누르면 아래 창에 관리 화면의 한마디가 열림) */
+    rBubble(R.greetG, 54, 192, "드릴 말씀이 있어요", "greet");
     rmkRoot = null;
     R.svg = svg;
     R.talk = el("div", { class: "rm-talk", hidden: true });
