@@ -1399,12 +1399,12 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
      공개방송: 거북목 라디오 '최신화'에서만 입장 버튼이 보인다.
      · 입장하면 무대(진행자 3명·객석·스태프)가 열리고, 같은 방에 들어온 로그인한 사람이 닉네임과 함께 객석에 앉는다.
        (Realtime 채널 'room:프로그램'. 입장해 있는 동안만 닉네임·접속 표시를 나누고, 나가면 지운다.)
-     · '말하기': 글자 40자 이내, 내 머리 위에 5초 떴다 사라진다. 서버에 저장하지 않는다. 같은 사람이 다시 말하면 이전 풍선은 바로 사라진다.
+     · '말하기': 글자 40자 이내, 내 머리 위에 5초(다음에 말하는 사람이 없으면 10초까지) 떴다 사라진다. 서버에 저장하지 않는다. 같은 사람이 다시 말하면 이전 풍선은 바로 사라진다.
      · '방송 댓글로 남기기': 기존 댓글 보내기(send)와 같다. 듣는 시각 그대로 댓글 줄에 저장된다.
      · 스태프(민턴)는 사람이 아니라 안내 캐릭터라 접속 인원에 세지 않는다. 공지는 관리자가 관리 화면에서 올린다.
      ===================================================================== */
   var ROOM = { geobuk: { staff: "민턴", hosts: [["강원", "gangwon"], ["희북", "huibuk"], ["주환", "juhwan"]] } };
-  var SAY_MAX = 40, SAY_MS = 5000, SAY_GAP = 1500, HOST_XS = [96, 195, 294], HOST_OFF = ["#FFF3B8", "#EEDC8A"], HOST_ON = ["var(--sig)", "#E6B800"];
+  var SAY_MAX = 40, SAY_MS = 5000, SAY_LONG_MS = 10000, SAY_GAP = 1500, HOST_XS = [96, 195, 294], HOST_OFF = ["#FFF3B8", "#EEDC8A"], HOST_ON = ["var(--sig)", "#E6B800"];
   var SEATS = [[128, 252], [186, 252], [244, 252], [302, 252], [356, 252], [100, 322], [160, 322], [220, 322], [280, 322], [340, 322]];
   var SVGNS = "http://www.w3.org/2000/svg", rmkRoot = null;
   function rmk(tag, attrs, parent) {
@@ -1592,10 +1592,19 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   function roomBubble(S, u, text) {
     var R = S.room; if (!R || !R.gBub) return;
     var pos = R.seatPos[u]; if (!pos) return;
-    var old = R.bubbles[u]; if (old) { clearTimeout(old.tm); old.g.remove(); }
+    var now = Date.now();
+    function drop(k) { var b = R.bubbles[k]; if (!b) return; clearTimeout(b.tm); b.g.remove(); delete R.bubbles[k]; }
+    drop(u);   /* 같은 사람이 다시 말하면 이전 풍선은 바로 사라진다 */
+    Object.keys(R.bubbles).forEach(function (k) { if (now - R.bubbles[k].t0 >= SAY_MS) drop(k); });   /* 5초가 지나 연장 중이던 다른 풍선은 새 말이 나오면 사라진다 */
     var g = rBubble(R.gBub, pos[0], pos[1], text, "mine", pos[1] === 62 ? [104, 346] : null);   /* 무대 위(진행자) 말풍선은 위쪽 버튼(카메라·입장권·나가기)과 겹치지 않게 */
-    var tm = setTimeout(function () { g.remove(); if (R.bubbles[u] && R.bubbles[u].g === g) delete R.bubbles[u]; }, SAY_MS);
-    R.bubbles[u] = { g: g, tm: tm };
+    R.sayAt = now;
+    var rec = { g: g, t0: now, tm: 0 };
+    /* 5초 뒤: 그 사이 누군가 말했으면 사라지고, 아무도 안 말했으면 10초까지 남긴다(사진 찍을 시간) */
+    rec.tm = setTimeout(function () {
+      if (R.sayAt > now) { drop(u); return; }
+      rec.tm = setTimeout(function () { drop(u); }, SAY_LONG_MS - SAY_MS);
+    }, SAY_MS);
+    R.bubbles[u] = rec;
   }
 
   /* ---- 무대 그리기 ---- */
