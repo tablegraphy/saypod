@@ -1385,7 +1385,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
           sec: sec, text: txt.slice(0, 200), nick: nick, uid: caps.uid || null, plat: SITE ? "" : (store.get("ds_plat") || ""), at: Date.now()
         });
       }
-      if (sess === S) { r.msg.value = ""; S.stamp = null; r.err.textContent = ""; if (S.replyTo) { S.open[S.replyTo.root] = true; S.replyTo = null; renderReplyBar(); S.noFollowOnce = true; } if (SB && S.poll) S.poll(false); }
+      if (sess === S) { if (S.room) roomToTop(); r.msg.value = ""; S.stamp = null; r.err.textContent = ""; if (S.replyTo) { S.open[S.replyTo.root] = true; S.replyTo = null; renderReplyBar(); S.noFollowOnce = true; } if (SB && S.poll) S.poll(false); }
     } catch (e) {
       if (sess === S) r.err.textContent = SB ? sbSendError(e) : e && e.code === "invalid_argument" ? "댓글을 쓸 권한이 없어요. 초대된 분만 쓸 수 있어요."
         : e && e.code === "quota_exceeded" ? "저장 공간이 가득 찼어요." : "보내지 못했어요. 다시 눌러 주세요.";
@@ -1587,6 +1587,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     R.lastSay = now;
     try { R.ch.send({ type: "broadcast", event: "say", payload: { u: liveUser, t: t } }); } catch (e) { return; }
     S.r.msg.value = ""; S.stamp = null; updateStampLabel(); updateSay();
+    roomToTop();   /* 말한 뒤 내 말풍선이 보이도록 맨 위(무대)로 */
   }
   /* 말풍선: 같은 사람이 다시 말하면 이전 풍선은 바로 사라지고, 새 풍선이 맨 위에 그려진다. 5초 뒤 사라진다 */
   function roomBubble(S, u, text) {
