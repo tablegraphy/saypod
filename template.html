@@ -374,6 +374,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   var LIVE_MIN = 1, live = { open: 0, playing: 0, users: 0 }, liveCh = null, liveReady = false, liveSent = "", liveUser = "", liveUid = "", rankCache = {}, rankWalked = false, wmDrawn = false;   /* 지금 접속·재생 수·순위 캐시(아래 '지금 접속' 블록). initSupabase 보다 먼저 선언해야 값이 덮어써지지 않는다 */
   var me = null;                          /* 로그인한 사람: {id, nick, host} */
   var wantRoom = "";                      /* 프로그램 페이지의 '공개방송 입장'을 눌렀을 때: 최신화 화면이 열리면 바로 무대로 들어간다 */
+  var CMT_MAX = 80;   /* 댓글 최대 글자 수(서버 규칙 supabase/schema_v17.sql 과 같게 맞출 것) */
   var srvPos = {};   /* 서버에 저장된 이어듣기 위치 {에피소드키: {sec, ms}} */
   var OTHER_APP = false; /* '다른 앱에서 듣기' 전환. 2026-11-16 사용자가 헷갈린다며 뺌. true로 바꾸면 되살아난다 */
   var NEAR = 30;    /* 방금 지난 댓글 강조 범위(초) · 서버에서 미리 받아 두는 폭 */
@@ -774,7 +775,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     r.rep = el("div", { class: "repbar" });
     r.stamp = el("div", { class: "stamp" });
     r.err = el("div", { class: "err", role: "alert" });
-    r.msg = el("input", { type: "text", id: "msg-in", maxlength: "200", autocomplete: "off", "aria-label": "댓글" });
+    r.msg = el("input", { type: "text", id: "msg-in", maxlength: String(CMT_MAX), autocomplete: "off", "aria-label": "댓글" });
     r.send = el("button", { class: "send", type: "submit", "aria-label": "남기기" }, sendIcon());
     r.form = el("form", { onsubmit: function (e) { e.preventDefault(); send(); } }, r.msg, r.send);
     r.msg.addEventListener("input", function () {
@@ -1218,7 +1219,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (/has_replies/.test(m)) return "답글이 달린 댓글은 지울 수 없어요.";
     if (/too_fast/.test(m)) return "조금 뒤에 다시 해 주세요.";
     if (/not_allowed|not_authenticated/.test(m)) return "이 댓글은 고치거나 지울 수 없어요.";
-    if (/bad_body/.test(m)) return "1자 이상 200자 이하로 써 주세요.";
+    if (/bad_body/.test(m)) return "1자 이상 " + CMT_MAX + "자 이하로 써 주세요.";
     return "처리하지 못했어요. 다시 해 주세요.";
   }
   function startEdit(c) {
@@ -1237,7 +1238,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (v === c.text) { cancelEdit(); return; }
     S.savingEdit = true;
     try {
-      var r = await sb.rpc("edit_comment", { p_id: c.id, p_body: v.slice(0, 200) });
+      var r = await sb.rpc("edit_comment", { p_id: c.id, p_body: v.slice(0, CMT_MAX) });
       if (r.error) throw r.error;
       if (sess === S) { S.editing = null; S.editDraft = null; S.noFollowOnce = true; renderFeed(true); if (S.poll) S.poll(true); }
     } catch (e) { toast(cmErr(e)); }
@@ -1254,7 +1255,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     } catch (e) { toast(cmErr(e)); }
   }
   function editForm(c) {
-    var S = sess, inp = el("input", { class: "edin", type: "text", maxlength: "200", autocomplete: "off", "aria-label": "댓글 수정", value: S.editDraft != null ? S.editDraft : c.text });
+    var S = sess, inp = el("input", { class: "edin", type: "text", maxlength: String(CMT_MAX), autocomplete: "off", "aria-label": "댓글 수정", value: S.editDraft != null ? S.editDraft : c.text });
     inp.addEventListener("input", function () { S.editDraft = inp.value; });
     return el("form", { class: "ed", onsubmit: function (e) { e.preventDefault(); saveEdit(c, inp.value); } }, inp,
       el("div", { class: "edb" }, el("button", { class: "btn", type: "submit", text: "저장" }), el("button", { class: "btn link", type: "button", text: "취소", onclick: cancelEdit })));
@@ -1380,11 +1381,11 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     S.sending = true; updateComposer();
     try {
       if (SB) {
-        var ins = await sb.from("comments").insert({ episode_key: S.key, sec: sec, body: txt.slice(0, 200), parent_id: S.replyTo ? S.replyTo.root : null, reply_to_id: S.replyTo ? S.replyTo.id : null });
+        var ins = await sb.from("comments").insert({ episode_key: S.key, sec: sec, body: txt.slice(0, CMT_MAX), parent_id: S.replyTo ? S.replyTo.root : null, reply_to_id: S.replyTo ? S.replyTo.id : null });
         if (ins.error) throw ins.error;
       } else {
         await caps.db.collection("eps/" + S.key + "/comments").add({
-          sec: sec, text: txt.slice(0, 200), nick: nick, uid: caps.uid || null, plat: SITE ? "" : (store.get("ds_plat") || ""), at: Date.now()
+          sec: sec, text: txt.slice(0, CMT_MAX), nick: nick, uid: caps.uid || null, plat: SITE ? "" : (store.get("ds_plat") || ""), at: Date.now()
         });
       }
       if (sess === S) { if (S.room) roomToTop(); r.msg.value = ""; S.stamp = null; r.err.textContent = ""; if (S.replyTo) { S.open[S.replyTo.root] = true; S.replyTo = null; renderReplyBar(); S.noFollowOnce = true; } if (SB && S.poll) S.poll(false); }
