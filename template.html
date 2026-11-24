@@ -324,6 +324,9 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .stick .th.sq { width: 56px; height: 56px; }
 .stick .eptitle { font-size: 18px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.3; margin: 0 0 8px; overflow-wrap: anywhere; }
 .stick .hd .em { color: var(--muted); font-size: 13px; }
+.stick .hd .shr { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--fg); font: 500 12.5px var(--font); cursor: pointer; }   /* 스토리로 공유 */
+.stick .hd .shr svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.stick .hd .shr:disabled { opacity: .55; cursor: default; }
 .stick .sync { position: static; padding: 4px 0; }
 .stick .prow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .stick .clock.sm { font-size: 34px; }
@@ -804,8 +807,10 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     r.stick = el("div", { class: "stick" },
       el("h1", { class: "eptitle", text: ep.title }),
       el("div", { class: "hd" }, episodeThumb(ch, ep),
-        el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") })),
+        el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") }),
+        (SITE && ch.coverBig) ? (r.shr = el("button", { class: "shr", type: "button", "aria-label": "인스타 스토리로 공유할 이미지 만들기", onclick: shareStory }, svgIcon(["M12 3v12", "M8 7l4-4 4 4", "M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"]), "스토리로 공유")) : null),
       r.sync, r.fh);
+    if (SITE && ch.coverBig) loadStoryCover(ch);   /* 누르기 전에 선명한 표지를 미리 받아 둔다(공유창은 누른 직후에 떠야 해서) */
     r.msg.addEventListener("focus", function () { r.stick.classList.add("compact"); });   /* 글 쓸 때는 키보드가 화면을 차지하므로 고정 영역을 줄인다 */
     r.msg.addEventListener("blur", function () { r.stick.classList.remove("compact"); });
     put(app, topbar({ href: "#c-" + ch.id, label: ch.name }), r.mode, r.stage, r.stick, r.plat, r.feed, el("div", { class: "pad" }), r.comp);
@@ -1871,6 +1876,67 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
 
   /* 입장권 아이콘: 양쪽이 둥글게 펀칭된 티켓 + 점선 절취선, 살짝 기울임 */
+  /* ---- 인스타 스토리 공유 이미지(1080×1920): 지금 듣는 방송·재생 위치를 그림 한 장으로. 입장권 이미지와 같은 방식(SVG→PNG→공유창, 안 되면 저장) ---- */
+  var storyCover = {};
+  function loadStoryCover(ch) {
+    if (storyCover[ch.id]) return Promise.resolve(storyCover[ch.id]);
+    if (!ch.coverBig) return Promise.resolve(ch.cover || "");
+    return fetch(ch.coverBig).then(function (r) { if (!r.ok) throw new Error("cover"); return r.blob(); }).then(function (b) {
+      return new Promise(function (res) { var fr = new FileReader(); fr.onload = function () { storyCover[ch.id] = String(fr.result); res(storyCover[ch.id]); }; fr.onerror = function () { res(ch.cover || ""); }; fr.readAsDataURL(b); });
+    }).catch(function () { return ch.cover || ""; });   /* 못 받으면 작은 표지로라도 */
+  }
+  function storyWrap(str, n) {   /* 띄어쓰기 단위로 줄바꿈(한 줄 최대 n자, 최대 3줄) */
+    var words = String(str).split(" "), out = [], cur = "";
+    words.forEach(function (w) {
+      while (w.length > n) { if (cur) { out.push(cur); cur = ""; } out.push(w.slice(0, n)); w = w.slice(n); }
+      if (cur && cur.length + 1 + w.length > n) { out.push(cur); cur = w; } else cur = cur ? cur + " " + w : w;
+    });
+    if (cur) out.push(cur);
+    if (out.length > 3) { out = out.slice(0, 3); out[2] = out[2].slice(0, n - 1) + "…"; }
+    return out;
+  }
+  function storySvg(S, cover, posSec) {
+    var INKC = "#14161B", MUTC = "#6A6E78", BGC = "#FDFCF7", PLAYC = "#FAD43C", FAINT = "#A9ACB4";
+    var FF = "Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, sans-serif";
+    function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    function tx(x, y, size, weight, fill, str, extra) { return '<text x="' + x + '" y="' + y + '" font-size="' + size + '" font-weight="' + weight + '" fill="' + fill + '" font-family="' + FF + '" ' + (extra || "") + ">" + esc(str) + "</text>"; }
+    function skip(cx, cy, label, fwd) {
+      return '<g transform="translate(' + cx + "," + cy + ')"><g transform="scale(' + (fwd ? -1 : 1) + ',1)" fill="none" stroke="' + INKC + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M0 -14 A14 14 0 1 1 -12.12 -7"/><path d="M4.5 -18.5 L-1 -14 L4.5 -9.5"/></g>' + tx(0, 3.6, 10, 800, INKC, label, 'text-anchor="middle"') + "</g>";
+    }
+    var SZ = 190, T = 116, X0 = 180 - SZ / 2, ratio = S.dur > 0 ? Math.max(0, Math.min(1, posSec / S.dur)) : 0;
+    var title = String(S.ep.title).replace(/^\s*\[[^\]]*\]\s*/, "").replace(/^\s*ep\.?\s*\d+\s*[.:)\-]?\s*/i, "") || String(S.ep.title), n = String(S.ep.n);   /* 앞의 [21화]·Ep1. 은 큰 회차 숫자와 겹치므로 덜어낸다 */
+    var b = '<defs><clipPath id="c"><rect x="' + X0 + '" y="' + T + '" width="' + SZ + '" height="' + SZ + '" rx="30"/></clipPath><filter id="sh" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur stdDeviation="9"/></filter></defs>';
+    b += '<rect width="360" height="640" fill="' + BGC + '"/>';
+    b += '<rect x="' + (X0 + 10) + '" y="' + (T + SZ * 0.06 + 8) + '" width="' + (SZ - 20) + '" height="' + (SZ * 0.92) + '" rx="30" fill="#B8A200" opacity=".26" filter="url(#sh)"/>';
+    if (cover) b += '<image x="' + X0 + '" y="' + T + '" width="' + SZ + '" height="' + SZ + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#c)" href="' + cover + '"/>';
+    else b += '<rect x="' + X0 + '" y="' + T + '" width="' + SZ + '" height="' + SZ + '" rx="30" fill="#FFF24D"/>';
+    b += tx(180, 62, 11.5, 500, FAINT, "듣는 사이 · saypod.saysiot.com", 'text-anchor="middle" letter-spacing=".3"');   /* 맨 위 작은 글씨(인스타 계정 표시줄에 가려져도 괜찮음) */
+    var y = T + SZ + 34;
+    b += tx(180, y, 14.5, 700, MUTC, S.ch.name, 'text-anchor="middle"') + tx(180, y + 34, 32, 900, INKC, n + "화", 'text-anchor="middle" letter-spacing="-1"');
+    var ty = y + 34 + 28;
+    storyWrap(title, 17).forEach(function (l, k) { b += tx(180, ty + k * 24, 18, 700, INKC, l, 'text-anchor="middle"'); });
+    var bc = ty + 54, xh = 40 + 280 * ratio;
+    b += '<rect x="40" y="' + (bc - 2.5) + '" width="280" height="5" rx="2.5" fill="' + INKC + '" opacity=".13"/><rect x="40" y="' + (bc - 2.5) + '" width="' + (280 * ratio).toFixed(1) + '" height="5" rx="2.5" fill="' + INKC + '"/><circle cx="' + xh.toFixed(1) + '" cy="' + bc + '" r="7" fill="' + INKC + '"/>';
+    var t2 = bc + 28;
+    b += tx(40, t2, 12.5, 600, INKC, fmt(posSec)) + tx(320, t2, 12.5, 500, MUTC, fmt(S.dur), 'text-anchor="end"');
+    var cy = t2 + 42;
+    b += skip(112, cy, "10", false) + skip(248, cy, "30", true);
+    b += '<circle cx="180" cy="' + cy + '" r="29" fill="' + PLAYC + '"/><path d="M172 ' + (cy - 12) + " L172 " + (cy + 12) + " L192.5 " + cy + ' Z" fill="' + INKC + '" stroke="' + INKC + '" stroke-width="3" stroke-linejoin="round"/>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640">' + b + "</svg>";
+  }
+  function shareStory() {
+    var S = sess; if (!S || !SITE) return;
+    var btn = S.r.shr, p = pos();
+    if (btn) btn.disabled = true;
+    loadStoryCover(S.ch).then(function (cov) {
+      var root = new DOMParser().parseFromString(storySvg(S, cov, p), "image/svg+xml").documentElement;
+      rasterize(root, 1080, 1920, function (blob) {
+        if (btn) btn.disabled = false;
+        if (!blob) { toast("이미지를 만들지 못했어요. 다시 해 주세요."); return; }
+        savePng(blob, "듣는사이_" + S.key + ".png");
+      });
+    });
+  }
   function tixIcon() {
     var s = svgIcon(["M3 7H21V9.6a2.4 2.4 0 0 0 0 4.8V17H3V14.4a2.4 2.4 0 0 0 0-4.8Z", "M14.5 8.6v1.5M14.5 11.3v1.4M14.5 13.9v1.5"]);
     s.querySelectorAll("path").forEach(function (p) { p.setAttribute("transform", "rotate(-14 12 12)"); });

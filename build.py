@@ -54,26 +54,49 @@ def ep_number(it, title):
     return int(m.group(1)) if m else 0
 
 
-def cover_data_uri(url, size=160):
+def cover_jpeg_bytes(url, size=160, quality=70):
+    """주소의 이미지를 받아 긴 변이 size 인 JPEG 바이트로 줄인다. 실패하면 빈 바이트."""
     if not url:
-        return ""
+        return b""
     try:
         with tempfile.TemporaryDirectory() as d:
             src, dst = os.path.join(d, "src.img"), os.path.join(d, "out.jpg")
             open(src, "wb").write(fetch(url))
             if shutil.which("sips"):   # 맥
-                subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "70",
+                subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", str(quality),
                                 "-Z", str(size), src, "--out", dst],
                                check=True, capture_output=True)
             else:                      # 깃허브 서버(리눅스): Pillow
                 from PIL import Image
                 im = Image.open(src).convert("RGB")
                 im.thumbnail((size, size))
-                im.save(dst, "JPEG", quality=70)
-            return "data:image/jpeg;base64," + base64.b64encode(open(dst, "rb").read()).decode()
+                im.save(dst, "JPEG", quality=quality)
+            return open(dst, "rb").read()
     except Exception as e:
         print(f"표지 이미지를 만들지 못했습니다: {e}", file=sys.stderr)
-        return ""
+        return b""
+
+
+def cover_data_uri(url, size=160):
+    b = cover_jpeg_bytes(url, size, 70)
+    return "data:image/jpeg;base64," + base64.b64encode(b).decode() if b else ""
+
+
+def cover_big_cached(ch_id, url, size=720):
+    """스토리 공유 이미지용 선명한 표지(720px JPEG 파일). 사이트 안(같은 주소)에 두고 공유할 때 읽는다.
+    표지 주소가 그대로면 저장해 둔 파일(cache/cover720_<채널>.jpg)을 쓰고, 바뀌었으면 새로 만든다. 못 만들면 이전 파일을 그대로 쓴다."""
+    jpg = os.path.join(HERE, "cache", "cover%d_%s.jpg" % (size, ch_id))
+    meta = jpg[:-4] + ".json"
+    saved = json.load(open(meta, encoding="utf-8")) if os.path.exists(meta) else {}
+    if os.path.exists(jpg) and saved.get("url") == url:
+        return jpg
+    b = cover_jpeg_bytes(url, size, 85)
+    if b:
+        os.makedirs(os.path.dirname(jpg), exist_ok=True)
+        open(jpg, "wb").write(b)
+        json.dump({"url": url}, open(meta, "w", encoding="utf-8"))
+        return jpg
+    return jpg if os.path.exists(jpg) else ""
 
 
 def cover_cached(ch_id, url):
@@ -191,6 +214,7 @@ def build_channel(ch):
         "id": ch["id"], "name": ch["name"], "tagline": ch.get("tagline", ""), "home": ch.get("home") or {},   # 홈 패널용(배경색·진행자 줄)
         "links": links,
         "cover": cover_cached(ch["id"], img.get("href") if img is not None else ""),
+        "_big": cover_big_cached(ch["id"], img.get("href") if img is not None else ""),   # 파일 경로, 화면 데이터에서는 빼고 site/cover-<id>.jpg 로 복사
         "episodes": eps,
     }
 
@@ -225,6 +249,12 @@ def main():
     channels = [build_channel(c) for c in cfg["channels"]]
     for c in channels:   # 비어 있는 결과를 올리지 않도록(RSS 오류 등) 멈춘다
         assert c["episodes"], "[%s] 에피소드가 하나도 없습니다" % c["id"]
+    big = {}
+    for c in channels:   # 스토리 공유용 선명한 표지: 화면 데이터에는 파일 이름만 넣고, 파일은 사이트 폴더에 둔다
+        path = c.pop("_big", "")
+        if path:
+            big[c["id"]] = path
+            c["coverBig"] = "cover-%s.jpg" % c["id"]
     tpl = open(os.path.join(HERE, "template.html"), encoding="utf-8").read()
     assert "/*__DATA__*/null" in tpl
 
@@ -248,6 +278,8 @@ def main():
                  % (sbcfg["jsVersion"], sbcfg["jsSri"]))
     site = tpl.replace("/*__DATA__*/null", dump(site_data))
     os.makedirs(out_dir, exist_ok=True)
+    for cid, path in big.items():
+        shutil.copyfile(path, os.path.join(out_dir, "cover-%s.jpg" % cid))
     page = head + site + "\n</html>\n"
     # 새 버전 알림용 버전표: 화면 내용의 해시를 화면(BUILD_ID)과 version.txt 에 같이 적는다(화면이 달라지면 값도 달라짐)
     build_id = hashlib.sha1(page.encode("utf-8")).hexdigest()[:10]
