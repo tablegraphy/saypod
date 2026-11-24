@@ -248,6 +248,12 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .tk-img { display: block; width: min(100%, 290px); height: auto; margin: 10px auto 14px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0, 0, 0, .2); }
 .tk-card .row { justify-content: center; }
 .adm-sec { margin: 14px 0 4px; font-size: 14px; font-weight: 700; }
+.adm-rp { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.adm-rr { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.adm-rr .hd { display: flex; gap: 8px; align-items: baseline; font-size: 14px; }
+.adm-rr .mt { margin-left: auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.adm-rr .tx { margin: 6px 0; font-size: 14px; line-height: 1.5; word-break: break-word; }
+.adm-rr .row { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
 .adm-nt { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .adm-nt textarea { width: 100%; min-height: 64px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--fg); padding: 10px 12px; font: 400 14px/1.5 var(--font); }
 .adm-nt .nrow { border-top: 1px solid var(--line); padding: 10px 0 2px; font-size: 14px; }
@@ -344,6 +350,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
 .cm .act { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; margin-top: 2px; min-width: 0; }
 .link2 { border: 0; background: none; padding: 4px 0; min-height: 32px; font: 500 13px var(--font); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
 .link2:hover { color: var(--fg); }
+.link2:disabled { cursor: default; opacity: .6; }
 .link2.tg { color: var(--fg); }
 .link2.tg .pv { color: var(--muted); font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .cm .rps { margin-top: 4px; border-left: 2px solid var(--line); padding-left: 10px; }
@@ -1225,7 +1232,32 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (!SB || !me || masked || (sess && sess.editing === c.id)) return out;   /* 수정 중인 글에는 수정·삭제 줄을 숨긴다 */
     if (c.mine) out.push(el("button", { class: "link2", type: "button", text: "수정", onclick: function () { startEdit(c); } }));
     if (canDelete(c)) out.push(el("button", { class: "link2", type: "button", text: "삭제", onclick: function () { removeComment(c); } }));
+    if (!c.mine) out.push(reportBtn(c));
     return out;
+  }
+  /* 신고: 남의 댓글에만, 로그인한 사람만. 한 번 누르면 '신고할까요?'(4초), 다시 누르면 접수. 자동으로 숨기지 않고 운영자(관리 화면)에게만 쌓인다 */
+  var reported = {};
+  try { (JSON.parse(store.get("ds_reported") || "[]") || []).forEach(function (i) { reported[i] = true; }); } catch (e) {}
+  function reportBtn(c) {
+    var b = el("button", { class: "link2", type: "button", text: reported[c.id] ? "신고했어요" : "신고" });
+    if (reported[c.id]) { b.disabled = true; return b; }
+    var armed = false, busy = false, tm = 0;
+    b.addEventListener("click", function () {
+      if (busy) return;
+      if (!armed) { armed = true; b.textContent = "신고할까요?"; tm = setTimeout(function () { armed = false; b.textContent = "신고"; }, 4000); return; }
+      clearTimeout(tm); busy = true; b.textContent = "…";
+      sb.rpc("report_comment", { p_id: c.id }).then(function (r) {
+        if (r.error) {
+          busy = false; armed = false; b.textContent = "신고";
+          var m = String(r.error.message || "");
+          toast(/too_fast/.test(m) ? "조금 뒤에 다시 해 주세요." : (/own_comment/.test(m) ? "내 댓글은 신고할 수 없어요." : "신고하지 못했어요. 다시 해 주세요."));
+          return;
+        }
+        reported[c.id] = true; b.textContent = "신고했어요"; b.disabled = true; toast("신고했어요. 운영자가 확인할게요.");
+        store.set("ds_reported", JSON.stringify(Object.keys(reported).slice(-200)));
+      }, function () { busy = false; armed = false; b.textContent = "신고"; toast("신고하지 못했어요. 다시 해 주세요."); });
+    });
+    return b;
   }
   function cmErr(e) {
     var m = String((e && (e.message || e.msg)) || "");
@@ -2089,7 +2121,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     function drawAdmin() {
       var sum = el("div", { class: "adm-sum", text: "가입자" }), lv = el("div", { class: "adm-live", id: "adm-live" }), list = el("div", { class: "adm-list" });
       var nbox = el("div", { class: "adm-nt" });
-      put(card, xBtn(), el("h2", { text: "관리" }), sum, lv, el("div", { class: "adm-sec", text: "민턴의 한마디 · 거북목 라디오" }), el("div", { class: "adm-live", text: "보이는 한마디 중 가장 최근에 올리거나 고친 한 줄이, 민턴을 눌렀을 때 열리는 창에 떠요(42자 이내). 없으면 '오늘도 함께 들어요 :)'" }), nbox, list,
+      var rbox = el("div", { class: "adm-rp" });
+      put(card, xBtn(), el("h2", { text: "관리" }), sum, lv, el("div", { class: "adm-sec", text: "신고된 댓글" }), rbox, el("div", { class: "adm-sec", text: "민턴의 한마디 · 거북목 라디오" }), el("div", { class: "adm-live", text: "보이는 한마디 중 가장 최근에 올리거나 고친 한 줄이, 민턴을 눌렀을 때 열리는 창에 떠요(42자 이내). 없으면 '오늘도 함께 들어요 :)'" }), nbox, list,
         el("div", { class: "row" },
           el("button", { class: "btn link", type: "button", text: "닉네임 변경", onclick: function () { draw("nick"); } })));
       paintLive();
@@ -2129,6 +2162,33 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         }, function () { put(nbox, el("div", { class: "err", text: "공지를 불러오지 못했어요." })); });
       }
       drawNotices();
+      function epLabel(k) { var m = String(k).match(/^([a-z0-9]+)-(\d+)$/); return m ? chName(m[1]) + " " + m[2] + "화" : k; }
+      function drawReports() {
+        sb.rpc("admin_reports").then(function (r) {
+          if (!document.getElementById("adm-live")) return;
+          if (r.error || !Array.isArray(r.data)) { put(rbox, el("div", { class: "err", text: "신고를 불러오지 못했어요." })); return; }
+          if (!r.data.length) { put(rbox, el("div", { class: "note", text: "신고된 댓글이 없어요." })); return; }
+          put(rbox, r.data.map(function (x) {
+            var rmsg = el("span", { class: "note" });
+            return el("div", { class: "adm-rr" },
+              el("div", { class: "hd" }, el("b", { text: x.nickname }), el("span", { class: "mt", text: epLabel(x.episode_key) + " · " + fmt(x.sec) + " · 신고 " + x.reports + "건" })),
+              el("div", { class: "tx", text: x.body }),
+              el("div", { class: "row" },
+                el("button", { class: "btn link", type: "button", text: "문제없음", onclick: function () {
+                  sb.rpc("admin_dismiss_reports", { p_id: x.id }).then(function (d) { if (d.error) rmsg.textContent = "처리하지 못했어요."; else drawReports(); }, function () { rmsg.textContent = "처리하지 못했어요."; });
+                } }),
+                el("button", { class: "btn link", type: "button", text: "댓글 삭제", onclick: function () {
+                  if (!confirm("이 댓글을 삭제할까요?")) return;
+                  sb.rpc("delete_comment", { p_id: x.id }).then(function (d) {
+                    if (d.error) rmsg.textContent = /has_replies/.test(String(d.error.message)) ? "답글이 달려 있어 지울 수 없어요." : "삭제하지 못했어요."; else drawReports();
+                  }, function () { rmsg.textContent = "삭제하지 못했어요."; });
+                } }),
+                el("button", { class: "btn link", type: "button", text: "방송 열기", onclick: function () { closeAuth(); location.hash = "#e-" + x.episode_key; } }),
+                rmsg));
+          }));
+        }, function () { put(rbox, el("div", { class: "err", text: "신고를 불러오지 못했어요." })); });
+      }
+      drawReports();
       function ymd(s) { var t = Date.parse(s); return isNaN(t) ? "" : new Date(t + 9 * 3600000).toISOString().slice(2, 10).replace(/-/g, "."); }
       function chName(id) { var c = CH.find(function (x) { return x.id === id; }); return c ? c.name : id; }
       sb.rpc("admin_overview").then(function (r) {
