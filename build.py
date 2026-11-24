@@ -225,6 +225,17 @@ SITE_HEAD = (
     '<meta name="referrer" content="no-referrer">\n'
     '<meta name="apple-mobile-web-app-title" content="듣는 사이">\n'
     '<meta name="theme-color" content="#FAFAF9">\n'
+    # 링크 미리보기(카카오톡·슬랙·인스타 DM 등에 주소를 붙였을 때 뜨는 제목·설명·그림). 그림은 og-image.jpg(1200x630)
+    '<meta name="description" content="함께 듣고, 서로 이어지는">\n'
+    '<meta property="og:type" content="website">\n'
+    '<meta property="og:site_name" content="듣는 사이">\n'
+    '<meta property="og:title" content="듣는 사이">\n'
+    '<meta property="og:description" content="함께 듣고, 서로 이어지는">\n'
+    '<meta property="og:url" content="https://saypod.saysiot.com/">\n'
+    '<meta property="og:image" content="https://saypod.saysiot.com/og-image.jpg">\n'
+    '<meta property="og:image:width" content="1200">\n'
+    '<meta property="og:image:height" content="630">\n'
+    '<meta name="twitter:card" content="summary_large_image">\n'
     '<link rel="apple-touch-icon" href="icon-180.png">\n'
     '<link rel="icon" href="icon-180.png">\n'
     '<style>:root{color-scheme:light;padding-top:var(--st,env(safe-area-inset-top,0px));padding-bottom:env(safe-area-inset-bottom,0px)}'
@@ -280,6 +291,9 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     for cid, path in big.items():
         shutil.copyfile(path, os.path.join(out_dir, "cover-%s.jpg" % cid))
+    og = os.path.join(HERE, "og-image.jpg")   # 링크 미리보기 그림
+    if os.path.exists(og):
+        shutil.copyfile(og, os.path.join(out_dir, "og-image.jpg"))
     page = head + site + "\n</html>\n"
     # 새 버전 알림용 버전표: 화면 내용의 해시를 화면(BUILD_ID)과 version.txt 에 같이 적는다(화면이 달라지면 값도 달라짐)
     build_id = hashlib.sha1(page.encode("utf-8")).hexdigest()[:10]
