@@ -330,7 +330,8 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .ib.pl { width: 50px; height: 50px; background: var(--sig); color: var(--on-sig); }
 .ib.pl:active { filter: brightness(.94); background: var(--sig); }
 .stick .bar { margin: 6px 0 0; }
-.stick .tot { text-align: right; font: 400 11px var(--mono); color: var(--muted); margin-top: 2px; }
+.stick .tot { display: flex; align-items: center; justify-content: space-between; font: 400 11px var(--mono); color: var(--muted); margin-top: 2px; }
+.tot .spd { border: 1px solid var(--line, rgba(0,0,0,.18)); background: none; color: var(--fg); border-radius: 999px; min-width: 52px; height: 30px; padding: 0 10px; margin-top: 8px; font: 600 12px var(--mono); font-variant-numeric: tabular-nums; cursor: pointer; }   /* 재생 속도(1x→1.25x→1.5x 순환) */
 .stick .hint { margin: 2px 0 0; font-size: 12px; }
 .stick.compact .hd, .stick.compact .eptitle, .stick.compact .fh, .stick.compact .sync .bar, .stick.compact .sync .ctrl, .stick.compact .sync .hint, .stick.compact .sync .tot,
 .stick.editing .hd, .stick.editing .eptitle, .stick.editing .fh, .stick.editing .sync .bar, .stick.editing .sync .ctrl, .stick.editing .sync .hint, .stick.editing .sync .tot { display: none; }
@@ -931,10 +932,14 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     srvPos[S.key] = { sec: t, ms: now };
     try { sb.rpc("save_position", { p_ep: S.key, p_sec: t }).then(function () {}, function () {}); } catch (e) {}
   }
+  /* 재생 속도: 사이트 안 재생에서만(시계 모드는 1배속 기준). 눌러서 1x → 1.25x → 1.5x → 1x, 이 기기에 저장해 모든 방송에 적용 */
+  var SPEEDS = [1, 1.25, 1.5];
+  function getSpeed() { var v = parseFloat(store.get("ds_speed")); return SPEEDS.indexOf(v) >= 0 ? v : 1; }
+  function applySpeed(a) { if (!a) return; var v = getSpeed(); try { a.defaultPlaybackRate = v; a.playbackRate = v; } catch (e) {} }
   function ensureAudio() {
     var S = sess; if (S.audio || !S.ep.audio) return;
     var a = S.audio = new Audio();
-    a.preload = "metadata"; a.src = S.ep.audio;
+    a.preload = "metadata"; a.src = S.ep.audio; applySpeed(a);
     var sp0 = parseFloat(store.get("ds_pos_" + S.key));
     if (sp0 > 5 && sp0 < S.dur - 15) { try { a.currentTime = sp0; } catch (e) {} S.resumedFrom = sp0; S.resumed = true; }
     if (SB && me) fetchServerPos(S);
@@ -953,7 +958,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     ["play", "pause", "ended"].forEach(function (ev) {
       a.addEventListener(ev, function () {
         if (sess !== S) return;
-        if (ev === "play") S.touched = true;
+        if (ev === "play") { S.touched = true; applySpeed(a); }
         if (ev === "ended") { store.set("ds_pos_" + S.key, ""); store.set("ds_post_" + S.key, String(Date.now())); pushPos(S, 0, true); }
         else if (ev !== "play") savePos(S, true);
         updatePlayBtn(); tick();
@@ -987,7 +992,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (now - (S.lastSave || 0) > 5000) { S.lastSave = now; savePos(S); }
     if (now - (S.lastMS || 0) > 1000 && "mediaSession" in navigator && navigator.mediaSession.setPositionState) {
       S.lastMS = now;
-      try { navigator.mediaSession.setPositionState({ duration: S.dur, position: Math.min(p, S.dur), playbackRate: 1 }); } catch (e) {}
+      try { navigator.mediaSession.setPositionState({ duration: S.dur, position: Math.min(p, S.dur), playbackRate: S.audio.playbackRate || 1 }); } catch (e) {}
     }
   }
   function updatePlayBtn() {
@@ -1010,6 +1015,15 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     S.audio.currentTime = Math.min(S.dur, Math.max(0, S.audio.currentTime + d));
     tick();
   }
+  function speedBtn(S) {
+    var b = el("button", { class: "spd", type: "button", "aria-label": "재생 속도" });
+    function paint() { var v = getSpeed(); b.textContent = v + "x"; b.setAttribute("aria-label", "재생 속도 " + v + "배, 누르면 바뀝니다"); }
+    b.addEventListener("click", function () {
+      var i = SPEEDS.indexOf(getSpeed()); store.set("ds_speed", String(SPEEDS[(i + 1) % SPEEDS.length]));
+      applySpeed(S.audio); paint();
+    });
+    paint(); return b;
+  }
   function renderPlayerPanel(box) {
     var S = sess, a = S.audio;
     S.r.clockEl = el("span"); S.r.fill = el("div", { class: "fill" }); S.r.dot = el("div", { class: "dot" }); S.r.marks = el("div", { class: "wv" });
@@ -1026,7 +1040,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
           S.r.play,
           iconBtn("fwd", "30초 앞으로", function () { seekBy(30); }))),
       el("div", { class: "bar" }, S.r.marks, S.r.fill, S.r.dot, S.r.seek),
-      el("div", { class: "tot", text: fmt(S.dur) }),
+      el("div", { class: "tot" }, speedBtn(S), el("span", { text: fmt(S.dur) })),
       S.r.err2);
     updatePlayBtn();
   }
