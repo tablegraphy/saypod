@@ -1938,7 +1938,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       rasterize(root, 1080, 1920, function (blob) {
         if (btn) btn.disabled = false;
         if (!blob) { toast("이미지를 만들지 못했어요. 다시 해 주세요."); return; }
-        savePng(blob, "듣는사이-" + String(S.ch.name).replace(/\s+/g, "") + ".png");   /* 예: 듣는사이-거북목라디오.png */
+        savePng(blob, "듣는사이-" + String(S.ch.name).replace(/\s+/g, "") + "-" + S.ep.n + "화.png");   /* 예: 듣는사이-거북목라디오-21화.png */
       });
     });
   }
