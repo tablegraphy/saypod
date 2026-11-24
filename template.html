@@ -324,9 +324,10 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .stick .th.sq { width: 56px; height: 56px; }
 .stick .eptitle { font-size: 18px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.3; margin: 0 0 8px; overflow-wrap: anywhere; }
 .stick .hd .em { color: var(--muted); font-size: 13px; }
-.stick .hd .shr { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--fg); font: 500 12.5px var(--font); cursor: pointer; }   /* 스토리로 공유 */
-.stick .hd .shr svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.stick .hd .shr:disabled { opacity: .55; cursor: default; }
+.tot .tl { display: flex; align-items: center; gap: 8px; }
+.tot .shr { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-top: 8px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: none; color: var(--fg); cursor: pointer; }   /* 스토리로 공유(아이콘만, 속도 버튼 옆) */
+.tot .shr svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tot .shr:disabled { opacity: .55; cursor: default; }
 .stick .sync { position: static; padding: 4px 0; }
 .stick .prow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .stick .clock.sm { font-size: 34px; }
@@ -807,8 +808,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     r.stick = el("div", { class: "stick" },
       el("h1", { class: "eptitle", text: ep.title }),
       el("div", { class: "hd" }, episodeThumb(ch, ep),
-        el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") }),
-        (SITE && ch.coverBig) ? (r.shr = el("button", { class: "shr", type: "button", "aria-label": "인스타 스토리로 공유할 이미지 만들기", onclick: shareStory }, svgIcon(["M12 3v12", "M8 7l4-4 4 4", "M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"]), "스토리로 공유")) : null),
+        el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") })),
       r.sync, r.fh);
     if (SITE && ch.coverBig) loadStoryCover(ch);   /* 누르기 전에 선명한 표지를 미리 받아 둔다(공유창은 누른 직후에 떠야 해서) */
     r.msg.addEventListener("focus", function () { r.stick.classList.add("compact"); });   /* 글 쓸 때는 키보드가 화면을 차지하므로 고정 영역을 줄인다 */
@@ -862,7 +862,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     S.r.fill = el("div", { class: "fill" });
     S.r.dot = el("div", { class: "dot" });
     S.r.marks = el("div", { class: "wv" });
-    var playing = S.clock.playing;
+    var playing = S.clock.playing, shr = shareBtn(S);
     put(box,
       el("div", { class: "clock" }, S.r.clockEl, el("small", { text: " / " + fmt(S.dur) })),
       el("div", { class: "bar", "aria-hidden": "true" }, S.r.marks, S.r.fill, S.r.dot),
@@ -873,7 +873,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         }),
         iconBtn("fwd", "30초 앞으로", function () { setClock(pos() + 30, S.clock.playing); tick(); }),
         el("button", { class: "btn", type: "button", text: S.showSet ? "닫기" : "입력", "aria-expanded": S.showSet ? "true" : "false", onclick: function () { S.showSet = !S.showSet; renderSync(); renderMarks(); tick(); } })),
-      S.showSet ? timeForm("이 위치로 맞추기") : null
+      S.showSet ? timeForm("이 위치로 맞추기") : null,
+      shr ? el("div", { class: "tot" }, el("div", { class: "tl" }, shr)) : null
     );
   }
   function timeForm(label) {
@@ -1030,6 +1031,10 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     S.audio.currentTime = Math.min(S.dur, Math.max(0, S.audio.currentTime + d));
     tick();
   }
+  function shareBtn(S) {   /* 인스타 스토리 공유(아이콘만). 사이트에서 선명한 표지가 있을 때만 */
+    if (!(SITE && S.ch.coverBig)) return null;
+    return (S.r.shr = el("button", { class: "shr", type: "button", "aria-label": "인스타 스토리로 공유할 이미지 만들기", title: "스토리로 공유", onclick: shareStory }, svgIcon(["M12 3v12", "M8 7l4-4 4 4", "M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"])));
+  }
   function speedBtn(S) {
     var b = el("button", { class: "spd", type: "button", "aria-label": "재생 속도" });
     function paint() { var v = getSpeed(); b.textContent = v + "x"; b.setAttribute("aria-label", "재생 속도 " + v + "배, 누르면 바뀝니다"); }
@@ -1055,7 +1060,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
           S.r.play,
           iconBtn("fwd", "30초 앞으로", function () { seekBy(30); }))),
       el("div", { class: "bar" }, S.r.marks, S.r.fill, S.r.dot, S.r.seek),
-      el("div", { class: "tot" }, speedBtn(S), el("span", { text: fmt(S.dur) })),
+      el("div", { class: "tot" }, el("div", { class: "tl" }, speedBtn(S), shareBtn(S)), el("span", { text: fmt(S.dur) })),
       S.r.err2);
     updatePlayBtn();
   }
