@@ -78,13 +78,13 @@ a { color: inherit; }
 .rkh .trk .tur { position: absolute; left: 0; top: 2px; width: 22px; height: 22px; }
 .rkh .trk.done .tur { left: calc(100% - 22px); }
 @media (prefers-reduced-motion: no-preference) {
-  .rkh .trk.walk .tur { animation: walk 14s cubic-bezier(.35, .1, .5, 1) both, bob 1s ease-in-out 14 alternate; }   /* 아주 느리게 걷고, 걸음마다 1px만 까딱 */
+  .rkh .trk.walk .tur { animation: walk 30s cubic-bezier(.35, .1, .5, 1) both, bob 1.5s ease-in-out 20 alternate; }   /* 엉금엉금: 30초에 걸쳐 걷고, 걸음마다 1px만 까딱 */
   @keyframes walk { from { left: 0; } to { left: calc(100% - 22px); } }
   @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-1px); } }
-  /* 아장아장: 앞다리·뒷다리가 엇갈려 앞뒤로 흔들리고 살짝 들린다(걷는 14초 동안만, 끝나면 제자리 0도) */
-  .rkh .trk.walk .tur .lg { transform-box: fill-box; transform-origin: 50% 0; animation: step 1.4s ease-in-out 10; }
-  .rkh .trk.walk .tur .lg.b { animation-delay: -0.7s; }
-  .rkh .trk.walk .tur.siot { animation: walk 14s cubic-bezier(.35, .1, .5, 1) both, hop .8s ease-in-out 18 alternate; }   /* 말풍선은 통통 튀며 */
+  /* 아장아장: 앞다리·뒷다리가 엇갈려 앞뒤로 흔들리고 살짝 들린다(걷는 30초 동안만, 끝나면 제자리 0도) */
+  .rkh .trk.walk .tur .lg { transform-box: fill-box; transform-origin: 50% 0; animation: step 2s ease-in-out 15; }
+  .rkh .trk.walk .tur .lg.b { animation-delay: -1s; }
+  .rkh .trk.walk .tur.siot { animation: walk 30s cubic-bezier(.35, .1, .5, 1) both, hop 1.2s ease-in-out 25 alternate; }   /* 말풍선은 통통 튀며 */
   @keyframes hop { from { transform: translateY(0); } to { transform: translateY(-3px); } }
   @keyframes step { 0%, 50%, 100% { transform: rotate(0) translateY(0); } 25% { transform: rotate(-24deg) translateY(-.5px); } 75% { transform: rotate(24deg) translateY(-.5px); } }
 }
