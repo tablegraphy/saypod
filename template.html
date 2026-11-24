@@ -351,6 +351,9 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
 .link2 { border: 0; background: none; padding: 4px 0; min-height: 32px; font: 500 13px var(--font); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
 .link2:hover { color: var(--fg); }
 .link2:disabled { cursor: default; opacity: .6; }
+.hrt { align-self: start; display: inline-flex; align-items: center; gap: 3px; min-width: 34px; min-height: 32px; padding: 0 0 0 4px; border: 0; background: none; color: var(--muted); font: 500 12px var(--mono); font-variant-numeric: tabular-nums; cursor: pointer; justify-content: flex-end; }
+.hrt.on { color: var(--fg); }
+.hrt:disabled { cursor: default; }
 .link2.tg { color: var(--fg); }
 .link2.tg .pv { color: var(--muted); font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .cm .rps { margin-top: 4px; border-left: 2px solid var(--line); padding-left: 10px; }
@@ -1235,6 +1238,45 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (!c.mine) out.push(reportBtn(c));
     return out;
   }
+  /* 하트: 댓글·답글 오른쪽에 하트와 숫자(0이면 숫자 없음). 로그인한 사람만 누르고(로그아웃이면 로그인 창), 내 댓글에는 못 누르고 숫자만 보인다.
+     아직 가려진 댓글에는 아예 안 그린다. 순위·정렬에는 쓰지 않는다. 누르면 바로 바뀌고 서버가 알려 준 숫자로 맞춘다 */
+  function heartIcon(on) {
+    var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("width", "18"); svg.setAttribute("height", "18"); svg.setAttribute("aria-hidden", "true");
+    var pa = document.createElementNS(ns, "path");
+    [["d", "M12 20.5s-7.6-4.7-9.4-9.4C1.3 7.7 3.4 4.6 6.6 4.6c2 0 3.5 1.1 4.2 2.3l1.2 1.9 1.2-1.9c.7-1.2 2.2-2.3 4.2-2.3 3.2 0 5.3 3.1 4 6.5-1.8 4.7-9.4 9.4-9.4 9.4z"],
+     ["fill", on ? "currentColor" : "none"], ["stroke", "currentColor"], ["stroke-width", "1.8"], ["stroke-linejoin", "round"]].forEach(function (a) { pa.setAttribute(a[0], a[1]); });
+    svg.appendChild(pa); return svg;
+  }
+  function heartBtn(c) {
+    if (c.mine && !c.hearts) return el("span");
+    var b = el("button", { class: "hrt", type: "button" }), busy = false;
+    function paint() {
+      b.classList.toggle("on", !!c.hearted);
+      b.setAttribute("aria-pressed", c.hearted ? "true" : "false");
+      b.setAttribute("aria-label", "하트" + (c.hearts ? " " + c.hearts + "개" : ""));
+      b.replaceChildren(heartIcon(!!c.hearted));
+      if (c.hearts) b.append(el("span", { class: "n", text: String(c.hearts) }));
+    }
+    paint();
+    if (c.mine) { b.disabled = true; return b; }
+    b.addEventListener("click", function () {
+      if (!me) { openAuth("login"); return; }
+      if (busy) return; busy = true;
+      var was = !!c.hearted, wasN = c.hearts | 0;
+      c.hearted = !was; c.hearts = Math.max(0, wasN + (was ? -1 : 1)); paint();
+      sb.rpc("toggle_heart", { p_id: c.id }).then(function (r) {
+        busy = false;
+        if (r.error) {
+          c.hearted = was; c.hearts = wasN; paint();
+          toast(/too_fast/.test(String(r.error.message || "")) ? "조금 뒤에 다시 눌러 주세요." : "하트를 누르지 못했어요. 다시 해 주세요.");
+          return;
+        }
+        if (r.data && typeof r.data.n === "number") { c.hearts = r.data.n; c.hearted = !!r.data.on; paint(); }
+      }, function () { busy = false; c.hearted = was; c.hearts = wasN; paint(); toast("하트를 누르지 못했어요. 다시 해 주세요."); });
+    });
+    return b;
+  }
   /* 신고: 남의 댓글에만, 로그인한 사람만. 한 번 누르면 '신고할까요?'(4초), 다시 누르면 접수. 자동으로 숨기지 않고 운영자(관리 화면)에게만 쌓인다 */
   var reported = {};
   try { (JSON.parse(store.get("ds_reported") || "[]") || []).forEach(function (i) { reported[i] = true; }); } catch (e) {}
@@ -1316,7 +1358,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     return el("div", { class: "rp" },   /* 답글은 방송 내용이 아니라 댓글에 대한 의견이라 시각을 보이지 않는다(서버에는 스포 방지용으로 그대로 저장) */
       el("div", null, whoEl(c), txEl(c, false),
         el("div", { class: "act" }, [replyBtn(c)].concat(ownBtns(c, false)))),
-      (!SB && caps.isAdmin) ? delBtn(c) : el("span"));
+      (!SB && caps.isAdmin) ? delBtn(c) : (SB ? heartBtn(c) : el("span")));
   }
   function actionsRow(c, replies, masked) {
     var S = sess; if (!SB) return null;
@@ -1355,7 +1397,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     return el("div", { class: "cm " + st },
       el("button", { class: "t", type: "button", "aria-label": fmt(c.sec) + " 10초 전부터 재생", text: fmt(c.sec), onclick: function () { playFrom(c.sec - 10); } }),   /* 듣다가 댓글을 쓰는 동안 시간이 흐르므로 10초 앞에서 시작 */
       el("div", null, who, masked ? el("span", { class: "mask", role: "img", "aria-label": "아직 가려진 댓글" }) : txEl(c, false), actionsRow(c, replies, masked)),
-      (!SB && caps.isAdmin) ? delBtn(c) : el("span"));
+      (!SB && caps.isAdmin) ? delBtn(c) : (SB && !masked ? heartBtn(c) : el("span")));
   }
   function delBtn(c) {
     var armed = false, b = el("button", { class: "del", type: "button", text: "삭제" });
@@ -2310,7 +2352,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   /* ---- 댓글 조회(몇 초마다). 앞으로 나올 댓글은 서버가 보내지 않는다 ---- */
   function startPolling(S) {
     S.map = {}; S.afterId = 0; S.prevUpto = -1; S.extra = 0; S.total = 0; S.polls = 0; S.lastFull = 0;
-    function norm(c) { return { id: c.id, sec: c.sec, text: c.body, nick: c.nickname, host: !!c.is_host, parent: c.parent_id || null, replyTo: c.reply_to_nick || "", mine: !!c.mine, edited: !!c.edited, badge: !!c.badge }; }
+    function norm(c) { return { id: c.id, sec: c.sec, text: c.body, nick: c.nickname, host: !!c.is_host, parent: c.parent_id || null, replyTo: c.reply_to_nick || "", mine: !!c.mine, edited: !!c.edited, badge: !!c.badge, hearts: c.hearts | 0, hearted: !!c.hearted }; }
     async function poll(full) {
       if (sess !== S) return;
       if (S.polling) { S.again = true; if (full) S.wantFull = true; return; }
@@ -2327,7 +2369,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         if (full) { S.map = {}; S.afterId = 0; S.lastFull = Date.now(); }
         r.data.forEach(function (c) {
           var n = norm(c), o = old[c.id];
-          if (o && (o.text !== n.text || o.edited !== n.edited || o.nick !== n.nick || o.host !== n.host || o.mine !== n.mine)) S.rev = (S.rev || 0) + 1;
+          if (o && (o.text !== n.text || o.edited !== n.edited || o.nick !== n.nick || o.host !== n.host || o.mine !== n.mine || o.hearts !== n.hearts || o.hearted !== n.hearted)) S.rev = (S.rev || 0) + 1;
           S.map[c.id] = n; if (c.id > S.afterId) S.afterId = c.id;
         });
         S.prevUpto = full ? upto : Math.max(S.prevUpto, upto);
