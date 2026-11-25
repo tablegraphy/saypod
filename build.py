@@ -208,6 +208,9 @@ def build_channel(ch):
             t = thumb_cached(u)
             if t:
                 e["thumb"] = t
+            bp = cover_big_cached("%s_ep%d" % (ch["id"], e["n"]), u)   # 잠금 화면용 선명한 방송 이미지(720px 파일)
+            if bp:
+                e["_big"] = bp
     eps.sort(key=lambda e: e["date"] + "%05d" % e["n"], reverse=True)
     links = {k: v for k, v in ch.get("links", {}).items() if v}
     return {
@@ -266,6 +269,14 @@ def main():
         if path:
             big[c["id"]] = path
             c["coverBig"] = "cover-%s.jpg" % c["id"]
+    art_files = {}
+    for c in channels:   # 방송 고유 이미지가 있는 회차: 잠금 화면 이미지용 파일 이름만 화면 데이터에 넣고 파일은 사이트 폴더에 둔다
+        for e in c["episodes"]:
+            path = e.pop("_big", "")
+            if path:
+                name = "art-%s-%s.jpg" % (c["id"], e["n"])
+                art_files[name] = path
+                e["art"] = name
     tpl = open(os.path.join(HERE, "template.html"), encoding="utf-8").read()
     assert "/*__DATA__*/null" in tpl
 
@@ -291,6 +302,8 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     for cid, path in big.items():
         shutil.copyfile(path, os.path.join(out_dir, "cover-%s.jpg" % cid))
+    for name, path in art_files.items():
+        shutil.copyfile(path, os.path.join(out_dir, name))
     adm_path = os.path.join(HERE, "admin.html")   # 관리자 화면(로그인한 관리자만 데이터를 봄): 회차·프로그램 목록과 연결 값을 끼워 내보낸다
     if os.path.exists(adm_path) and sbcfg:
         eps = [{"key": "%s-%s" % (c["id"], e["n"]), "ch": c["id"], "chName": c["name"], "n": e["n"], "title": e.get("title", ""), "date": e.get("date", ""), "sec": e.get("sec") or 0}

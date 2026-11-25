@@ -1111,13 +1111,19 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     });
     if (S.useAudio) mediaSessionInit(S);
   }
+  /* 잠금 화면·알림에 뜨는 이미지: 선명한 720px 파일(방송 고유 이미지 → 채널 표지), 없으면 작은 표지 */
+  function lockArt(S) {
+    var f = (SITE && (S.ep.art || S.ch.coverBig)) || "";
+    if (f) { try { return [{ src: new URL(f, location.href).href, sizes: "720x720", type: "image/jpeg" }]; } catch (e) {} }
+    return S.ch.cover ? [{ src: S.ch.cover, sizes: "160x160", type: "image/jpeg" }] : [];
+  }
   function mediaSessionInit(S) {
     if (!("mediaSession" in navigator) || !S.audio) return;
     var ms = navigator.mediaSession, a = S.audio;
     try {
       ms.metadata = new MediaMetadata({
         title: S.ep.title, artist: S.ch.name, album: "듣는 사이",
-        artwork: S.ch.cover ? [{ src: S.ch.cover, sizes: "160x160", type: "image/jpeg" }] : []
+        artwork: lockArt(S)
       });
     } catch (e) {}
     function h(name, fn) { try { ms.setActionHandler(name, fn); } catch (e) {} }
