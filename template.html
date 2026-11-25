@@ -111,7 +111,7 @@ h1, h2 { margin: 0; font-weight: 900; letter-spacing: -0.03em; text-wrap: balanc
 .btn.link { border: 0; background: none; min-height: 36px; padding: 0 6px; color: var(--fg); font-weight: 500; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
 .btn:focus-visible, .chip:focus-visible, a:focus-visible, .tgl:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 input:focus-visible { outline: none; border-color: var(--fg) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--sig) 45%, transparent); }
-input[type=text], input[type=email], input[type=password] { width: 100%; min-height: 48px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 14px; padding: 0 14px; font: 16px var(--font); }
+input[type=text], input[type=email], input[type=password], select { width: 100%; min-height: 48px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 14px; padding: 0 14px; font: 16px var(--font); }
 input:disabled { opacity: .55; }
 /* ---- 홈: 프로그램이 화면을 가득 채우는 반반 패널(폰에서는 좌우 끝까지) ---- */
 .home { display: flex; flex-direction: column; min-height: calc(100svh - var(--st, 0px) - 24px - env(safe-area-inset-bottom, 0px)); }
@@ -2415,6 +2415,12 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       var email = el("input", { type: "email", id: "auth-email", autocomplete: "email", inputmode: "email", maxlength: "120" });
       var pw = el("input", { type: "password", id: "auth-pw", autocomplete: (m === "signup" || m === "reset") ? "new-password" : "current-password", maxlength: "72" });
       var nick = el("input", { type: "text", id: "auth-nick", autocomplete: "nickname", maxlength: "12" });
+      /* 가입 때 성별·나이대(모두 필수, 드롭다운). 값은 서버 profiles.gender·age_band 에 저장되고 관리자 통계에서만 쓴다 */
+      function pick(id, label, items) {
+        return el("select", { id: id, "aria-label": label }, el("option", { value: "", text: "선택해 주세요" }), items.map(function (x) { return el("option", { value: x[0], text: x[1] }); }));
+      }
+      var gSel = pick("auth-gender", "성별", [["female", "여성"], ["male", "남성"], ["none", "선택 안 함"]]);
+      var bSel = pick("auth-band", "나이대", [["10-19", "10~19"], ["20-29", "20~29"], ["30-39", "30~39"], ["40-49", "40~49"], ["50-59", "50~59"], ["60+", "60 이상"], ["none", "선택 안 함"]]);
       var agree1 = el("input", { type: "checkbox", id: "auth-agree" }), agree2 = el("input", { type: "checkbox", id: "auth-age" });
       var titles = { login: "로그인", signup: "가입", forgot: "비밀번호 찾기", reset: "새 비밀번호", nick: "닉네임 변경" };
       var go = el("button", { class: "btn pri", type: "submit", text: { login: "로그인", signup: "가입하기", forgot: "메일 보내기", reset: "비밀번호 바꾸기", nick: "변경하기" }[m] });
@@ -2425,17 +2431,20 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       var form = el("form", { novalidate: true, onsubmit: async function (e) {
         e.preventDefault(); if (busy) return;
         busy = true; go.disabled = true; msg.textContent = ""; ok.textContent = "";
-        try { await submitAuth(m, email.value.trim(), pw.value, nick.value.trim(), fail, ok, { agree: agree1.checked, age: agree2.checked }); }
+        try { await submitAuth(m, email.value.trim(), pw.value, nick.value.trim(), fail, ok, { agree: agree1.checked, age: agree2.checked, gender: gSel.value, band: bSel.value }); }
         catch (x) { fail(authMsg(x)); }
         finally { busy = false; go.disabled = false; }
       } },
         (m === "reset" || m === "nick") ? null : field("이메일", email),
         (m === "forgot" || m === "nick") ? null : field(m === "reset" ? "새 비밀번호 (8자 이상)" : (m === "signup" ? "비밀번호 (8자 이상)" : "비밀번호"), pw),
         (m === "signup" || m === "nick") ? field(m === "nick" ? "새 닉네임 (한글·영문·숫자·밑줄, 단어 사이 띄어쓰기 1칸, 12자까지)" : "닉네임 (한글·영문·숫자·밑줄, 단어 사이 띄어쓰기 1칸, 12자까지 · 공개돼요)", nick) : null,
+        m === "signup" ? field("성별", gSel) : null,
+        m === "signup" ? field("나이대", bSel) : null,
+        m === "signup" ? el("p", { class: "fine", text: "*입력하신 정보는 더 나은 콘텐츠 제작을 위한 자료로 활용됩니다." }) : null,
         m === "signup" ? el("div", { class: "consent" },
           el("div", { class: "ct", text: "개인정보 수집·이용 동의 (필수)" }),
           el("ul", null,
-            el("li", { text: "수집 항목: 이메일, 비밀번호, 닉네임 (이용 중 생성: 댓글, 이어듣기 위치, 공개방송 입장 기록, 청취 기록)" }),
+            el("li", { text: "수집 항목: 이메일, 비밀번호, 닉네임, 성별, 나이대 (이용 중 생성: 댓글, 이어듣기 위치, 공개방송 입장 기록, 청취 기록)" }),
             el("li", { text: "이용 목적: 회원 가입·로그인, 댓글 서비스, 비밀번호 찾기, 이어듣기 저장, 이용 통계(콘텐츠 기획·서비스 개선)" }),
             el("li", { text: "보유 기간: 회원 탈퇴 때까지(이어듣기 위치는 마지막 저장 후 30일)" }),
             el("li", { text: "동의를 거부할 수 있어요. 거부하면 가입과 댓글 쓰기가 제한되고, 듣기와 댓글 읽기는 가입 없이 할 수 있어요." })),
@@ -2446,7 +2455,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         el("div", { class: "row2" }, go), msg, ok);
       put(card, xBtn(), el("h2", { text: titles[m] }), form,
         m === "nick" ? el("p", { class: "fine", text: "닉네임을 변경하면 지금까지 남긴 댓글의 닉네임도 함께 바뀌어요. 24시간에 한 번만 바꿀 수 있어요." }) : null,
-        m === "signup" ? el("p", { class: "fine", text: "받는 정보는 이메일·비밀번호·닉네임뿐이에요. 이메일은 로그인과 비밀번호 찾기에만 쓰고 공개하지 않아요." }) : null,
+        m === "signup" ? el("p", { class: "fine", text: "받는 정보는 이메일·비밀번호·닉네임·성별·나이대예요. 이메일은 로그인과 비밀번호 찾기에만 쓰고 공개하지 않아요. 성별과 나이대도 다른 이용자에게 보이지 않아요." }) : null,
         el("div", { class: "row" },
           m === "login" ? [link("가입하기", "signup"), link("비밀번호를 잊으셨나요?", "forgot")] : ((m === "reset" || m === "nick") ? null : link("로그인으로", "login")),
           (m === "nick" && me && me.admin) ? link("관리", "admin") : null,
@@ -2467,12 +2476,13 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("이메일 주소를 확인해 주세요.");
       if (pw.length < 8) return fail("비밀번호는 8자 이상으로 해 주세요.");
       if (!nickOk(nick)) return fail(NICK_RULE);
+      if (!consent.gender || !consent.band) return fail("성별과 나이대를 선택해 주세요.");
       var a = await sb.rpc("nickname_available", { p_nick: nick });
       if (a.error) return fail(authMsg(a.error));
       if (a.data === "taken") return fail("이미 사용 중인 닉네임이에요. 다른 이름을 써 주세요.");
       if (a.data === "reserved") return fail("이 닉네임은 쓸 수 없어요. 다른 이름을 써 주세요.");
       if (a.data !== "ok") return fail("닉네임 형식을 확인해 주세요.");
-      r = await sb.auth.signUp({ email: email, password: pw, options: { data: { nickname: nick, consent_privacy: (D && D.privacy ? D.privacy.version : ""), age14: true }, emailRedirectTo: location.origin + location.pathname } });
+      r = await sb.auth.signUp({ email: email, password: pw, options: { data: { nickname: nick, gender: consent.gender, age_band: consent.band, consent_privacy: (D && D.privacy ? D.privacy.version : ""), age14: true }, emailRedirectTo: location.origin + location.pathname } });
       if (r.error) return fail(authMsg(r.error));
       if (r.data && r.data.user && r.data.user.identities && r.data.user.identities.length === 0) return fail("이미 가입된 이메일이에요. 로그인해 주세요.");
       ok.textContent = "이메일 인증을 마치면 가입이 완료됩니다. 받으신 메일의 링크를 눌러 주세요. 메일이 안 보이면 스팸함도 확인해 주세요.";
