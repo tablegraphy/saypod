@@ -6,6 +6,9 @@ name: 사이트 갱신 (새 방송 반영)
 on:
   schedule:
     - cron: "3,13,23,33,43,53 * * * *"
+    # 거북목 라디오는 매월 2·4번째 목요일 오전 5시(한국)에 올라온다. 그날 05:00~06:59 에는 3분마다 확인한다(수요일 20:00~21:59 UTC).
+    # 2·4번째 목요일이 아닌 주에는 아래 gate 단계가 건너뛴다. 사이시옷은 올라오는 시각이 불규칙해서 위 10분 간격이 맡는다.
+    - cron: "*/3 20-21 * * 3"
   push:
     branches: [main]
   workflow_dispatch:
@@ -17,7 +20,24 @@ concurrency:
   group: pages
   cancel-in-progress: false
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.g.outputs.run }}
+    steps:
+      - id: g
+        run: |
+          run=true
+          if [ "${{ github.event.schedule }}" = "*/3 20-21 * * 3" ]; then
+            d=$(TZ=Asia/Seoul date +%-d)
+            nth=$(( (d - 1) / 7 + 1 ))
+            if [ "$nth" != "2" ] && [ "$nth" != "4" ]; then run=false; fi
+            echo "한국 날짜 ${d}일 = ${nth}번째 목요일, 실행: $run"
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
   build:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
