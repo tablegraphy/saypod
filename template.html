@@ -795,10 +795,11 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     r.msg = el("input", { type: "text", id: "msg-in", maxlength: String(CMT_MAX), autocomplete: "off", "aria-label": "댓글" });
     r.send = el("button", { class: "send", type: "submit", "aria-label": "남기기" }, sendIcon());
     r.form = el("form", { onsubmit: function (e) { e.preventDefault(); send(); } }, r.msg, r.send);
+    /* 댓글 시각: 방송은 계속 흐르지만, 댓글창을 누른 순간의 위치로 고정한다(생각하는 동안 밀리지 않게). 빈 채로 창을 벗어나면 풀리고 다음에 누를 때 새로 고정 */
+    r.msg.addEventListener("focus", function () { armStamp(); updateStampLabel(); });
+    r.msg.addEventListener("blur", function () { if (!r.msg.value.trim()) { S.stamp = null; updateStampLabel(); } });
     r.msg.addEventListener("input", function () {
-      var has = r.msg.value.trim().length > 0;
-      if (has && S.stamp == null && isSynced()) S.stamp = pos();
-      if (!has) S.stamp = null;
+      armStamp();   /* 포커스 없이 글이 들어온 경우(붙여넣기·자동완성)에도 비어 있으면 지금 위치로 고정 */
       updateStampLabel(); updateSay();
     });
     r.stage = el("div", { class: "rm-stage" });   /* 공개방송 무대(입장했을 때만 채워진다) */
@@ -1529,7 +1530,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       (SB ? (me && me.nick && c.nick === me.nick) : (c.uid && c.uid === caps.uid)) ? " · 나" : "",
       c.plat && PLAT_SHORT[c.plat] ? " · " + PLAT_SHORT[c.plat] : "");
     return el("div", { class: "cm " + st },
-      el("button", { class: "t", type: "button", "aria-label": fmt(c.sec) + " 10초 전부터 재생", text: fmt(c.sec), onclick: function () { playFrom(c.sec - 10); } }),   /* 듣다가 댓글을 쓰는 동안 시간이 흐르므로 10초 앞에서 시작 */
+      el("button", { class: "t", type: "button", "aria-label": fmt(c.sec) + " 3초 전부터 재생", text: fmt(c.sec), onclick: function () { playFrom(c.sec - 3); } }),   /* 댓글 시각은 댓글창을 누른 순간으로 고정되므로 3초 앞에서 시작 */
       el("div", null, who, masked ? el("span", { class: "mask", role: "img", "aria-label": "아직 가려진 댓글" }) : txEl(c, false), actionsRow(c, replies, masked)),
       (!SB && caps.isAdmin) ? delBtn(c) : (SB && !masked ? heartBtn(c) : el("span")));
   }
@@ -1586,6 +1587,10 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     r.rec.disabled = r.send.disabled;
     updateStampLabel(); updateSay();
   }
+  function armStamp() {
+    var S = sess; if (!S || S.stamp != null || S.replyTo || !isSynced()) return;
+    if (document.activeElement === S.r.msg || S.r.msg.value.trim()) S.stamp = pos();
+  }
   function updateStampLabel() {
     var S = sess; if (!S) return;
     var t = S.r.stamp;
@@ -1609,7 +1614,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
           sec: sec, text: txt.slice(0, CMT_MAX), nick: nick, uid: caps.uid || null, plat: SITE ? "" : (store.get("ds_plat") || ""), at: Date.now()
         });
       }
-      if (sess === S) { if (S.room) roomToTop(); r.msg.value = ""; S.stamp = null; r.err.textContent = ""; if (S.replyTo) { S.open[S.replyTo.root] = true; S.replyTo = null; renderReplyBar(); S.noFollowOnce = true; } if (SB && S.poll) S.poll(false); }
+      if (sess === S) { if (S.room) roomToTop(); r.msg.value = ""; S.stamp = null; r.err.textContent = ""; if (S.replyTo) { S.open[S.replyTo.root] = true; S.replyTo = null; renderReplyBar(); S.noFollowOnce = true; } armStamp(); if (SB && S.poll) S.poll(false); }
     } catch (e) {
       if (sess === S) r.err.textContent = SB ? sbSendError(e) : e && e.code === "invalid_argument" ? "댓글을 쓸 권한이 없어요. 초대된 분만 쓸 수 있어요."
         : e && e.code === "quota_exceeded" ? "저장 공간이 가득 찼어요." : "보내지 못했어요. 다시 눌러 주세요.";
@@ -1825,7 +1830,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var now = Date.now(); if (now - R.lastSay < SAY_GAP) return;   /* 연속 전송 막기 */
     R.lastSay = now;
     try { R.ch.send({ type: "broadcast", event: "say", payload: { u: liveUser, t: t } }); } catch (e) { return; }
-    S.r.msg.value = ""; S.stamp = null; updateStampLabel(); updateSay();
+    S.r.msg.value = ""; S.stamp = null; armStamp(); updateStampLabel(); updateSay();
     roomToTop();   /* 말한 뒤 내 말풍선이 보이도록 맨 위(무대)로 */
   }
   /* 말풍선: 같은 사람이 다시 말하면 이전 풍선은 바로 사라지고, 새 풍선이 맨 위에 그려진다. 5초 뒤 사라진다 */
