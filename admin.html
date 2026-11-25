@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>듣는 사이 관리</title>
+<style>
+:root { color-scheme: light dark; --bg: #FAFAF9; --surface: #FFFFFF; --fg: #14161B; --muted: #6A6E78; --line: #E8E8E4; --soft: #F0F0EC; --sig: #FFD83A; --warn: #E8870E; --bad: #D93025; --ok: #1E8E5A; --bar: #14161B; --hot: #F5C400; --pink: #E5527A; --blue: #4A78E0; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0F1013; --surface: #17181D; --fg: #F3F3F0; --muted: #9A9CA5; --line: #26272E; --soft: #22232A; --bar: #E8E8E4; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 "Pretendard Variable", Pretendard, system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px 60px; }
+header.top { display: flex; align-items: center; gap: 14px; padding: 18px 0 12px; flex-wrap: wrap; }
+header.top h1 { font-size: 20px; margin: 0; letter-spacing: -0.02em; }
+header.top .sp { flex: 1; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 7px 14px; font-size: 14px; }
+.btn:hover { background: var(--soft); }
+.btn.pri { background: var(--sig); border-color: transparent; color: #14161B; font-weight: 700; }
+.btn.sm { padding: 3px 10px; font-size: 12.5px; border-radius: 8px; }
+.btn[disabled] { opacity: .5; cursor: default; }
+nav.tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+nav.tabs button { border: 0; background: none; padding: 10px 14px; border-bottom: 3px solid transparent; color: var(--muted); font-weight: 600; }
+nav.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--sig); }
+h2 { font-size: 17px; margin: 26px 0 10px; letter-spacing: -0.02em; }
+h2:first-child { margin-top: 4px; }
+.note { color: var(--muted); font-size: 13px; }
+.err { color: var(--bad); padding: 14px; border: 1px solid var(--bad); border-radius: 12px; }
+.empty { color: var(--muted); padding: 22px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.card .v { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.card .l { color: var(--muted); font-size: 12.5px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td.wrapc { white-space: normal; min-width: 220px; }
+th { color: var(--muted); font-weight: 600; font-size: 12.5px; position: sticky; top: 0; background: var(--surface); }
+th.sort { cursor: pointer; }
+th.sort:hover { color: var(--fg); }
+td.num, th.num { text-align: right; }
+tr.row { cursor: pointer; }
+tr.row:hover td { background: var(--soft); }
+tr.sel td { background: var(--soft); }
+.chip { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); margin-left: 4px; }
+.chip.adm { background: var(--sig); color: #14161B; font-weight: 700; }
+.bad { color: var(--bad); } .warnc { color: var(--warn); } .okc { color: var(--ok); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .row2 { grid-template-columns: 1fr; } }
+input[type=text], input[type=email], input[type=password], select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; min-height: 36px; }
+.bars .b { display: grid; grid-template-columns: 90px 1fr 46px; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
+.bars .t { height: 12px; background: var(--soft); border-radius: 6px; overflow: hidden; }
+.bars .t i { display: block; height: 100%; background: var(--bar); border-radius: 6px; }
+.gauge { height: 10px; background: var(--soft); border-radius: 6px; overflow: hidden; margin: 6px 0; }
+.gauge i { display: block; height: 100%; background: var(--ok); }
+.gauge i.warn { background: var(--warn); } .gauge i.bad { background: var(--bad); }
+.heat { display: grid; grid-template-columns: 30px repeat(24, minmax(16px, 1fr)); gap: 2px; font-size: 11px; min-width: 640px; }
+.heat .h { text-align: center; color: var(--muted); }
+.heat .d { color: var(--muted); display: flex; align-items: center; }
+.heat .c { aspect-ratio: 1.3; border-radius: 3px; background: var(--soft); }
+.heat .c.l1 { background: #FFF3A8; } .heat .c.l2 { background: #FFE35C; } .heat .c.l3 { background: #F5C400; } .heat .c.l4 { background: #E08A00; } .heat .c.l5 { background: #B85C00; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.chart text { fill: var(--muted); font-size: 11px; }
+.login { max-width: 360px; margin: 14vh auto; display: grid; gap: 10px; }
+.login h1 { margin: 0 0 6px; font-size: 22px; }
+.detail { margin-top: 14px; }
+.detail h3 { font-size: 15px; margin: 18px 0 6px; }
+.cm { padding: 8px 0; border-bottom: 1px solid var(--line); white-space: normal; }
+.cm .m { color: var(--muted); font-size: 12.5px; }
+.sp8 { display: inline-block; width: 8px; }
+.chbar { display: flex; gap: 6px; align-items: center; margin: -6px 0 16px; flex-wrap: wrap; }
+.chbar[hidden] { display: none; }
+.chbar .lb { color: var(--muted); font-size: 13px; margin-right: 4px; }
+.chbar button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 14px; font-size: 13.5px; font-weight: 600; }
+.chbar button[aria-pressed="true"] { background: var(--sig); border-color: transparent; color: #14161B; }
+</style>
+__SB_SCRIPT__
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+(function () {
+  "use strict";
+  var CFG = { url: "__SB_URL__", key: "__SB_KEY__" };
+  var EPS = /*__EPISODES__*/[];
+  var CHS = /*__CHANNELS__*/[];
+  var EPMAP = {}; EPS.forEach(function (e) { EPMAP[e.key] = e; });
+  var GENDER = { female: "여성", male: "남성", none: "선택 안 함", unset: "미입력" };
+  var AGE = { "10-19": "10~19", "20-29": "20~29", "30-39": "30~39", "40-49": "40~49", "50-59": "50~59", "60+": "60 이상", none: "선택 안 함", unset: "미입력" };
+  var DOWN = ["일", "월", "화", "수", "목", "금", "토"];
+  var app = document.getElementById("app"), sb = null, state = { tab: "dash", ch: "all", ep: null, cache: {}, sort: {}, sel: null };
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function n0(x) { return Number(x || 0).toLocaleString("ko-KR"); }
+  function epName(k) { var e = EPMAP[k]; return e ? e.chName + " " + e.n + "화" : k; }
+  function epTitle(k) { var e = EPMAP[k]; return e ? e.title : ""; }
+  function mmss(sec) { sec = Math.max(0, Math.round(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ":" + (m < 10 ? "0" : "") + m : String(m)) + ":" + (s < 10 ? "0" : "") + s; }
+  function minTxt(sec) { sec = Math.round(sec || 0); return sec >= 3600 ? Math.floor(sec / 3600) + "시간 " + Math.round(sec % 3600 / 60) + "분" : (sec >= 60 ? Math.round(sec / 60) + "분" : sec + "초"); }
+  function kst(iso, withTime) {
+    if (!iso) return "-";
+    var d = new Date(iso); if (isNaN(d)) return "-";
+    var o = { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" };
+    if (withTime !== false) { o.hour = "2-digit"; o.minute = "2-digit"; o.hour12 = false; }
+    return new Intl.DateTimeFormat("ko-KR", o).format(d).replace(/\. /g, ".").replace(/\.$/, "").replace(/\.(\d\d):/, ". $1:");
+  }
+  function chParam() { return state.ch === "all" ? null : state.ch; }
+  function inCh(key) { return state.ch === "all" || String(key).split("-")[0] === state.ch; }
+  function chName(id) { var c = CHS.filter(function (x) { return x.id === id; })[0]; return c ? c.name : id; }
+  function pct(v, max) { return max > 0 ? Math.max(0, Math.min(100, v / max * 100)) : 0; }
+  function rpc(name, args) {
+    if (window.__rpc) return Promise.resolve(window.__rpc(name, args || {}));   /* 화면 시험용 대체 통로(실제 사이트에서는 쓰이지 않음) */
+    return sb.rpc(name, args || {}).then(function (r) { if (r.error) throw r.error; return r.data; });
+  }
+  function errText(e) { var m = String((e && (e.message || e.msg)) || e || ""); return /not_allowed/.test(m) ? "관리자 권한이 없어요." : "불러오지 못했어요. " + m.slice(0, 120); }
+  function cached(key, fn) { if (state.cache[key]) return Promise.resolve(state.cache[key]); return fn().then(function (d) { state.cache[key] = d; return d; }); }
+
+  /* ---------- 로그인 · 권한 확인 ---------- */
+  function showLogin(msg) {
+    app.innerHTML = '<form class="login" id="lf"><h1>듣는 사이 관리</h1><input type="email" id="le" autocomplete="email" placeholder="이메일" required><input type="password" id="lp" autocomplete="current-password" placeholder="비밀번호" required><button class="btn pri" type="submit">로그인</button><div class="note" id="lm">' + esc(msg || "관리자 계정으로 로그인해 주세요. 사이트에 이미 로그인해 있으면 바로 열려요.") + "</div></form>";
+    document.getElementById("lf").addEventListener("submit", function (e) {
+      e.preventDefault();
+      sb.auth.signInWithPassword({ email: document.getElementById("le").value.trim(), password: document.getElementById("lp").value }).then(function (r) {
+        if (r.error) { document.getElementById("lm").textContent = "이메일이나 비밀번호가 맞지 않아요."; return; }
+        start();
+      });
+    });
+  }
+  function start() {
+    if (window.__rpc) { showApp(); return; }
+    if (!sb) {
+      if (!window.supabase) { app.innerHTML = '<div class="err">로그인 기능을 불러오지 못했어요. 새로고침해 주세요.</div>'; return; }
+      sb = window.supabase.createClient(CFG.url, CFG.key, { auth: { flowType: "pkce", persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
+    }
+    app.innerHTML = '<div class="empty">확인하는 중…</div>';
+    sb.auth.getSession().then(function (s) {
+      if (!(s && s.data && s.data.session)) { showLogin(); return; }
+      return sb.rpc("my_roles").then(function (r) {
+        if (r.error || !r.data || !r.data.admin) { showLogin("관리자 권한이 없는 계정이에요. 관리자 계정으로 다시 로그인해 주세요."); sb.auth.signOut(); return; }
+        showApp();
+      });
+    }).catch(function () { showLogin(); });
+  }
+  window.adminStart = start;
+
+  /* ---------- 틀과 탭 ---------- */
+  var TABS = [["dash", "회차 한 장"], ["members", "멤버"], ["listen", "청취 통계"], ["moments", "인기 순간"], ["room", "공개방송"], ["usage", "서버 점검"], ["reports", "신고"]];
+  function showApp() {
+    app.innerHTML = '<header class="top"><h1>듣는 사이 관리</h1><span class="note">PC 화면에 맞춰져 있어요 · 읽기 전용(신고 처리만 가능)</span><span class="sp"></span><button class="btn" type="button" data-act="refresh">새로고침</button><a class="btn" href="./">사이트로</a></header><nav class="tabs" role="tablist"></nav><div class="chbar" id="chbar"></div><main id="view"></main>';
+    drawTabs(); go(state.tab);
+  }
+  function drawChBar() { var bar = document.getElementById("chbar"); if (!bar) return; var hide = state.tab === "usage" || state.tab === "reports"; bar.hidden = hide; if (hide) return; bar.innerHTML = '<span class="lb">프로그램</span>' + [{ id: "all", name: "전체" }].concat(CHS).map(function (c) { return '<button type="button" data-ch="' + esc(c.id) + '" aria-pressed="' + (state.ch === c.id) + '">' + esc(c.name) + "</button>"; }).join(""); }
+  function drawTabs() { document.querySelector("nav.tabs").innerHTML = TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (state.tab === t[0]) + '">' + t[1] + "</button>"; }).join(""); }
+  function go(tab) { state.tab = tab; state.sel = null; drawTabs(); drawChBar(); var v = document.getElementById("view"); v.innerHTML = '<div class="empty">불러오는 중…</div>'; ({ dash: viewDash, members: viewMembers, listen: viewListen, moments: viewMoments, room: viewRoom, usage: viewUsage, reports: viewReports })[tab](v).catch(function (e) { v.innerHTML = '<div class="err">' + esc(errText(e)) + "</div>"; }); }
+  function sortRows(rows, id, defKey, defDir) {
+    var s = state.sort[id] || { k: defKey, d: defDir }; var k = s.k, d = s.d;
+    return rows.slice().sort(function (a, b) { var x = a[k], y = b[k]; if (x == null) x = ""; if (y == null) y = ""; var r = (typeof x === "number" && typeof y === "number") ? x - y : String(x).localeCompare(String(y), "ko"); return d * r || 0; });
+  }
+  function th(id, k, label, cls) { var s = state.sort[id]; var mark = s && s.k === k ? (s.d > 0 ? " ▲" : " ▼") : ""; return '<th class="sort ' + (cls || "") + '" data-sort="' + id + ":" + k + '">' + label + mark + "</th>"; }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-ch],[data-tab],[data-act],[data-sort],[data-ep],[data-member],[data-mail],[data-dismiss],[data-delc]"); if (!t) return;
+    if (t.dataset.ch) { state.ch = t.dataset.ch; state.ep = null; go(state.tab); return; }
+    if (t.dataset.tab) { go(t.dataset.tab); return; }
+    if (t.dataset.sort) { var p = t.dataset.sort.split(":"), cur = state.sort[p[0]]; state.sort[p[0]] = { k: p[1], d: cur && cur.k === p[1] ? -cur.d : -1 }; go(state.tab); return; }
+    if (t.dataset.ep) { state.ep = t.dataset.ep; go("dash"); return; }
+    if (t.dataset.member) { openMember(t.dataset.member); return; }
+    if (t.dataset.mail) { revealMail(t); return; }
+    if (t.dataset.dismiss) { dismissReport(t); return; }
+    if (t.dataset.delc) { deleteComment(t); return; }
+    if (t.dataset.act === "refresh") { state.cache = {}; go(state.tab); }
+  });
+
+  /* ---------- 회차 한 장 대시보드 ---------- */
+  function curveSvg(mins, durMin) {
+    var N = Math.max(mins.length, durMin, 1), W = 900, L = 40, R = 8, bw = (W - L - R) / N, panels = [{ h: 90, t: "듣는 사람 수 (그 1분 구간을 들은 청취 수)" }, { h: 56, t: "되감기 · 건너뛰기 · 이탈" }, { h: 70, t: "댓글 · 하트" }], y = 14, out = "", i;
+    function mx(f) { var m = 1; mins.forEach(function (x) { m = Math.max(m, f(x)); }); return m; }
+    var mCov = mx(function (x) { return x.cover; }), mSig = mx(function (x) { return Math.max(x.rew, x.skp, x.ext); }), mCm = mx(function (x) { return Math.max(x.cm, x.hr); });
+    var H = panels.reduce(function (a, p) { return a + p.h + 26; }, 0) + 30;
+    out += '<svg class="chart" viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="1분 단위 곡선">';
+    function panel(idx, draw) {
+      var p = panels[idx], top = y + 14, base = top + p.h;
+      out += '<text x="' + L + '" y="' + y + '">' + p.t + "</text>";
+      out += '<line x1="' + L + '" y1="' + base + '" x2="' + (W - R) + '" y2="' + base + '" stroke="currentColor" opacity=".25"/>';
+      draw(top, base, p.h); y = base + 22;
+    }
+    panel(0, function (top, base, h) { mins.forEach(function (x, i) { var bh = x.cover / mCov * h; out += '<rect x="' + (L + i * bw).toFixed(1) + '" y="' + (base - bh).toFixed(1) + '" width="' + Math.max(bw - 0.6, 0.8).toFixed(1) + '" height="' + bh.toFixed(1) + '" fill="var(--bar)" opacity=".85"><title>' + i + "분: 듣는 사람 " + x.cover + "</title></rect>"; }); out += '<text x="' + (L - 4) + '" y="' + (top + 8) + '" text-anchor="end">' + mCov + "</text>"; });
+    panel(1, function (top, base, h) { mins.forEach(function (x, i) { var w3 = Math.max((bw - 0.6) / 3, 0.8), x0 = L + i * bw; [["rew", "var(--warn)"], ["skp", "var(--blue)"], ["ext", "var(--bad)"]].forEach(function (c, k) { var v = x[c[0]]; if (!v) return; var bh = v / mSig * h; out += '<rect x="' + (x0 + k * w3).toFixed(1) + '" y="' + (base - bh).toFixed(1) + '" width="' + w3.toFixed(1) + '" height="' + bh.toFixed(1) + '" fill="' + c[1] + '"><title>' + i + "분: " + { rew: "되감기", skp: "건너뛰기", ext: "이탈" }[c[0]] + " " + v + "</title></rect>"; }); }); out += '<text x="' + (L - 4) + '" y="' + (top + 8) + '" text-anchor="end">' + mSig + "</text>"; });
+    panel(2, function (top, base, h) { mins.forEach(function (x, i) { var w2 = Math.max((bw - 0.6) / 2, 0.8), x0 = L + i * bw; if (x.cm) { var bh = x.cm / mCm * h; out += '<rect x="' + x0.toFixed(1) + '" y="' + (base - bh).toFixed(1) + '" width="' + w2.toFixed(1) + '" height="' + bh.toFixed(1) + '" fill="var(--hot)"><title>' + i + "분: 댓글 " + x.cm + "</title></rect>"; } if (x.hr) { var hh = x.hr / mCm * h; out += '<rect x="' + (x0 + w2).toFixed(1) + '" y="' + (base - hh).toFixed(1) + '" width="' + w2.toFixed(1) + '" height="' + hh.toFixed(1) + '" fill="var(--pink)"><title>' + i + "분: 하트 " + x.hr + "</title></rect>"; } }); out += '<text x="' + (L - 4) + '" y="' + (top + 8) + '" text-anchor="end">' + mCm + "</text>"; });
+    var step = N > 120 ? 20 : N > 60 ? 10 : 5;
+    for (i = 0; i <= N; i += step) out += '<text x="' + (L + i * bw).toFixed(1) + '" y="' + (H - 4) + '" text-anchor="middle">' + i + "분</text>";
+    return out + "</svg>";
+  }
+  function legend(items) { return '<div class="legend">' + items.map(function (x) { return '<span><i data-c="' + x[0] + '" class="lg-' + x[0] + '"></i>' + x[1] + "</span>"; }).join("") + "</div>"; }
+  function splitBars(sp, listeners) {
+    var rows = [["1", "한 번에"], ["2", "2번에 나눠"], ["3", "3번에 나눠"], ["4", "4번 이상"]];
+    return '<div class="bars">' + rows.map(function (r) { var v = Number(sp[r[0]] || 0); return '<div class="b"><span>' + r[1] + '</span><span class="t"><i data-w="' + pct(v, listeners).toFixed(0) + '"></i></span><span>' + v + "명</span></div>"; }).join("") + "</div>";
+  }
+  function applyWidths(root) { (root || document).querySelectorAll("[data-w]").forEach(function (e) { e.style.width = e.dataset.w + "%"; }); (root || document).querySelectorAll(".lg-rew").forEach(function (e) { e.style.background = "var(--warn)"; }); (root || document).querySelectorAll(".lg-skp").forEach(function (e) { e.style.background = "var(--blue)"; }); (root || document).querySelectorAll(".lg-ext").forEach(function (e) { e.style.background = "var(--bad)"; }); (root || document).querySelectorAll(".lg-cover").forEach(function (e) { e.style.background = "var(--bar)"; }); (root || document).querySelectorAll(".lg-cm").forEach(function (e) { e.style.background = "var(--hot)"; }); (root || document).querySelectorAll(".lg-hr").forEach(function (e) { e.style.background = "var(--pink)"; }); }
+  function chCompare(d) {
+    var rows = (d.channels || []).map(function (c) { var nEp = EPS.filter(function (e) { return e.ch === c.channel; }).length; return "<tr><td>" + esc(chName(c.channel)) + '</td><td class="num">' + nEp + '</td><td class="num">' + c.sessions + '</td><td class="num">' + c.listeners + '</td><td class="num">' + (c.sessions ? minTxt(c.avg_listened) : "-") + '</td><td class="num">' + (c.sessions ? c.finish_pct + "%" : "-") + '</td><td class="num">' + c.comments + '</td><td class="num">' + c.commenters + '</td><td class="num">' + c.hearts + '</td><td class="num">' + c.rooms + '</td><td class="num">' + c.room_people + "</td></tr>"; }).join("");
+    return '<div class="panel"><table><tr><th>프로그램</th><th class="num">회차 수</th><th class="num">청취 횟수</th><th class="num">듣는 사람</th><th class="num">평균 청취</th><th class="num">끝까지 %</th><th class="num">댓글</th><th class="num">댓글 쓴 사람</th><th class="num">하트</th><th class="num">공개방송 참여(건)</th><th class="num">참여한 사람</th></tr>' + (rows || '<tr><td colspan="11" class="note">기록이 아직 없어요.</td></tr>') + '</table><div class="note">두 프로그램을 모두 들은 사람 ' + n0(d.both_listeners) + "명 · 두 프로그램에서 활동(댓글·공개방송·청취)한 멤버 " + n0(d.both_members) + "명</div></div>";
+  }
+  function viewDash(v) {
+    return Promise.all([cached("episodes", function () { return rpc("admin_episodes"); }), cached("chs", function () { return rpc("admin_channels"); })]).then(function (r0) {
+      var list = r0[0].filter(function (x) { return inCh(x.episode_key); }), chs = r0[1];
+      var keys = EPS.map(function (e) { return e.key; }).filter(inCh); list.forEach(function (x) { if (keys.indexOf(x.episode_key) < 0) keys.push(x.episode_key); });
+      if (!state.ep || keys.indexOf(state.ep) < 0) { var best = list.slice().sort(function (a, b) { return (b.sessions + b.comments) - (a.sessions + a.comments); })[0]; state.ep = best ? best.episode_key : (keys[0] || null); }
+      if (!state.ep) { v.innerHTML = '<div class="empty">회차가 없어요.</div>'; return; }
+      var sel = '<select id="epsel">' + keys.map(function (k) { return '<option value="' + esc(k) + '"' + (k === state.ep ? " selected" : "") + ">" + esc(epName(k)) + (epTitle(k) ? " · " + esc(epTitle(k).replace(/^\s*\[[^\]]*\]\s*/, "")) : "") + "</option>"; }).join("") + "</select>";
+      return Promise.all([cached("ed:" + state.ep, function () { return rpc("admin_episode_detail", { p_ep: state.ep }); }), cached("hot", function () { return rpc("admin_hot_moments", { p_limit: 100 }); }), cached("att", function () { return rpc("admin_attendance"); })]).then(function (rs) {
+        var d = rs[0], hot = rs[1].filter(function (x) { return x.episode_key === state.ep; }).slice(0, 10), att = rs[2].filter(function (x) { return x.episode_key === state.ep; })[0];
+        var e = EPMAP[state.ep], durMin = e && e.sec ? Math.ceil(e.sec / 60) : 0, has = d.sessions > 0;
+        var h = "<h2>프로그램 비교</h2>" + chCompare(chs) + '<h2>' + sel + '<span class="sp8"></span><span class="note">' + esc(epTitle(state.ep)) + "</span></h2>";
+        h += '<div class="cards"><div class="card"><div class="v">' + n0(d.sessions) + '</div><div class="l">청취 횟수</div></div><div class="card"><div class="v">' + n0(d.listeners) + '</div><div class="l">듣는 사람(기기·계정)</div></div><div class="card"><div class="v">' + (has ? minTxt(d.avg_listened) : "-") + '</div><div class="l">평균 청취 시간</div></div><div class="card"><div class="v">' + (has ? d.finish_pct + "%" : "-") + '</div><div class="l">끝까지 들은 비율</div></div><div class="card"><div class="v">' + n0(d.comments) + '</div><div class="l">댓글</div></div><div class="card"><div class="v">' + n0(d.hearts) + '</div><div class="l">하트</div></div><div class="card"><div class="v">' + n0(d.rooms) + '</div><div class="l">공개방송 참여</div></div></div>';
+        if (!has) h += '<div class="empty">이 회차의 청취 기록이 아직 없어요. 청취 기록은 2026-11-25부터 쌓여요.</div>';
+        h += "<h2>1분 단위 곡선</h2>";
+        h += '<div class="panel">' + curveSvg(d.minutes || [], durMin) + legend([["cover", "듣는 사람"], ["rew", "되감기(그 위치에서 뒤로)"], ["skp", "건너뛰기(그 위치에서 앞으로)"], ["ext", "이탈(멈추고 나간 위치)"], ["cm", "댓글"], ["hr", "하트"]]) + "</div>";
+        h += '<div class="row2"><div><h2>한 사람이 몇 번에 나눠 듣나</h2><div class="panel">' + (has ? splitBars(d.split || {}, d.listeners) + '<div class="note">첫 청취부터 마지막 청취까지 평균 ' + (d.avg_span_days || 0) + "일 (두 번 이상 들은 사람 기준)</div>" : '<div class="note">청취 기록이 쌓이면 보여요.</div>') + '</div></div>';
+        h += "<div><h2>댓글이 많이 달린 순간 TOP 10</h2><div class=\"panel\">" + (hot.length ? "<table><tr><th>구간(방송 시각)</th><th class=\"num\">댓글</th><th class=\"num\">하트</th><th>대표 댓글</th></tr>" + hot.map(function (x) { return "<tr><td>" + x.m + "분 " + mmss(x.m * 60) + "~</td><td class=\"num\">" + x.comments + '</td><td class="num">' + x.hearts + '</td><td class="wrapc">' + esc(x.sample) + "</td></tr>"; }).join("") + "</table>" : '<div class="note">댓글이 아직 없어요.</div>') + "</div></div></div>";
+        h += "<h2>공개방송 참여 " + (att ? att.n + "명" : "0명") + "</h2><div class=\"panel\">" + (att ? att.members.map(function (m) { return esc(m.nickname) + ' <span class="note">' + kst(m.first_at) + "</span>"; }).join(" · ") : '<span class="note">참여 기록이 없어요.</span>') + "</div>";
+        v.innerHTML = h; applyWidths(v);
+        document.getElementById("epsel").addEventListener("change", function (ev) { state.ep = ev.target.value; go("dash"); });
+      });
+    });
+  }
+
+  /* ---------- 멤버 ---------- */
+  function distBars(arr, labels) { var tot = arr.reduce(function (a, x) { return a + x.n; }, 0); return '<div class="bars">' + arr.map(function (x) { return '<div class="b"><span>' + esc(labels[x.k] || x.k) + '</span><span class="t"><i data-w="' + pct(x.n, tot).toFixed(0) + '"></i></span><span>' + x.n + "명</span></div>"; }).join("") + "</div>"; }
+  function dailySvg(daily) { var W = 560, H = 120, L = 24, bw = (W - L - 6) / Math.max(daily.length, 1), m = 1, out = '<svg class="chart" viewBox="0 0 ' + W + " " + (H + 22) + '" width="100%" role="img" aria-label="일별 가입">'; daily.forEach(function (x) { m = Math.max(m, x.n); }); daily.forEach(function (x, i) { var bh = x.n / m * H; out += '<rect x="' + (L + i * bw).toFixed(1) + '" y="' + (H - bh + 4).toFixed(1) + '" width="' + Math.max(bw - 1, 1).toFixed(1) + '" height="' + bh.toFixed(1) + '" fill="var(--bar)"><title>' + x.d + ": " + x.n + "명</title></rect>"; }); out += '<text x="' + (L - 4) + '" y="14" text-anchor="end">' + m + "</text>"; if (daily.length) { out += '<text x="' + L + '" y="' + (H + 18) + '">' + esc(daily[0].d.slice(5)) + '</text><text x="' + (W - 6) + '" y="' + (H + 18) + '" text-anchor="end">' + esc(daily[daily.length - 1].d.slice(5)) + "</text>"; } return out + "</svg>"; }
+  function viewMembers(v) {
+    return Promise.all([cached("members:" + state.ch, function () { return rpc("admin_members", { p_search: "", p_limit: 500, p_channel: chParam() }); }), cached("signups", function () { return rpc("admin_signups", { p_days: 60 }); })]).then(function (rs) {
+      var rows = rs[0], su = rs[1], q = (state.q || "").toLowerCase();
+      var list = sortRows(rows.filter(function (r) { return !q || String(r.nickname).toLowerCase().indexOf(q) >= 0; }), "m", "joined", -1);
+      var h = '<h2>가입자 ' + n0(su.total) + "명</h2>";
+      h += '<div class="row2"><div class="panel"><div class="note">최근 60일 가입(일별)</div>' + dailySvg(su.daily || []) + '</div><div class="panel"><div class="row2"><div><div class="note">성별</div>' + distBars(su.gender || [], GENDER) + '</div><div><div class="note">나이대</div>' + distBars(su.age || [], AGE) + "</div></div></div></div>";
+      h += '<h2>멤버 목록 <input type="text" id="mq" placeholder="닉네임 검색" value="' + esc(state.q || "") + '"> <span class="note">' + (state.ch === "all" ? "댓글·공개방송·청취는 두 프로그램 합계예요" : esc(chName(state.ch)) + " 활동만 센 값이에요") + "</span></h2>";
+      h += '<div class="panel"><table><tr>' + th("m", "nickname", "닉네임") + th("m", "joined", "가입 일시") + th("m", "gender", "성별") + th("m", "age_band", "나이대") + "<th>인증</th><th>이메일</th>" + th("m", "comments", "댓글", "num") + th("m", "replies", "답글", "num") + th("m", "hearts_received", "받은 하트", "num") + th("m", "rooms", "공개방송", "num") + th("m", "listens", "청취", "num") + th("m", "listened_sec", "총 청취 시간", "num") + th("m", "last_active", "마지막 활동") + "</tr>";
+      list.forEach(function (r) { h += '<tr class="row' + (state.sel === r.id ? " sel" : "") + '" data-member="' + esc(r.id) + '"><td>' + esc(r.nickname) + (r.is_admin ? '<span class="chip adm">관리자</span>' : "") + (r.hosts || []).map(function (c) { return '<span class="chip">' + esc(chName(c)) + " 진행자</span>"; }).join("") + "</td><td>" + kst(r.joined) + "</td><td>" + esc(GENDER[r.gender || "unset"]) + "</td><td>" + esc(AGE[r.age_band || "unset"]) + "</td><td>" + (r.verified ? '<span class="okc">완료</span>' : '<span class="warnc">대기</span>') + '</td><td><span id="em-' + esc(r.id) + '">' + esc(r.email_masked) + '</span> <button class="btn sm" type="button" data-mail="' + esc(r.id) + '">보기</button></td><td class="num">' + r.comments + '</td><td class="num">' + r.replies + '</td><td class="num">' + r.hearts_received + '</td><td class="num">' + r.rooms + '</td><td class="num">' + r.listens + '</td><td class="num">' + (r.listened_sec ? minTxt(r.listened_sec) : "-") + "</td><td>" + kst(r.last_active) + "</td></tr>"; });
+      h += "</table>" + (list.length ? "" : '<div class="empty">조건에 맞는 멤버가 없어요.</div>') + '</div><div id="mdetail" class="detail"></div>';
+      v.innerHTML = h; applyWidths(v);
+      document.getElementById("mq").addEventListener("input", function (e) { state.q = e.target.value; var pos = e.target.selectionStart; viewMembers(v).then(function () { var i = document.getElementById("mq"); i.focus(); i.setSelectionRange(pos, pos); }); });
+      if (state.sel) openMember(state.sel);
+    });
+  }
+  function revealMail(btn) { var id = btn.dataset.mail; rpc("admin_member_email", { p_user: id }).then(function (e) { var s = document.getElementById("em-" + id); if (s) s.textContent = e || "(없음)"; btn.remove(); }).catch(function (e) { btn.textContent = errText(e).slice(0, 12); }); }
+  function openMember(id) {
+    state.sel = id; document.querySelectorAll("tr.row").forEach(function (r) { r.classList.toggle("sel", r.dataset.member === id); });
+    var box = document.getElementById("mdetail"); if (!box) return; box.innerHTML = '<div class="empty">불러오는 중…</div>';
+    var who = (state.cache["members:" + state.ch] || []).filter(function (m) { return m.id === id; })[0] || {};
+    rpc("admin_member_detail", { p_user: id }).then(function (d) {
+      var h = '<div class="panel"><h2>' + esc(who.nickname || "") + " 님의 기록</h2>";
+      h += "<h3>댓글 " + d.comments.length + "개</h3>" + (d.comments.length ? d.comments.map(function (c) { return '<div class="cm"><div class="m">' + esc(epName(c.episode_key)) + " · " + (c.parent_id ? "답글" : mmss(c.sec)) + " · " + kst(c.created_at) + " · 하트 " + c.hearts + (c.reports ? ' · <span class="bad">신고 ' + c.reports + "</span>" : "") + "</div>" + esc(c.body) + "</div>"; }).join("") : '<div class="note">남긴 댓글이 없어요.</div>');
+      h += "<h3>공개방송 참여 " + d.attendance.length + "회</h3>" + (d.attendance.length ? d.attendance.map(function (a) { return esc(epName(a.episode_key)) + ' <span class="note">' + kst(a.first_at) + "</span>"; }).join(" · ") : '<div class="note">참여 기록이 없어요.</div>');
+      h += "<h3>청취 기록 " + d.listens.length + "건 (최근 100건까지)</h3>" + (d.listens.length ? "<table><tr><th>회차</th><th>시작</th><th class=\"num\">들은 시간</th><th class=\"num\">멈춘 위치</th><th>끝까지</th><th class=\"num\">되감기</th><th class=\"num\">건너뛰기</th></tr>" + d.listens.map(function (s) { return "<tr><td>" + esc(epName(s.episode_key)) + "</td><td>" + kst(s.started_at) + '</td><td class="num">' + minTxt(s.listened_sec) + '</td><td class="num">' + mmss(s.end_sec) + "</td><td>" + (s.finished ? "예" : "아니오") + '</td><td class="num">' + s.rewinds + '</td><td class="num">' + s.skips + "</td></tr>"; }).join("") + "</table>" : '<div class="note">청취 기록이 없어요(기록은 2026-11-25부터 쌓여요).</div>') + "</div>";
+      box.innerHTML = h; box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }).catch(function (e) { box.innerHTML = '<div class="err">' + esc(errText(e)) + "</div>"; });
+  }
+
+  /* ---------- 청취 통계 ---------- */
+  function viewListen(v) {
+    var days = state.days || 90, metric = state.metric || "n";
+    return Promise.all([cached("heat:" + days + ":" + state.ch, function () { return rpc("admin_listen_heatmap", { p_days: days, p_channel: chParam() }); }), cached("episodes", function () { return rpc("admin_episodes"); })]).then(function (rs) {
+      var hm = rs[0], eps = rs[1], grid = {}, mxv = 0, cells = [];
+      (hm.cells || []).forEach(function (c) { var val = metric === "n" ? c.n : Math.round(c.sec / 60); grid[c.dow + ":" + c.hour] = val; mxv = Math.max(mxv, val); cells.push({ dow: c.dow, hour: c.hour, v: val }); });
+      cells.sort(function (a, b) { return b.v - a.v; });
+      var h = '<h2>언제 가장 많이 듣나 <select id="hd"><option value="30"' + (days === 30 ? " selected" : "") + '>최근 30일</option><option value="90"' + (days === 90 ? " selected" : "") + '>최근 90일</option><option value="365"' + (days === 365 ? " selected" : "") + '>최근 1년</option></select> <select id="hm"><option value="n"' + (metric === "n" ? " selected" : "") + '>청취 시작 횟수</option><option value="sec"' + (metric === "sec" ? " selected" : "") + '>들은 시간(분)</option></select></h2>';
+      if (!(hm.sessions > 0)) { h += '<div class="empty">청취 기록이 아직 없어요. 사람들이 사이트에서 방송을 들으면 요일·시간대가 쌓여요.</div>'; }
+      else {
+        h += '<div class="panel"><div class="heat"><span></span>';
+        for (var hr = 0; hr < 24; hr++) h += '<span class="h">' + hr + "</span>";
+        [1, 2, 3, 4, 5, 6, 0].forEach(function (dw) { h += '<span class="d">' + DOWN[dw] + "</span>"; for (var hh = 0; hh < 24; hh++) { var val = grid[dw + ":" + hh] || 0, lv = val ? Math.min(5, Math.max(1, Math.ceil(5 * val / mxv))) : 0; h += '<span class="c l' + lv + '" title="' + DOWN[dw] + "요일 " + hh + "시: " + val + (metric === "n" ? "회" : "분") + '"></span>'; } });
+        h += "</div>" + '<div class="note">총 ' + n0(hm.sessions) + "회 · 한국시간 기준 · 진할수록 많이 들은 시간</div>" + (cells.length ? '<div class="note">가장 많이 듣는 시간 TOP 3: ' + cells.slice(0, 3).map(function (c) { return DOWN[c.dow] + "요일 " + c.hour + "시(" + c.v + (metric === "n" ? "회" : "분") + ")"; }).join(" · ") + "</div>" : "") + "</div>";
+      }
+      var rows = sortRows(eps.filter(function (x) { return inCh(x.episode_key); }).map(function (x) { return { key: x.episode_key, name: epName(x.episode_key), sessions: x.sessions, listeners: x.listeners, avg_listened: x.avg_listened, finish_pct: x.finish_pct, comments: x.comments, hearts: x.hearts, rooms: x.rooms }; }), "ep", "sessions", -1);
+      h += "<h2>인기 회차 <span class=\"note\">(행을 누르면 그 회차 한 장 대시보드)</span></h2><div class=\"panel\"><table><tr>" + th("ep", "name", "회차") + th("ep", "sessions", "청취 횟수", "num") + th("ep", "listeners", "듣는 사람", "num") + th("ep", "avg_listened", "평균 청취", "num") + th("ep", "finish_pct", "끝까지 %", "num") + th("ep", "comments", "댓글", "num") + th("ep", "hearts", "하트", "num") + th("ep", "rooms", "공개방송", "num") + "</tr>";
+      rows.forEach(function (r) { h += '<tr class="row" data-ep="' + esc(r.key) + '"><td>' + esc(r.name) + ' <span class="note">' + esc(epTitle(r.key).replace(/^\s*\[[^\]]*\]\s*/, "").slice(0, 24)) + '</span></td><td class="num">' + r.sessions + '</td><td class="num">' + r.listeners + '</td><td class="num">' + (r.sessions ? minTxt(r.avg_listened) : "-") + '</td><td class="num">' + (r.sessions ? r.finish_pct + "%" : "-") + '</td><td class="num">' + r.comments + '</td><td class="num">' + r.hearts + '</td><td class="num">' + r.rooms + "</td></tr>"; });
+      h += "</table>" + (rows.length ? "" : '<div class="empty">아직 기록이 없어요.</div>') + "</div>";
+      v.innerHTML = h;
+      document.getElementById("hd").addEventListener("change", function (e) { state.days = Number(e.target.value); go("listen"); });
+      document.getElementById("hm").addEventListener("change", function (e) { state.metric = e.target.value; go("listen"); });
+    });
+  }
+
+  /* ---------- 인기 순간 ---------- */
+  function viewMoments(v) {
+    return cached("hotv:" + state.ch, function () { return rpc("admin_hot_moments", { p_limit: 100, p_channel: chParam() }); }).then(function (rows) {
+      var h = '<h2>댓글이 많이 달린 순간 <span class="note">방송 시각 1분 단위, 모든 회차 TOP ' + rows.length + "</span></h2>";
+      if (!rows.length) { v.innerHTML = h + '<div class="empty">댓글이 아직 없어요.</div>'; return; }
+      h += '<div class="panel"><table><tr><th>순위</th><th>회차</th><th>구간(방송 시각)</th><th class="num">댓글</th><th class="num">하트</th><th>대표 댓글</th></tr>';
+      rows.forEach(function (x, i) { h += '<tr class="row" data-ep="' + esc(x.episode_key) + '"><td>' + (i + 1) + "</td><td>" + esc(epName(x.episode_key)) + "</td><td>" + mmss(x.m * 60) + "~" + mmss(x.m * 60 + 59) + '</td><td class="num">' + x.comments + '</td><td class="num">' + x.hearts + '</td><td class="wrapc">' + esc(x.sample) + "</td></tr>"; });
+      v.innerHTML = h + "</table></div>";
+    });
+  }
+
+  /* ---------- 공개방송 ---------- */
+  function viewRoom(v) {
+    return cached("att", function () { return rpc("admin_attendance"); }).then(function (all) {
+      var rows = all.filter(function (r) { return inCh(r.episode_key); });
+      var h = "<h2>공개방송 참여 기록 <span class=\"note\">회차별 첫 입장 시각</span></h2>";
+      if (!rows.length) { v.innerHTML = h + '<div class="empty">참여 기록이 아직 없어요.</div>'; return; }
+      h += '<div class="panel"><table><tr><th>회차</th><th class="num">인원</th><th>참여자(첫 입장 시각)</th></tr>';
+      rows.forEach(function (r) { h += '<tr><td>' + esc(epName(r.episode_key)) + '</td><td class="num">' + r.n + '</td><td class="wrapc">' + r.members.map(function (m) { return esc(m.nickname) + ' <span class="note">' + kst(m.first_at) + "</span>"; }).join(" · ") + "</td></tr>"; });
+      v.innerHTML = h + "</table></div>";
+    });
+  }
+
+  /* ---------- 서버 점검 ---------- */
+  var DB_LIMIT = 500 * 1024 * 1024;
+  function gauge(v, max, warnAt, badAt) { var p = pct(v, max); return '<div class="gauge"><i class="' + (p >= badAt ? "bad" : p >= warnAt ? "warn" : "") + '" data-w="' + p.toFixed(0) + '"></i></div>'; }
+  function viewUsage(v) {
+    return cached("usage", function () { return rpc("admin_usage"); }).then(function (u) {
+      var live = null, h = "<h2>서버 사용량 점검 <span class=\"note\">무료 요금제 기준 · 읽기 전용</span></h2>";
+      h += '<div class="cards">';
+      h += '<div class="card"><div class="l">지금 접속 중(실시간 연결)</div><div class="v" id="live">…</div><div id="livegauge"></div><div class="l">한도 동시 200명 — 넘으면 새 연결이 거절돼요</div></div>';
+      h += '<div class="card"><div class="l">데이터베이스 크기</div><div class="v">' + (u.db_bytes / 1048576).toFixed(1) + ' MB</div>' + gauge(u.db_bytes, DB_LIMIT, 60, 85) + '<div class="l">한도 500 MB (' + pct(u.db_bytes, DB_LIMIT).toFixed(1) + "%)</div></div>";
+      h += '<div class="card"><div class="l">오늘 가입(인증 메일 최소 사용량)</div><div class="v">' + u.signups_today + '</div>' + gauge(u.signups_today, 100, 60, 90) + '<div class="l">Resend 무료 하루 100통 · 비밀번호 찾기 메일은 별도로 더 셈</div></div>';
+      h += '<div class="card"><div class="l">가입자 합계</div><div class="v">' + n0(u.auth_users) + '</div>' + gauge(u.auth_users, 50000, 60, 85) + '<div class="l">월간 활성 한도 50,000명</div></div>';
+      h += "</div>";
+      h += "<h2>최근 증가량</h2>" + '<div class="cards"><div class="card"><div class="v">' + u.signups_24h + '</div><div class="l">가입 · 24시간</div></div><div class="card"><div class="v">' + u.signups_7d + '</div><div class="l">가입 · 7일</div></div><div class="card"><div class="v">' + u.comments_24h + '</div><div class="l">댓글 · 24시간</div></div><div class="card"><div class="v">' + u.comments_7d + '</div><div class="l">댓글 · 7일</div></div><div class="card"><div class="v">' + u.listens_24h + '</div><div class="l">청취 기록 · 24시간</div></div><div class="card"><div class="v">' + u.listens_7d + '</div><div class="l">청취 기록 · 7일</div></div><div class="card"><div class="v">' + u.rooms_24h + '</div><div class="l">공개방송 입장 · 24시간</div></div></div>';
+      h += '<div class="row2"><div><h2>표별 크기</h2><div class="panel"><table><tr><th>표</th><th class="num">행 수</th><th class="num">크기</th></tr>' + u.tables.slice().sort(function (a, b) { return b.bytes - a.bytes; }).map(function (t) { return "<tr><td>" + esc(t.name) + '</td><td class="num">' + n0(t.rows) + '</td><td class="num">' + (t.bytes / 1024).toFixed(0) + " KB</td></tr>"; }).join("") + "</table></div></div>";
+      h += '<div><h2>이 화면에서 못 재는 한도</h2><div class="panel"><table><tr><th>항목</th><th>한도</th><th>확인할 곳</th></tr><tr><td>인증 메일(Supabase)</td><td>시간당 1000통(설정값)</td><td>Supabase 인증 · Rate Limits</td></tr><tr><td>인증 메일(Resend 무료)</td><td class="bad">하루 100통 · 한 달 3,000통</td><td><a href="https://resend.com/settings/usage" target="_blank" rel="noopener">Resend 사용량</a></td></tr><tr><td>데이터 전송량</td><td>월 5 GB</td><td><a href="https://supabase.com/dashboard/project/uskanhkdemmrvwfajvzu" target="_blank" rel="noopener">Supabase 대시보드</a></td></tr><tr><td>실시간 메시지</td><td>월 200만 건</td><td>Supabase 대시보드</td></tr></table></div></div></div>';
+      v.innerHTML = h; applyWidths(v); watchLive();
+    });
+  }
+  function watchLive() {
+    var out = document.getElementById("live"), gg = document.getElementById("livegauge"); if (!out) return;
+    function show(n) { out.textContent = n + "명"; var p = pct(n, 200); gg.innerHTML = '<div class="gauge"><i class="' + (p >= 95 ? "bad" : p >= 75 ? "warn" : "") + '" data-w="' + p.toFixed(0) + '"></i></div>'; applyWidths(gg); }
+    if (window.__rpc || !sb) { show(window.__liveMock || 0); return; }
+    try {
+      if (state.liveCh) { sb.removeChannel(state.liveCh); }
+      var ch = sb.channel("live", { config: { presence: { key: "admin" + Math.random().toString(36).slice(2, 8), enabled: true } } });
+      state.liveCh = ch;
+      ch.on("presence", { event: "sync" }, function () { try { show(Object.keys(ch.presenceState() || {}).length); } catch (e) {} }).subscribe(function (st) { if (st !== "SUBSCRIBED") out.textContent = st === "CLOSED" ? "끊김" : "연결 중…"; });
+    } catch (e) { out.textContent = "확인 못 함"; }
+  }
+
+  /* ---------- 신고 ---------- */
+  function viewReports(v) {
+    return rpc("admin_reports").then(function (rows) {
+      var h = '<h2>신고된 댓글 <span class="note">자동으로 숨기지 않아요. 확인 뒤 정해 주세요.</span></h2>';
+      if (!rows.length) { v.innerHTML = h + '<div class="empty">신고된 댓글이 없어요.</div>'; return; }
+      h += '<div class="panel"><table><tr><th>닉네임</th><th>회차</th><th>구간</th><th class="num">신고</th><th>내용</th><th></th></tr>';
+      rows.forEach(function (x) { h += "<tr><td>" + esc(x.nickname) + "</td><td>" + esc(epName(x.episode_key)) + "</td><td>" + mmss(x.sec) + '</td><td class="num">' + x.reports + '</td><td class="wrapc">' + esc(x.body) + '</td><td><button class="btn sm" type="button" data-dismiss="' + x.id + '">문제없음</button> <button class="btn sm" type="button" data-delc="' + x.id + '">댓글 삭제</button></td></tr>'; });
+      v.innerHTML = h + "</table></div>";
+    });
+  }
+  function dismissReport(btn) { rpc("admin_dismiss_reports", { p_id: Number(btn.dataset.dismiss) }).then(function () { state.cache = {}; go("reports"); }).catch(function (e) { btn.textContent = errText(e).slice(0, 14); }); }
+  function deleteComment(btn) {
+    if (!window.confirm("이 댓글을 삭제할까요? 되돌릴 수 없어요.")) return;
+    rpc("delete_comment", { p_id: Number(btn.dataset.delc) }).then(function () { state.cache = {}; go("reports"); }).catch(function (e) { btn.textContent = /has_replies/.test(String(e && e.message)) ? "답글이 있어 못 지움" : "삭제 실패"; });
+  }
+
+  if (!window.__rpc) start();
+})();
+</script>
+</body>
+</html>

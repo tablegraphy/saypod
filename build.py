@@ -291,6 +291,17 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     for cid, path in big.items():
         shutil.copyfile(path, os.path.join(out_dir, "cover-%s.jpg" % cid))
+    adm_path = os.path.join(HERE, "admin.html")   # 관리자 화면(로그인한 관리자만 데이터를 봄): 회차·프로그램 목록과 연결 값을 끼워 내보낸다
+    if os.path.exists(adm_path) and sbcfg:
+        eps = [{"key": "%s-%s" % (c["id"], e["n"]), "ch": c["id"], "chName": c["name"], "n": e["n"], "title": e.get("title", ""), "date": e.get("date", ""), "sec": e.get("sec") or 0}
+               for c in channels for e in c["episodes"]]
+        chs = [{"id": c["id"], "name": c["name"]} for c in channels]
+        adm = open(adm_path, encoding="utf-8").read()
+        sb_script = ('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@%s/dist/umd/supabase.js" integrity="%s" crossorigin="anonymous"></script>'
+                     % (sbcfg["jsVersion"], sbcfg["jsSri"]))
+        adm = (adm.replace("__SB_SCRIPT__", sb_script).replace("__SB_URL__", sbcfg["url"]).replace("__SB_KEY__", sbcfg["key"])
+                  .replace("/*__EPISODES__*/[]", dump(eps)).replace("/*__CHANNELS__*/[]", dump(chs)))
+        open(os.path.join(out_dir, "admin.html"), "w", encoding="utf-8").write(adm)
     og = os.path.join(HERE, "og-image.jpg")   # 링크 미리보기 그림
     if os.path.exists(og):
         shutil.copyfile(og, os.path.join(out_dir, "og-image.jpg"))
