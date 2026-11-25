@@ -1075,6 +1075,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   function ensureAudio() {
     var S = sess; if (S.audio || !S.ep.audio) return;
     var a = S.audio = new Audio();
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}   /* 아이폰: 이 페이지의 소리를 '재생' 용도로 선언(무음 스위치·끼어들기 뒤에도 소리가 이어지게) */
     a.preload = "metadata"; a.src = S.ep.audio; applySpeed(a);
     var sp0 = parseFloat(store.get("ds_pos_" + S.key));
     if (sp0 > 5 && sp0 < S.dur - 15) { try { a.currentTime = sp0; } catch (e) {} S.resumedFrom = sp0; S.resumed = true; }
@@ -1096,6 +1097,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         if (sess !== S) return;
         if (ev === "play") { S.touched = true; applySpeed(a); }
         try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = ev === "play" ? "playing" : "paused"; } catch (e) {}
+        if (ev === "pause") S.pausedAt = Date.now();
         if (ev === "ended") { store.set("ds_pos_" + S.key, ""); store.set("ds_post_" + S.key, String(Date.now())); pushPos(S, 0, true); }
         else if (ev !== "play") savePos(S, true);
         updatePlayBtn(); tick();
@@ -1128,7 +1130,10 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       });
     } catch (e) {}
     function h(name, fn) { try { ms.setActionHandler(name, fn); } catch (e) {} }
-    h("play", function () { startPlay(S); });
+    h("play", function () {
+      /* 화면이 꺼진 채 4초 넘게 멈췄다 잠금 화면에서 다시 재생하면 아이폰이 위치 숫자만 흐르고 소리는 안 나는 일이 있어, 같은 위치에서 음원을 새로 받아 재생한다 */
+      startPlay(S, document.hidden && S.pausedAt && Date.now() - S.pausedAt > 4000);
+    });
     h("pause", function () { a.pause(); });
     h("seekbackward", function (d) { seekBy(-((d && d.seekOffset) || 10)); });
     h("seekforward", function (d) { seekBy((d && d.seekOffset) || 30); });
@@ -1151,7 +1156,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
   /* 재생 시작(잠금 화면 재생 버튼·화면 재생 버튼 공통). 백그라운드에서 멈췄다 다시 누르면 아이폰이 음원 연결을 끊어 둔 채라 시작이 안 되는 일이 있다.
      시작 신호('playing')가 3초 안에 안 오거나 거절되면 같은 위치에서 음원을 다시 받아 한 번 더 시도한다. */
-  function startPlay(S) {
+  function startPlay(S, fresh) {
     var a = S && S.audio; if (!a) return;
     var at = a.currentTime, ok = false, tried = false;
     function fail() {
@@ -1171,6 +1176,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       try { a.load(); } catch (e) { a.removeEventListener("loadedmetadata", onMeta); fail(); }
     }
     a.addEventListener("playing", function () { ok = true; }, { once: true });
+    if (fresh) { retry(); return; }
     var p = a.play();
     if (p && p.catch) p.catch(retry);
     setTimeout(function () { if (!ok) retry(); }, 3500);
@@ -2733,7 +2739,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var S = sess, ae = document.activeElement;
     var playing = !!(S && ((S.audio && !S.audio.paused) || (S.clock && S.clock.playing)));
     var typing = !!ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA");
-    return !playing && !typing && !document.getElementById("auth-modal") && !(S && (S.editing || S.sending));
+    var started = !!(S && S.audio && S.touched && !S.audio.ended);   /* 이 화면에서 재생을 시작한 적이 있으면(멈춘 상태여도) 새로고침하지 않는다: 새로고침하면 잠금 화면 재생 정보가 지워지고 빈 플레이어만 남는다 */
+    return !playing && !started && !typing && !document.getElementById("auth-modal") && !(S && (S.editing || S.sending));
   }
   function applyUpdate() {
     if (!newBuild || !updateIdle()) return;
