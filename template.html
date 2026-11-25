@@ -1061,6 +1061,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   function trkStart() {
     if (!CFG || navigator.doNotTrack === "1" || window.doNotTrack === "1") return;
     TRK.on = true;
+    if (sess && sess.key) trkEvent("ep_open", sess.key);   /* 회차 주소로 바로 들어온 첫 화면은 기록이 켜지기 전에 열렸으므로 여기서 한 번 더 */
     try { TRK.sid = sessionStorage.getItem("ds_sid") || ""; if (!/^[A-Za-z0-9-]{8,64}$/.test(TRK.sid)) { TRK.sid = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); sessionStorage.setItem("ds_sid", TRK.sid); } }
     catch (e) { TRK.sid = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); }
     setTimeout(function () { trkVisit(); trkPing(); }, 2500);
