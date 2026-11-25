@@ -145,14 +145,14 @@ __SB_SCRIPT__
   window.adminStart = start;
 
   /* ---------- 틀과 탭 ---------- */
-  var TABS = [["dash", "회차 한 장"], ["members", "멤버"], ["listen", "청취 통계"], ["moments", "인기 순간"], ["room", "공개방송"], ["usage", "서버 점검"], ["reports", "신고"]];
+  var TABS = [["dash", "회차 한 장"], ["members", "멤버"], ["listen", "청취 통계"], ["traffic", "방문·유입"], ["moments", "인기 순간"], ["room", "공개방송"], ["usage", "서버 점검"], ["reports", "신고"]];
   function showApp() {
     app.innerHTML = '<header class="top"><h1>듣는 사이 관리</h1><span class="note">PC 화면에 맞춰져 있어요 · 읽기 전용(신고 처리만 가능)</span><span class="sp"></span><button class="btn" type="button" data-act="refresh">새로고침</button><a class="btn" href="./">사이트로</a></header><nav class="tabs" role="tablist"></nav><div class="chbar" id="chbar"></div><main id="view"></main>';
     drawTabs(); go(state.tab);
   }
-  function drawChBar() { var bar = document.getElementById("chbar"); if (!bar) return; var hide = state.tab === "usage" || state.tab === "reports"; bar.hidden = hide; if (hide) return; bar.innerHTML = '<span class="lb">프로그램</span>' + [{ id: "all", name: "전체" }].concat(CHS).map(function (c) { return '<button type="button" data-ch="' + esc(c.id) + '" aria-pressed="' + (state.ch === c.id) + '">' + esc(c.name) + "</button>"; }).join(""); }
+  function drawChBar() { var bar = document.getElementById("chbar"); if (!bar) return; var hide = state.tab === "usage" || state.tab === "reports" || state.tab === "traffic";   /* 사이트 전체 기준인 탭에서는 프로그램 선택을 숨김 */ bar.hidden = hide; if (hide) return; bar.innerHTML = '<span class="lb">프로그램</span>' + [{ id: "all", name: "전체" }].concat(CHS).map(function (c) { return '<button type="button" data-ch="' + esc(c.id) + '" aria-pressed="' + (state.ch === c.id) + '">' + esc(c.name) + "</button>"; }).join(""); }
   function drawTabs() { document.querySelector("nav.tabs").innerHTML = TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (state.tab === t[0]) + '">' + t[1] + "</button>"; }).join(""); }
-  function go(tab) { state.tab = tab; state.sel = null; drawTabs(); drawChBar(); var v = document.getElementById("view"); v.innerHTML = '<div class="empty">불러오는 중…</div>'; ({ dash: viewDash, members: viewMembers, listen: viewListen, moments: viewMoments, room: viewRoom, usage: viewUsage, reports: viewReports })[tab](v).catch(function (e) { v.innerHTML = '<div class="err">' + esc(errText(e)) + "</div>"; }); }
+  function go(tab) { state.tab = tab; state.sel = null; drawTabs(); drawChBar(); var v = document.getElementById("view"); v.innerHTML = '<div class="empty">불러오는 중…</div>'; ({ dash: viewDash, members: viewMembers, listen: viewListen, traffic: viewTraffic, moments: viewMoments, room: viewRoom, usage: viewUsage, reports: viewReports })[tab](v).catch(function (e) { v.innerHTML = '<div class="err">' + esc(errText(e)) + "</div>"; }); }
   function sortRows(rows, id, defKey, defDir) {
     var s = state.sort[id] || { k: defKey, d: defDir }; var k = s.k, d = s.d;
     return rows.slice().sort(function (a, b) { var x = a[k], y = b[k]; if (x == null) x = ""; if (y == null) y = ""; var r = (typeof x === "number" && typeof y === "number") ? x - y : String(x).localeCompare(String(y), "ko"); return d * r || 0; });
@@ -293,6 +293,44 @@ __SB_SCRIPT__
     });
   }
 
+  /* ---------- 방문·유입 ---------- */
+  var SRC = { direct: "직접(주소 입력·북마크·앱)", kakao: "카카오톡", instagram: "인스타그램", naver: "네이버", facebook: "페이스북", line: "라인" };
+  var EVT = { ep_open: "회차 열기", play: "재생 시작", signup_open: "가입 창 열기", room_try: "공개방송 입장 시도", room_full: "정원이 차서 못 들어감", room_enter: "공개방송 입장", share_story: "스토리 공유" };
+  var DCL = { mobile: "휴대폰", tablet: "태블릿", desktop: "컴퓨터", unknown: "알 수 없음" };
+  var OSN = { ios: "iOS", android: "안드로이드", mac: "맥", windows: "윈도우", linux: "리눅스", other: "기타" };
+  function landLabel(l) { var m = String(l).match(/^(ch|ep):(.+)$/); return m ? (m[1] === "ch" ? chName(m[2]) + " 목록" : epName(m[2])) : ({ home: "홈", privacy: "처리방침", other: "기타" }[l] || l); }
+  function visitDaily(daily) { var W = 560, H = 120, L = 24, bw = (W - L - 6) / Math.max(daily.length, 1), m = 1, out = '<svg class="chart" viewBox="0 0 ' + W + " " + (H + 22) + '" width="100%" role="img" aria-label="일별 방문">'; daily.forEach(function (x) { m = Math.max(m, x.v); }); daily.forEach(function (x, i) { var bh = x.v / m * H, nh = x.n / m * H; out += '<rect x="' + (L + i * bw).toFixed(1) + '" y="' + (H - bh + 4).toFixed(1) + '" width="' + Math.max(bw - 1, 1).toFixed(1) + '" height="' + bh.toFixed(1) + '" fill="var(--bar)" opacity=".35"><title>' + x.d + ": 방문 " + x.v + "명(새 방문 " + x.n + ")</title></rect>" + '<rect x="' + (L + i * bw).toFixed(1) + '" y="' + (H - nh + 4).toFixed(1) + '" width="' + Math.max(bw - 1, 1).toFixed(1) + '" height="' + nh.toFixed(1) + '" fill="var(--bar)"></rect>'; }); out += '<text x="' + (L - 4) + '" y="14" text-anchor="end">' + m + "</text>"; if (daily.length) out += '<text x="' + L + '" y="' + (H + 18) + '">' + esc(daily[0].d.slice(5)) + '</text><text x="' + (W - 6) + '" y="' + (H + 18) + '" text-anchor="end">' + esc(daily[daily.length - 1].d.slice(5)) + "</text>"; return out + "</svg>"; }
+  function peakSvg(series) {
+    var W = 900, H = 110, L = 40, R = 8, now = Date.now(), t0 = now - 36 * 3600000, mx = 200, out;
+    series.forEach(function (x) { mx = Math.max(mx, x.peak); });
+    out = '<svg class="chart" viewBox="0 0 ' + W + " " + (H + 30) + '" width="100%" role="img" aria-label="10분 단위 최대 동시 접속">';
+    out += '<line x1="' + L + '" y1="' + (6 + H - 200 / mx * H).toFixed(1) + '" x2="' + (W - R) + '" y2="' + (6 + H - 200 / mx * H).toFixed(1) + '" stroke="var(--bad)" stroke-dasharray="4 4" opacity=".7"/><text x="' + (L - 4) + '" y="' + (10 + H - 200 / mx * H).toFixed(1) + '" text-anchor="end">200</text>';
+    series.forEach(function (x) { var t = Date.parse(x.bucket); if (isNaN(t) || t < t0) return; var xx = L + (t - t0) / (36 * 3600000) * (W - L - R), bh = x.peak / mx * H, w = Math.max((W - L - R) / 216, 1.5); out += '<rect x="' + xx.toFixed(1) + '" y="' + (6 + H - bh).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + bh.toFixed(1) + '" fill="' + (x.peak >= 190 ? "var(--bad)" : x.peak >= 150 ? "var(--warn)" : "var(--bar)") + '"><title>' + kst(x.bucket) + " · 최대 " + x.peak + "개 화면(재생 중 " + x.playing_peak + ", 로그인 " + x.member_peak + ")</title></rect>"; });
+    out += '<line x1="' + L + '" y1="' + (6 + H) + '" x2="' + (W - R) + '" y2="' + (6 + H) + '" stroke="currentColor" opacity=".25"/>';
+    for (var h = 0; h <= 36; h += 6) out += '<text x="' + (L + h / 36 * (W - L - R)).toFixed(1) + '" y="' + (H + 24) + '" text-anchor="middle">' + (h === 36 ? "지금" : "-" + (36 - h) + "시간") + "</text>";
+    return out + "</svg>";
+  }
+  function viewTraffic(v) {
+    var days = state.tdays || 30;
+    return Promise.all([cached("traffic:" + days, function () { return rpc("admin_traffic", { p_days: days }); }), cached("peaks", function () { return rpc("admin_peaks"); })]).then(function (rs) {
+      var t = rs[0], pk = rs[1], h = "<h2>방문·유입 <select id=\"td\"><option value=\"7\"" + (days === 7 ? " selected" : "") + ">최근 7일</option><option value=\"30\"" + (days === 30 ? " selected" : "") + ">최근 30일</option><option value=\"90\"" + (days === 90 ? " selected" : "") + '>최근 90일</option></select> <span class="note">기기에서 임의로 만든 번호로 센 값(이름·이메일과 연결 안 됨). 기록은 2026-11-26부터 쌓여요.</span></h2>';
+      h += '<div class="cards"><div class="card"><div class="v">' + n0(t.visitors) + '</div><div class="l">방문한 기기</div></div><div class="card"><div class="v">' + n0(t.new_visitors) + '</div><div class="l">처음 방문</div></div><div class="card"><div class="v">' + n0(t.returning) + '</div><div class="l">다른 날 또 온 기기</div></div><div class="card"><div class="v">' + n0(t.standalone) + '</div><div class="l">홈 화면 앱으로 연 방문</div></div></div>';
+      h += "<h2>최대 동시 접속 <span class=\"note\">열려 있는 화면 수(3분 안에 신호가 온 화면), 10분 단위 최대치</span></h2>";
+      var mx = pk.max, tm = pk.today_max;
+      h += '<div class="cards"><div class="card"><div class="v">' + n0(pk.now) + '</div><div class="l">지금 열린 화면</div></div><div class="card"><div class="v">' + (tm ? n0(tm.peak) : "-") + '</div><div class="l">오늘 최대' + (tm ? " · " + kst(tm.bucket, true).slice(11) : "") + '</div></div><div class="card"><div class="v">' + (mx ? n0(mx.peak) : "-") + '</div><div class="l">전체 최대' + (mx ? " · " + kst(mx.bucket) : "") + '</div></div></div>';
+      h += '<div class="panel">' + peakSvg(pk.series || []) + '<div class="note">점선은 실시간 연결 무료 한도 200. 150을 넘으면 주황, 190을 넘으면 빨강. 숨겨진 탭은 세지 않아 실제 연결 수보다 조금 적을 수 있어요.</div></div>';
+      h += '<div class="row2"><div><h2>일별 방문(진한 막대=처음 방문)</h2><div class="panel">' + visitDaily(t.daily || []) + "</div></div>";
+      h += '<div><h2>가입 흐름 <span class="note">같은 기간</span></h2><div class="panel"><table><tr><th>단계</th><th class="num">수</th><th class="num">앞 단계 대비</th></tr>' + (function () { var s = t.signup || {}, a = s.opened || 0, b = s.created || 0, c = s.confirmed || 0; function pc(x, y) { return y ? Math.round(x / y * 100) + "%" : "-"; } return "<tr><td>가입 창을 연 기기</td><td class=\"num\">" + a + "</td><td class=\"num\">-</td></tr><tr><td>가입 신청(프로필 생성)</td><td class=\"num\">" + b + "</td><td class=\"num\">" + pc(b, a) + "</td></tr><tr><td>이메일 인증 완료</td><td class=\"num\">" + c + "</td><td class=\"num\">" + pc(c, b) + "</td></tr>"; })() + "</table></div></div></div>";
+      h += '<div class="row2"><div><h2>어디서 들어왔나</h2><div class="panel"><table><tr><th>경로</th><th class="num">방문</th><th class="num">처음 방문</th></tr>' + ((t.sources || []).map(function (x) { return "<tr><td>" + esc(SRC[x.label] || x.label) + '</td><td class="num">' + x.visits + '</td><td class="num">' + x.new_visitors + "</td></tr>"; }).join("") || '<tr><td colspan="3" class="note">기록이 아직 없어요.</td></tr>') + '</table><div class="note">링크 끝에 <b>?from=이름</b> 또는 <b>?utm_source=이름</b>을 붙여 퍼뜨리면 그 이름으로 구분돼요. 카카오톡·인스타 안에서 열면 주소가 안 넘어와도 앱 이름으로 잡혀요.</div></div></div>';
+      h += '<div><h2>처음 열린 화면</h2><div class="panel"><table><tr><th>화면</th><th class="num">방문</th></tr>' + ((t.landing || []).map(function (x) { return "<tr><td>" + esc(landLabel(x.label)) + '</td><td class="num">' + x.visits + "</td></tr>"; }).join("") || '<tr><td colspan="2" class="note">기록이 아직 없어요.</td></tr>') + "</table></div></div></div>";
+      h += '<div class="row2"><div><h2>기기</h2><div class="panel"><table><tr><th>종류</th><th class="num">방문</th></tr>' + ((t.dclass || []).map(function (x) { return "<tr><td>" + esc(DCL[x.label] || x.label) + '</td><td class="num">' + x.visits + "</td></tr>"; }).join("")) + "</table><table><tr><th>운영체제</th><th class=\"num\">방문</th></tr>" + ((t.os || []).map(function (x) { return "<tr><td>" + esc(OSN[x.label] || x.label) + '</td><td class="num">' + x.visits + "</td></tr>"; }).join("")) + "</table></div></div>";
+      h += '<div><h2>화면 이용</h2><div class="panel"><table><tr><th>행동</th><th class="num">횟수</th><th class="num">기기 수</th></tr>' + ((t.events || []).map(function (x) { return "<tr><td>" + esc(EVT[x.kind] || x.kind) + '</td><td class="num">' + x.n + '</td><td class="num">' + x.devices + "</td></tr>"; }).join("") || '<tr><td colspan="3" class="note">기록이 아직 없어요.</td></tr>') + "</table><div class=\"note\">한 번 연 화면에서 같은 행동은 한 번만 세요(새로 열면 다시).</div></div></div></div>";
+      h += "<h2>많이 열린 회차 TOP 10</h2><div class=\"panel\"><table><tr><th>회차</th><th class=\"num\">열기</th><th class=\"num\">기기 수</th></tr>" + ((t.ep_open || []).map(function (x) { return '<tr class="row" data-ep="' + esc(x.key) + '"><td>' + esc(epName(x.key)) + '</td><td class="num">' + x.n + '</td><td class="num">' + x.devices + "</td></tr>"; }).join("") || '<tr><td colspan="3" class="note">기록이 아직 없어요.</td></tr>') + "</table></div>";
+      v.innerHTML = h;
+      document.getElementById("td").addEventListener("change", function (e) { state.tdays = Number(e.target.value); go("traffic"); });
+    });
+  }
+
   /* ---------- 공개방송 ---------- */
   function viewRoom(v) {
     return cached("att", function () { return rpc("admin_attendance"); }).then(function (all) {
@@ -309,17 +347,19 @@ __SB_SCRIPT__
   var DB_LIMIT = 500 * 1024 * 1024;
   function gauge(v, max, warnAt, badAt) { var p = pct(v, max); return '<div class="gauge"><i class="' + (p >= badAt ? "bad" : p >= warnAt ? "warn" : "") + '" data-w="' + p.toFixed(0) + '"></i></div>'; }
   function viewUsage(v) {
-    return cached("usage", function () { return rpc("admin_usage"); }).then(function (u) {
+    return Promise.all([cached("usage", function () { return rpc("admin_usage"); }), cached("peaks", function () { return rpc("admin_peaks"); })]).then(function (rs0) {
+      var u = rs0[0], pk = rs0[1];
       var live = null, h = "<h2>서버 사용량 점검 <span class=\"note\">무료 요금제 기준 · 읽기 전용</span></h2>";
       h += '<div class="cards">';
       h += '<div class="card"><div class="l">지금 접속 중(실시간 연결)</div><div class="v" id="live">…</div><div id="livegauge"></div><div class="l">한도 동시 200명 — 넘으면 새 연결이 거절돼요</div></div>';
+      h += '<div class="card"><div class="l">최대 동시 접속(열린 화면)</div><div class="v">' + (pk.max ? n0(pk.max.peak) : "-") + '</div>' + gauge(pk.max ? pk.max.peak : 0, 200, 75, 95) + '<div class="l">오늘 최대 ' + (pk.today_max ? n0(pk.today_max.peak) : "-") + " · 자세히는 방문·유입 탭</div></div>";
       h += '<div class="card"><div class="l">데이터베이스 크기</div><div class="v">' + (u.db_bytes / 1048576).toFixed(1) + ' MB</div>' + gauge(u.db_bytes, DB_LIMIT, 60, 85) + '<div class="l">한도 500 MB (' + pct(u.db_bytes, DB_LIMIT).toFixed(1) + "%)</div></div>";
-      h += '<div class="card"><div class="l">오늘 가입(인증 메일 최소 사용량)</div><div class="v">' + u.signups_today + '</div>' + gauge(u.signups_today, 100, 60, 90) + '<div class="l">Resend 무료 하루 100통 · 비밀번호 찾기 메일은 별도로 더 셈</div></div>';
+      h += '<div class="card"><div class="l">오늘 가입(인증 메일 최소 사용량)</div><div class="v">' + u.signups_today + '</div><div class="l">Resend Pro: 하루 한도 없음, 월 50,000통 · 비밀번호 찾기 메일은 별도로 더 셈</div></div>';
       h += '<div class="card"><div class="l">가입자 합계</div><div class="v">' + n0(u.auth_users) + '</div>' + gauge(u.auth_users, 50000, 60, 85) + '<div class="l">월간 활성 한도 50,000명</div></div>';
       h += "</div>";
       h += "<h2>최근 증가량</h2>" + '<div class="cards"><div class="card"><div class="v">' + u.signups_24h + '</div><div class="l">가입 · 24시간</div></div><div class="card"><div class="v">' + u.signups_7d + '</div><div class="l">가입 · 7일</div></div><div class="card"><div class="v">' + u.comments_24h + '</div><div class="l">댓글 · 24시간</div></div><div class="card"><div class="v">' + u.comments_7d + '</div><div class="l">댓글 · 7일</div></div><div class="card"><div class="v">' + u.listens_24h + '</div><div class="l">청취 기록 · 24시간</div></div><div class="card"><div class="v">' + u.listens_7d + '</div><div class="l">청취 기록 · 7일</div></div><div class="card"><div class="v">' + u.rooms_24h + '</div><div class="l">공개방송 입장 · 24시간</div></div></div>';
       h += '<div class="row2"><div><h2>표별 크기</h2><div class="panel"><table><tr><th>표</th><th class="num">행 수</th><th class="num">크기</th></tr>' + u.tables.slice().sort(function (a, b) { return b.bytes - a.bytes; }).map(function (t) { return "<tr><td>" + esc(t.name) + '</td><td class="num">' + n0(t.rows) + '</td><td class="num">' + (t.bytes / 1024).toFixed(0) + " KB</td></tr>"; }).join("") + "</table></div></div>";
-      h += '<div><h2>이 화면에서 못 재는 한도</h2><div class="panel"><table><tr><th>항목</th><th>한도</th><th>확인할 곳</th></tr><tr><td>인증 메일(Supabase)</td><td>시간당 1000통(설정값)</td><td>Supabase 인증 · Rate Limits</td></tr><tr><td>인증 메일(Resend 무료)</td><td class="bad">하루 100통 · 한 달 3,000통</td><td><a href="https://resend.com/settings/usage" target="_blank" rel="noopener">Resend 사용량</a></td></tr><tr><td>데이터 전송량</td><td>월 5 GB</td><td><a href="https://supabase.com/dashboard/project/uskanhkdemmrvwfajvzu" target="_blank" rel="noopener">Supabase 대시보드</a></td></tr><tr><td>실시간 메시지</td><td>월 200만 건</td><td>Supabase 대시보드</td></tr></table></div></div></div>';
+      h += '<div><h2>이 화면에서 못 재는 한도</h2><div class="panel"><table><tr><th>항목</th><th>한도</th><th>확인할 곳</th></tr><tr><td>인증 메일(Supabase)</td><td>시간당 1000통(설정값)</td><td>Supabase 인증 · Rate Limits</td></tr><tr><td>인증 메일(Resend Pro)</td><td>하루 한도 없음 · 한 달 50,000통(12월 25일 갱신)</td><td><a href="https://resend.com/settings/usage" target="_blank" rel="noopener">Resend 사용량</a></td></tr><tr><td>데이터 전송량</td><td>월 5 GB</td><td><a href="https://supabase.com/dashboard/project/uskanhkdemmrvwfajvzu" target="_blank" rel="noopener">Supabase 대시보드</a></td></tr><tr><td>실시간 메시지</td><td>월 200만 건</td><td>Supabase 대시보드</td></tr></table></div></div></div>';
       v.innerHTML = h; applyWidths(v); watchLive();
     });
   }

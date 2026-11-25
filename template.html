@@ -813,6 +813,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       el("div", { class: "hd" }, episodeThumb(ch, ep),
         el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") })),
       r.sync, r.fh);
+    trkEvent("ep_open", S.key);
     if (SITE && ch.coverBig) loadStoryCover(ch);   /* 누르기 전에 선명한 표지를 미리 받아 둔다(공유창은 누른 직후에 떠야 해서) */
     r.msg.addEventListener("focus", function () { r.stick.classList.add("compact"); });   /* 글 쓸 때는 키보드가 화면을 차지하므로 고정 영역을 줄인다 */
     r.msg.addEventListener("blur", function () { r.stick.classList.remove("compact"); });
@@ -965,6 +966,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
   function ltPlay(S) {
     if (!CFG || !S.useAudio || !S.audio) return;
+    trkEvent("play", S.key);
     var a = S.audio;
     if (!S.ls) S.ls = { started: new Date(), segs: [], rew: [], skp: [], listened: 0, open: null, last: a.currentTime, finished: false, idle: 0 };
     clearTimeout(S.ls.idle);
@@ -1030,6 +1032,40 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     store.set("ds_lt_pend", "");
     if (pend.p.p_device == null && !ltToken) return;   /* 로그인해서 들었던 기록은 로그인 상태에서만 보낼 수 있다 */
     ltSend(pend.p, pend.p.p_device != null);
+  }
+  /* ---- 방문·유입·화면 이용·동시 접속 기록(통계용). 이름·이메일·계정과 연결하지 않고 기기 임의 번호만 쓴다.
+     서버 부담을 줄이려고 방문은 기기당 하루 1회, 화면 이용은 세션당 항목별 1회, 열린 화면 신호는 90초마다만 보낸다.
+     브라우저의 '추적 안 함'을 켠 사람은 보내지 않고, 보내다 실패해도 사이트에는 아무 영향이 없다. ---- */
+  var TRK = { on: false, seen: {}, sid: "", lastPing: 0 };
+  function trkRpc(name, args) {
+    if (!TRK.on) return;
+    try { fetch(CFG.url + "/rest/v1/rpc/" + name, { method: "POST", keepalive: true, headers: { "Content-Type": "application/json", apikey: CFG.key, Authorization: "Bearer " + CFG.key }, body: JSON.stringify(args) }).catch(function () {}); } catch (e) {}
+  }
+  function trkEvent(kind, key) { var k = kind + "|" + (key || ""); if (!TRK.on || TRK.seen[k]) return; TRK.seen[k] = 1; trkRpc("log_event", { p_kind: kind, p_key: key || "", p_device: ltDevice() }); }
+  function trkPing() { if (!TRK.on || document.hidden) return; TRK.lastPing = Date.now(); trkRpc("live_ping", { p_sid: TRK.sid, p_playing: isPlayingNow(), p_member: !!me }); }
+  function trkVisit() {
+    var day = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+    if (store.get("ds_vday") === day) return;
+    store.set("ds_vday", day);
+    var first = !store.get("ds_first"); if (first) store.set("ds_first", day);
+    var qs = {}; try { new URLSearchParams(location.search).forEach(function (v, k) { qs[k] = v; }); } catch (e) {}
+    var ref = ""; try { var u = new URL(document.referrer); if (u.hostname && u.hostname !== location.hostname) ref = u.hostname.replace(/^(www|m)\./, ""); } catch (e) {}
+    var ua = navigator.userAgent || "";
+    var inapp = /KAKAOTALK/i.test(ua) ? "kakao" : /Instagram/i.test(ua) ? "instagram" : /NAVER\(inapp/i.test(ua) ? "naver" : /FBAN|FBAV/.test(ua) ? "facebook" : /Line\//i.test(ua) ? "line" : "";
+    var os = (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) ? "ios" : /Android/.test(ua) ? "android" : /Macintosh/.test(ua) ? "mac" : /Windows/.test(ua) ? "windows" : /Linux/.test(ua) ? "linux" : "other";
+    var w = Math.min(window.innerWidth || 0, (window.screen && screen.width) || 9999), dclass = w < 768 ? "mobile" : w < 1024 ? "tablet" : "desktop";
+    var h = location.hash, landing = /^#e-[a-z0-9]+-\d+$/.test(h) ? "ep:" + h.slice(3) : /^#c-[a-z0-9]+$/.test(h) ? "ch:" + h.slice(3) : h === "#privacy" ? "privacy" : "home";
+    var standalone = !!((window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone);
+    trkRpc("log_visit", { p_device: ltDevice(), p_first: first, p_ref: ref, p_src: qs.utm_source || qs.from || "", p_medium: qs.utm_medium || "", p_campaign: qs.utm_campaign || "", p_inapp: inapp, p_landing: landing, p_dclass: dclass, p_os: os, p_standalone: standalone, p_lang: navigator.language || "" });
+  }
+  function trkStart() {
+    if (!CFG || navigator.doNotTrack === "1" || window.doNotTrack === "1") return;
+    TRK.on = true;
+    try { TRK.sid = sessionStorage.getItem("ds_sid") || ""; if (!/^[A-Za-z0-9-]{8,64}$/.test(TRK.sid)) { TRK.sid = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); sessionStorage.setItem("ds_sid", TRK.sid); } }
+    catch (e) { TRK.sid = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); }
+    setTimeout(function () { trkVisit(); trkPing(); }, 2500);
+    setInterval(trkPing, 90000);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden && Date.now() - TRK.lastPing > 60000) trkPing(); });
   }
   var SPEEDS = [1, 1.25, 1.5];
   function getSpeed() { var v = parseFloat(store.get("ds_speed")); return SPEEDS.indexOf(v) >= 0 ? v : 1; }
@@ -1612,7 +1648,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       e.parentNode.classList.toggle("full", !!(liveReady && full));
     });
   }
-  function tryEnter(chId, go) { if (roomFull(chId)) { toast(ROOM_FULL_MSG); return; } go(); }
+  function tryEnter(chId, go) { trkEvent("room_try", chId); if (roomFull(chId)) { trkEvent("room_full", chId); toast(ROOM_FULL_MSG); return; } go(); }
   function roomAvail(S) { return !!(SB && S && ROOM[S.ch.id] && S.ch.episodes[0] && S.ch.episodes[0].n === S.ep.n); }
   function roomChannelBtn(c) {
     if (!SB || !ROOM[c.id] || !c.episodes[0]) return null;
@@ -1719,6 +1755,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     var S = sess; if (!S || S.room || !roomAvail(S) || !sb) return;
     var R = S.room = { hostPill: {}, t: Date.now(), ch: null, ready: false, sig: "", lastSay: 0, bubbles: {}, seatPos: {}, notices: [], talkKey: "", greet: 0 };
     app.classList.add("inroom");
+    trkEvent("room_enter", S.ch.id);
     roomDraw(S);
     roomJoinChannel(S);
     roomLoadNotices(S);
@@ -2043,6 +2080,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
   function shareStory() {
     var S = sess; if (!S || !SITE) return;
+    trkEvent("share_story", S.key);
     var btn = S.r.shr, p = pos();
     if (btn) btn.disabled = true;
     loadStoryCover(S.ch).then(function (cov) {
@@ -2441,6 +2479,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       }, function () { if (document.getElementById("adm-live")) sum.textContent = "불러오지 못했어요."; });
     }
     function draw(m) {
+      if (m === "signup") trkEvent("signup_open", "");
       if (m === "admin") return drawAdmin();
       var msg = el("div", { class: "err", role: "alert" });
       var ok = el("div", { class: "okmsg", role: "status" });
@@ -2476,7 +2515,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         m === "signup" ? el("div", { class: "consent" },
           el("div", { class: "ct", text: "개인정보 수집·이용 동의 (필수)" }),
           el("ul", null,
-            el("li", { text: "수집 항목: 이메일, 비밀번호, 닉네임, 성별, 나이대 (이용 중 생성: 댓글, 이어듣기 위치, 공개방송 입장 기록, 청취 기록)" }),
+            el("li", { text: "수집 항목: 이메일, 비밀번호, 닉네임, 성별, 나이대 (이용 중 생성: 댓글, 이어듣기 위치, 공개방송 입장 기록, 청취 기록, 방문·이용 기록)" }),
             el("li", { text: "이용 목적: 회원 가입·로그인, 댓글 서비스, 비밀번호 찾기, 이어듣기 저장, 이용 통계(콘텐츠 기획·서비스 개선)" }),
             el("li", { text: "보유 기간: 회원 탈퇴 때까지(이어듣기 위치는 마지막 저장 후 30일)" }),
             el("li", { text: "동의를 거부할 수 있어요. 거부하면 가입과 댓글 쓰기가 제한되고, 듣기와 댓글 읽기는 가입 없이 할 수 있어요." })),
@@ -2684,6 +2723,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   watchKeyboard();
   addEventListener("hashchange", route);
   route();
+  trkStart();   /* 방문·유입·동시 접속 기록 시작(사이트 빌드에서만, 추적 안 함 설정이면 안 함) */
   ready.then(function () { if (sess) updateComposer(); });
 })();
 </script>
