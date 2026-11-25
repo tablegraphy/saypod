@@ -1,0 +1,27 @@
+# 놓침 감시: 두 프로그램의 RSS 최신 방송이 사이트에 있는지 15분마다 확인한다.
+# 없으면 사이트 갱신을 다시 돌리고, 그래도 안 되면 실패로 끝나 깃허브가 저장소 주인에게 메일을 보낸다.
+# 공개 저장소(tablegraphy/saypod)의 .github/workflows/watchdog.yml 과 watchdog.py(저장소 맨 위)로 올려서 쓴다.
+name: 놓침 감시 (새 방송이 사이트에 있는지)
+on:
+  schedule:
+    - cron: "9,24,39,54 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: watchdog
+  cancel-in-progress: false
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: RSS 최신 방송이 사이트에 있는지 보고, 없으면 다시 올리기
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python watchdog.py
