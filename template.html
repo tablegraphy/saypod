@@ -324,6 +324,10 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .stick .th { flex: none; border-radius: 10px; object-fit: cover; background: var(--soft); }
 .stick .th.wide { width: 112px; height: 63px; }
 .stick .th.sq { width: 56px; height: 56px; }
+.dbgp { position: fixed; inset: 0; z-index: 99999; background: var(--bg); color: var(--fg); overflow: auto; padding: 16px; font: 12px/1.5 var(--mono); }
+.dbgp pre { white-space: pre-wrap; margin: 12px 0 0; }
+.dbgh { display: flex; justify-content: space-between; align-items: center; }
+.dbgh button { padding: 8px 14px; }
 .stick .eptitle { font-size: 18px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.3; margin: 0 0 8px; overflow-wrap: anywhere; }
 .stick .hd .em { color: var(--muted); font-size: 13px; }
 .tot .tl { display: flex; align-items: center; gap: 8px; }
@@ -810,7 +814,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     r.comp = el("div", { class: "comp" }, el("div", { class: "in" }, r.rep, el("div", { class: "meta" }, r.nick, r.stamp), r.form, r.rbtns, r.rhint, r.err));
 
     r.stick = el("div", { class: "stick" },
-      el("h1", { class: "eptitle", text: ep.title }),
+      el("h1", { class: "eptitle", text: ep.title, onclick: dbgTap }),
       el("div", { class: "hd" }, episodeThumb(ch, ep),
         el("div", { class: "em", text: dotDate(ep.date) + (ep.sec ? " · " + durText(ep.sec) : "") })),
       r.sync, r.fh);
@@ -1097,12 +1101,18 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         if (sess !== S) return;
         if (ev === "play") { S.touched = true; applySpeed(a); }
         try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = ev === "play" ? "playing" : "paused"; } catch (e) {}
-        if (ev === "pause") S.pausedAt = Date.now();
+        if (ev === "pause" && a.readyState > 0) { S.pausedAt = Date.now(); S.pausePos = a.currentTime; }   /* load() 직후의 pause 는 제외 */
+        /* 잠금 화면에서 iOS가 직접 재개했을 때(소리 없이 시계만 흐르는 경우): 숨김 상태로 4초 넘게 멈췄다면 멈춘 위치에서 새로 연결 */
+        if (ev === "play" && document.hidden && S.pausedAt && S.pausePos != null && Date.now() - S.pausedAt > 4000) startPlay(S, true);
         if (ev === "ended") { store.set("ds_pos_" + S.key, ""); store.set("ds_post_" + S.key, String(Date.now())); pushPos(S, 0, true); }
         else if (ev !== "play") savePos(S, true);
         updatePlayBtn(); tick();
       });
     });
+    ["play", "playing", "pause", "waiting", "stalled", "emptied", "seeked", "error", "ended", "loadedmetadata", "canplay"].forEach(function (ev) {
+      a.addEventListener(ev, function () { dbg(S, "오디오:" + ev); });
+    });
+    a.addEventListener("seeked", function () { if (a.paused && a.readyState > 0) S.pausePos = a.currentTime; });
     a.addEventListener("play", function () { ltPlay(S); });
     a.addEventListener("pause", function () { ltPause(S); });
     a.addEventListener("ended", function () { ltEnded(S); });
@@ -1129,7 +1139,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         artwork: lockArt(S)
       });
     } catch (e) {}
-    function h(name, fn) { try { ms.setActionHandler(name, fn); } catch (e) {} }
+    function h(name, fn) { try { ms.setActionHandler(name, function (d) { dbg(S, "잠금화면:" + name); return fn(d); }); } catch (e) {} }
     h("play", function () {
       /* 화면이 꺼진 채 4초 넘게 멈췄다 잠금 화면에서 다시 재생하면 아이폰이 위치 숫자만 흐르고 소리는 안 나는 일이 있어, 같은 위치에서 음원을 새로 받아 재생한다 */
       startPlay(S, document.hidden && S.pausedAt && Date.now() - S.pausedAt > 4000);
@@ -1154,11 +1164,37 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     S.r.play.replaceChildren(glyph(paused ? "play" : "pause"));
     S.r.play.setAttribute("aria-label", paused ? "재생" : "일시정지");
   }
+  /* ---- 재생 진단(아이폰 잠금 화면 문제 추적용): 오디오·화면 이벤트 최근 80줄을 이 기기에만 남기고, 방송 제목을 5번 연속 누르면 보여 준다. 서버로 보내지 않는다 ---- */
+  var DBG = [], DBGT = [];
+  try { DBG = JSON.parse(localStorage.getItem("ds_dbg") || "[]").slice(-40); } catch (e) { DBG = []; }
+  function dbg(S, m) {
+    try {
+      var a = S && S.audio, d = new Date(), z = function (n) { return ("0" + n).slice(-2); };
+      DBG.push(z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) + " " + m + (a ? " t=" + a.currentTime.toFixed(1) + (a.paused ? " 멈춤" : " 재생") + " rs" + a.readyState : "") + (document.hidden ? " 숨김" : ""));
+      if (DBG.length > 80) DBG.shift();
+      localStorage.setItem("ds_dbg", JSON.stringify(DBG));
+    } catch (e) {}
+  }
+  function dbgTap() {
+    var n = Date.now(); DBGT = DBGT.filter(function (x) { return n - x < 3000; }); DBGT.push(n);
+    if (DBGT.length < 5) return;
+    DBGT = [];
+    var old = document.getElementById("dbg-panel"); if (old) old.remove();
+    var p = el("div", { id: "dbg-panel", class: "dbgp" },
+      el("div", { class: "dbgh" }, el("b", { text: "재생 기록(최근 80줄)" }), el("button", { type: "button", text: "닫기", onclick: function () { p.remove(); } })),
+      el("pre", { text: DBG.join("\n") || "기록이 아직 없어요" }));
+    document.body.appendChild(p);
+  }
+  ["visibilitychange", "pagehide", "pageshow", "freeze", "resume"].forEach(function (ev) {
+    (ev === "visibilitychange" || ev === "freeze" || ev === "resume" ? document : window).addEventListener(ev, function () { dbg(sess, "화면:" + ev + (ev === "visibilitychange" ? "=" + document.visibilityState : "")); });
+  });
   /* 재생 시작(잠금 화면 재생 버튼·화면 재생 버튼 공통). 백그라운드에서 멈췄다 다시 누르면 아이폰이 음원 연결을 끊어 둔 채라 시작이 안 되는 일이 있다.
      시작 신호('playing')가 3초 안에 안 오거나 거절되면 같은 위치에서 음원을 다시 받아 한 번 더 시도한다. */
   function startPlay(S, fresh) {
     var a = S && S.audio; if (!a) return;
-    var at = a.currentTime, ok = false, tried = false;
+    if (fresh) { if (Date.now() - (S.freshAt || 0) < 8000) return; S.freshAt = Date.now(); }   /* 같은 재개를 두 경로가 겹쳐 처리하지 않게 */
+    var at = fresh && S.pausePos != null ? S.pausePos : a.currentTime, ok = false, tried = false;
+    dbg(S, "startPlay fresh=" + !!fresh + " at=" + at.toFixed(1));
     function fail() {
       S.audioErr = "재생을 시작하지 못했어요. 다시 눌러 주세요.";
       if (S.r && S.r.err2) S.r.err2.textContent = S.audioErr;
