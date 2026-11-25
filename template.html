@@ -501,6 +501,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (sess.room) roomTeardown(sess);
     closeTicket();
     if (sess.audio) {
+      ltFlush(sess);
       savePos(sess, true);
       try { sess.audio.pause(); sess.audio.removeAttribute("src"); sess.audio.load(); } catch (e) {}
       if ("mediaSession" in navigator) { try { navigator.mediaSession.metadata = null; } catch (e) {} }
@@ -949,6 +950,85 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     try { sb.rpc("save_position", { p_ep: S.key, p_sec: t }).then(function () {}, function () {}); } catch (e) {}
   }
   /* 재생 속도: 사이트 안 재생에서만(시계 모드는 1배속 기준). 눌러서 1x → 1.25x → 1.5x → 1x, 이 기기에 저장해 모든 방송에 적용 */
+  /* ---- 청취 기록(통계용): 사이트 플레이어로 '한 번 들은 것'(재생 시작 → 멈추거나 나갈 때까지, 5분 넘게 쉬면 끝)을 끝날 때 한 번 서버에 보낸다.
+     보내는 것: 회차·시작 시각·들은 시간·들은 구간·되감은 위치·앞으로 넘긴 위치·끝낸 위치. 로그인한 사람은 서버가 계정에 연결하고, 로그인 안 한 사람은 기기에서 임의로 만든 번호로만 구분한다. ---- */
+  var ltToken = null, LT_MIN = 10;
+  function ltDevice() {
+    var d = store.get("ds_did");
+    if (!d || !/^[A-Za-z0-9-]{8,64}$/.test(d)) {
+      d = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12));
+      store.set("ds_did", d);
+    }
+    return d;
+  }
+  function ltPlay(S) {
+    if (!CFG || !S.useAudio || !S.audio) return;
+    var a = S.audio;
+    if (!S.ls) S.ls = { started: new Date(), segs: [], rew: [], skp: [], listened: 0, open: null, last: a.currentTime, finished: false, idle: 0 };
+    clearTimeout(S.ls.idle);
+    if (S.ls.open == null) S.ls.open = a.currentTime;
+    S.ls.last = a.currentTime;
+  }
+  function ltClose(S, pos) {
+    var L = S.ls; if (!L || L.open == null) return;
+    var from = L.open, to = Math.max(from, pos); L.open = null;
+    if (to - from < 0.5) return;
+    L.listened += to - from;
+    var last = L.segs[L.segs.length - 1];
+    if (last && from >= last[1] && from - last[1] <= 1) last[1] = Math.round(to);   /* 바로 이어진 구간만 합친다(되감아 다시 들은 구간은 따로 센다) */
+    else if (L.segs.length < 300) L.segs.push([Math.round(from), Math.round(to)]);
+  }
+  function ltSeek(S) {
+    var L = S.ls, a = S.audio; if (!L || !a) return;
+    var from = L.last, to = a.currentTime, d = to - from;
+    if (L.open != null) ltClose(S, from);
+    if (d < -2 && L.rew.length < 300) L.rew.push([Math.round(from), Math.round(to)]);
+    else if (d > 2 && L.skp.length < 300) L.skp.push([Math.round(from), Math.round(to)]);
+    L.last = to;
+    if (!a.paused) L.open = to;
+  }
+  function ltPayload(S) {
+    var L = S.ls; if (!L) return null;
+    if (L.open != null && S.audio) ltClose(S, S.audio.currentTime);   /* 재생 중에 나가는 경우 */
+    if (L.listened < LT_MIN) return null;
+    var end = Math.round(S.audio ? S.audio.currentTime : L.last);
+    return { p_ep: S.key, p_device: ltToken ? null : ltDevice(), p_started: L.started.toISOString(), p_listened: Math.min(43200, Math.round(L.listened)),
+             p_end: Math.max(0, Math.min(43200, end)), p_finished: !!(L.finished || (S.dur > 60 && end >= S.dur - 15)), p_segs: L.segs, p_rewinds: L.rew, p_skips: L.skp };
+  }
+  function ltSend(payload, anon) {
+    if (!CFG || !payload) return;
+    try {
+      fetch(CFG.url + "/rest/v1/rpc/log_listen", { method: "POST", keepalive: true,
+        headers: { "Content-Type": "application/json", apikey: CFG.key, Authorization: "Bearer " + ((!anon && ltToken) || CFG.key) },
+        body: JSON.stringify(payload) }).catch(function () {});
+    } catch (e) {}
+  }
+  function ltFlush(S) {
+    var L = S && S.ls; if (!L) return;
+    clearTimeout(L.idle);
+    var p = ltPayload(S);
+    S.ls = null; store.set("ds_lt_pend", "");
+    ltSend(p);
+  }
+  function ltSave(S) {   /* 브라우저가 갑자기 닫혀도 다음에 열 때 보낼 수 있게 잠깐 저장 */
+    var p = ltPayload(S); if (p) store.set("ds_lt_pend", JSON.stringify({ p: p, at: Date.now() }));
+  }
+  function ltPause(S) {
+    var L = S.ls; if (!L || !S.audio) return;
+    ltClose(S, S.audio.currentTime); L.last = S.audio.currentTime; ltSave(S);
+    clearTimeout(L.idle); L.idle = setTimeout(function () { ltFlush(S); }, 300000);
+  }
+  function ltEnded(S) {
+    var L = S.ls; if (!L) return;
+    ltClose(S, S.dur || S.audio.duration || S.audio.currentTime); L.finished = true; ltFlush(S);
+  }
+  function ltRecover() {   /* 지난번에 못 보낸 기록이 있으면 5분 지난 뒤 한 번 보낸다 */
+    var pend = null; try { pend = JSON.parse(store.get("ds_lt_pend") || "null"); } catch (e) {}
+    if (!pend || !pend.p || Date.now() - pend.at < 300000) return;
+    store.set("ds_lt_pend", "");
+    if (pend.p.p_device == null && !ltToken) return;   /* 로그인해서 들었던 기록은 로그인 상태에서만 보낼 수 있다 */
+    ltSend(pend.p, pend.p.p_device != null);
+  }
   var SPEEDS = [1, 1.25, 1.5];
   function getSpeed() { var v = parseFloat(store.get("ds_speed")); return SPEEDS.indexOf(v) >= 0 ? v : 1; }
   function applySpeed(a) { if (!a) return; var v = getSpeed(); try { a.defaultPlaybackRate = v; a.playbackRate = v; } catch (e) {} }
@@ -980,6 +1060,11 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         updatePlayBtn(); tick();
       });
     });
+    a.addEventListener("play", function () { ltPlay(S); });
+    a.addEventListener("pause", function () { ltPause(S); });
+    a.addEventListener("ended", function () { ltEnded(S); });
+    a.addEventListener("timeupdate", function () { if (S.ls && !a.seeking) S.ls.last = a.currentTime; });
+    a.addEventListener("seeking", function () { ltSeek(S); });
     a.addEventListener("error", function () {
       S.audioErr = "음원을 불러오지 못했어요. 잠시 뒤 다시 시도하거나 '다른 앱에서 듣기'를 써 주세요.";
       if (sess === S && S.r.err2) S.r.err2.textContent = S.audioErr;
@@ -2100,11 +2185,13 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     }
     if (!sb) return Promise.resolve();
     startLive();
-    sb.auth.onAuthStateChange(function (event) {
+    sb.auth.onAuthStateChange(function (event, session) {
+      ltToken = (session && session.access_token) || null;   /* 청취 기록을 보낼 때 로그인 표시로 쓴다(서버 호출 아님) */
       /* 이 콜백 안에서 바로 서버를 부르면 멈출 수 있어 다음 틱으로 미룬다 */
       setTimeout(function () { if (event === "PASSWORD_RECOVERY") openAuth("reset"); loadMe(); }, 0);
     });
     return loadMe().then(function () {
+      ltRecover();
       if (hadCode) {
         /* 이메일 인증을 마치고 돌아오면 항상 메인(홈)으로 간다(비밀번호 재설정 창은 그대로 둔다) */
         try { history.replaceState(null, "", location.pathname); } catch (e) {}
@@ -2348,8 +2435,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         m === "signup" ? el("div", { class: "consent" },
           el("div", { class: "ct", text: "개인정보 수집·이용 동의 (필수)" }),
           el("ul", null,
-            el("li", { text: "수집 항목: 이메일, 비밀번호, 닉네임" }),
-            el("li", { text: "이용 목적: 회원 가입·로그인, 댓글 서비스, 비밀번호 찾기, 이어듣기 저장" }),
+            el("li", { text: "수집 항목: 이메일, 비밀번호, 닉네임 (이용 중 생성: 댓글, 이어듣기 위치, 공개방송 입장 기록, 청취 기록)" }),
+            el("li", { text: "이용 목적: 회원 가입·로그인, 댓글 서비스, 비밀번호 찾기, 이어듣기 저장, 이용 통계(콘텐츠 기획·서비스 개선)" }),
             el("li", { text: "보유 기간: 회원 탈퇴 때까지(이어듣기 위치는 마지막 저장 후 30일)" }),
             el("li", { text: "동의를 거부할 수 있어요. 거부하면 가입과 댓글 쓰기가 제한되고, 듣기와 댓글 읽기는 가입 없이 할 수 있어요." })),
           (D && D.privacy) ? el("a", { href: "#privacy", target: "_blank", rel: "noopener", text: "개인정보 처리방침 전문 보기" }) : null,
@@ -2483,7 +2570,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (document.hidden) { if (sess && sess.audio) savePos(sess, true); }
     else { tick(); if (sess && sess.poll) sess.poll(false); }
   });
-  addEventListener("pagehide", function () { if (sess && sess.audio) savePos(sess, true); });
+  addEventListener("pagehide", function () { if (sess && sess.audio) { ltFlush(sess); savePos(sess, true); } });
   addEventListener("pageshow", function () { tick(); });
   addEventListener("focus", function () { tick(); });
   function onScroll() { if (sess) sess.follow = nearBottom(); }
