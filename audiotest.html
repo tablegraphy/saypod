@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>재생 시험</title>
+<style>
+  :root { --bg:#FAFAF9; --fg:#14161B; --muted:#6A6E78; --line:#E0E0DB; --btn:#FFD000; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0F1013; --fg:#F3F3F0; --muted:#9A9CA5; --line:#2A2B32; } }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.6 -apple-system, "Apple SD Gothic Neo", sans-serif; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  section { border:1px solid var(--line); border-radius:14px; padding:14px; margin:0 0 14px; }
+  h2 { font-size:16px; margin:0 0 6px; }
+  p { margin:4px 0 10px; font-size:13px; color:var(--muted); }
+  button { font:inherit; font-weight:700; color:#14161B; background:var(--btn); border:0; border-radius:12px; padding:14px 18px; min-height:48px; margin:0 8px 8px 0; }
+  audio { width:100%; }
+  .st { font:13px/1.5 ui-monospace, Menlo, monospace; color:var(--fg); }
+  ol { padding-left:18px; margin:8px 0 0; font-size:13px; color:var(--muted); }
+</style>
+</head>
+<body>
+<h1>재생 시험</h1>
+<p class="sub">같은 방송(거북목 22화)으로 세 가지 방식을 비교해요. 하나씩만 해 주세요.</p>
+
+<section>
+  <h2>A. 기본 플레이어</h2>
+  <p>스크립트 없이 브라우저 기본 오디오 태그만 써요.</p>
+  <audio id="a-el" controls preload="metadata"></audio>
+</section>
+
+<section>
+  <h2>C. 스크립트 오디오 + 재생 정보</h2>
+  <p>우리 사이트처럼 스크립트로 만든 오디오에 제목·이미지만 붙이고, 잠금 화면 버튼은 기본 동작에 맡겨요.</p>
+  <button id="c-play" type="button">재생 / 멈춤</button>
+  <div class="st" id="c-st">멈춤 0:00</div>
+</section>
+
+<section>
+  <h2>B. 우리 방식 전체</h2>
+  <p>C에 더해 잠금 화면 재생·멈춤·앞뒤 이동 버튼을 우리 코드로 처리해요(사이트와 같은 방식).</p>
+  <button id="b-play" type="button">재생 / 멈춤</button>
+  <div class="st" id="b-st">멈춤 0:00</div>
+</section>
+
+<section>
+  <h2>시험 방법</h2>
+  <ol>
+    <li>세 가지 중 하나에서 재생을 눌러요.</li>
+    <li>폰 화면을 꺼요(잠금). 소리가 계속 나는지 확인.</li>
+    <li>잠금 화면에서 멈춤 → 5초 기다리기 → 재생.</li>
+    <li>소리가 나는지, 시간이 멈춘 곳에서 이어지는지(앞으로 건너뛰지 않는지) 알려 주세요.</li>
+    <li>A, C, B 순서로 각각 해 주세요. 한 번에 하나만 재생돼요.</li>
+  </ol>
+</section>
+
+<script>
+  var SRC = "__SRC__";
+  var TITLE = "[22화] 전국투어 1탄 (feat. 공주 책방, 잇다)";
+  var ART = [{ src: "cover-geobuk.jpg", sizes: "720x720", type: "image/jpeg" }];
+  var a0 = document.getElementById("a-el"); a0.src = SRC;
+  function fmt(s) { s = Math.floor(s || 0); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
+  function stopOthers(except) { [a0, ac, ab].forEach(function (x) { if (x && x !== except && !x.paused) x.pause(); }); }
+  function meta() {
+    if (!("mediaSession" in navigator)) return;
+    try { navigator.mediaSession.metadata = new MediaMetadata({ title: TITLE, artist: "거북목 라디오", album: "재생 시험", artwork: ART.map(function (a) { return { src: new URL(a.src, location.href).href, sizes: a.sizes, type: a.type }; }) }); } catch (e) {}
+  }
+  function clearHandlers() { if (!("mediaSession" in navigator)) return; ["play","pause","seekbackward","seekforward","seekto"].forEach(function (n) { try { navigator.mediaSession.setActionHandler(n, null); } catch (e) {} }); }
+  a0.addEventListener("play", function () { stopOthers(a0); clearHandlers(); meta(); });
+
+  var ac = new Audio(); ac.preload = "metadata"; ac.src = SRC;
+  var ab = new Audio(); ab.preload = "metadata"; ab.src = SRC;
+  function paint(a, id) { document.getElementById(id).textContent = (a.paused ? "멈춤 " : "재생 ") + fmt(a.currentTime); }
+  setInterval(function () { paint(ac, "c-st"); paint(ab, "b-st"); }, 500);
+
+  document.getElementById("c-play").onclick = function () {
+    if (ac.paused) { stopOthers(ac); clearHandlers(); meta(); ac.play().catch(function (e) { document.getElementById("c-st").textContent = "재생 실패 " + e.name; }); } else ac.pause();
+  };
+  document.getElementById("b-play").onclick = function () {
+    if (ab.paused) {
+      stopOthers(ab); meta();
+      var ms = navigator.mediaSession;
+      function h(n, f) { try { ms.setActionHandler(n, f); } catch (e) {} }
+      h("play", function () { ab.play().catch(function () {}); });
+      h("pause", function () { ab.pause(); });
+      h("seekbackward", function (d) { ab.currentTime = Math.max(0, ab.currentTime - ((d && d.seekOffset) || 10)); });
+      h("seekforward", function (d) { ab.currentTime = ab.currentTime + ((d && d.seekOffset) || 30); });
+      h("seekto", function (d) { if (d && typeof d.seekTime === "number") ab.currentTime = d.seekTime; });
+      ab.play().catch(function (e) { document.getElementById("b-st").textContent = "재생 실패 " + e.name; });
+    } else ab.pause();
+  };
+</script>
+</body>
+</html>

@@ -304,6 +304,12 @@ def main():
         shutil.copyfile(path, os.path.join(out_dir, "cover-%s.jpg" % cid))
     for name, path in art_files.items():
         shutil.copyfile(path, os.path.join(out_dir, name))
+    at_path = os.path.join(HERE, "audiotest.html")   # 재생 시험 페이지(재생 문제 원인 가르기용): 최신 회차 음원 주소를 끼워 내보낸다
+    if os.path.exists(at_path):
+        newest = [e for c in channels if c["id"] == "geobuk" for e in c["episodes"]][:1]
+        if newest and newest[0].get("audio"):
+            open(os.path.join(out_dir, "audiotest.html"), "w", encoding="utf-8").write(
+                open(at_path, encoding="utf-8").read().replace("__SRC__", newest[0]["audio"]).replace("[22화] 전국투어 1탄 (feat. 공주 책방, 잇다)", newest[0].get("title", "")))
     adm_path = os.path.join(HERE, "admin.html")   # 관리자 화면(로그인한 관리자만 데이터를 봄): 회차·프로그램 목록과 연결 값을 끼워 내보낸다
     if os.path.exists(adm_path) and sbcfg:
         eps = [{"key": "%s-%s" % (c["id"], e["n"]), "ch": c["id"], "chName": c["name"], "n": e["n"], "title": e.get("title", ""), "date": e.get("date", ""), "sec": e.get("sec") or 0}
