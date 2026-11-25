@@ -1095,6 +1095,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       a.addEventListener(ev, function () {
         if (sess !== S) return;
         if (ev === "play") { S.touched = true; applySpeed(a); }
+        try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = ev === "play" ? "playing" : "paused"; } catch (e) {}
         if (ev === "ended") { store.set("ds_pos_" + S.key, ""); store.set("ds_post_" + S.key, String(Date.now())); pushPos(S, 0, true); }
         else if (ev !== "play") savePos(S, true);
         updatePlayBtn(); tick();
@@ -1127,7 +1128,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       });
     } catch (e) {}
     function h(name, fn) { try { ms.setActionHandler(name, fn); } catch (e) {} }
-    h("play", function () { a.play().catch(function () {}); });
+    h("play", function () { startPlay(S); });
     h("pause", function () { a.pause(); });
     h("seekbackward", function (d) { seekBy(-((d && d.seekOffset) || 10)); });
     h("seekforward", function (d) { seekBy((d && d.seekOffset) || 30); });
@@ -1148,13 +1149,35 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     S.r.play.replaceChildren(glyph(paused ? "play" : "pause"));
     S.r.play.setAttribute("aria-label", paused ? "재생" : "일시정지");
   }
+  /* 재생 시작(잠금 화면 재생 버튼·화면 재생 버튼 공통). 백그라운드에서 멈췄다 다시 누르면 아이폰이 음원 연결을 끊어 둔 채라 시작이 안 되는 일이 있다.
+     시작 신호('playing')가 3초 안에 안 오거나 거절되면 같은 위치에서 음원을 다시 받아 한 번 더 시도한다. */
+  function startPlay(S) {
+    var a = S && S.audio; if (!a) return;
+    var at = a.currentTime, ok = false, tried = false;
+    function fail() {
+      S.audioErr = "재생을 시작하지 못했어요. 다시 눌러 주세요.";
+      if (S.r && S.r.err2) S.r.err2.textContent = S.audioErr;
+    }
+    function retry() {
+      if (ok || tried || sess !== S) return;
+      tried = true;
+      var to = at > 0 ? at : (S.pendingSeek || 0);
+      var onMeta = function () {
+        a.removeEventListener("loadedmetadata", onMeta);
+        try { if (to > 0) a.currentTime = to; } catch (e) {}
+        var q = a.play(); if (q && q.catch) q.catch(fail);
+      };
+      a.addEventListener("loadedmetadata", onMeta);
+      try { a.load(); } catch (e) { a.removeEventListener("loadedmetadata", onMeta); fail(); }
+    }
+    a.addEventListener("playing", function () { ok = true; }, { once: true });
+    var p = a.play();
+    if (p && p.catch) p.catch(retry);
+    setTimeout(function () { if (!ok) retry(); }, 3500);
+  }
   function togglePlay() {
     var S = sess, a = S.audio; if (!a) return;
-    if (a.paused) a.play().catch(function () {
-      S.audioErr = "재생을 시작하지 못했어요. 다시 눌러 주세요.";
-      if (S.r.err2) S.r.err2.textContent = S.audioErr;
-    });
-    else a.pause();
+    if (a.paused) startPlay(S); else a.pause();
   }
   function seekBy(d) {
     var S = sess; if (!S || !S.audio) return;
