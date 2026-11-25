@@ -45,13 +45,20 @@
 </section>
 
 <section>
+  <h2>D. 이동 버튼만</h2>
+  <p>B에서 잠금 화면 재생·멈춤 처리를 빼고, 앞뒤 이동 버튼 처리만 남긴 방식이에요.</p>
+  <button id="d-play" type="button">재생 / 멈춤</button>
+  <div class="st" id="d-st">멈춤 0:00</div>
+</section>
+
+<section>
   <h2>시험 방법</h2>
   <ol>
     <li>세 가지 중 하나에서 재생을 눌러요.</li>
     <li>폰 화면을 꺼요(잠금). 소리가 계속 나는지 확인.</li>
     <li>잠금 화면에서 멈춤 → 5초 기다리기 → 재생.</li>
     <li>소리가 나는지, 시간이 멈춘 곳에서 이어지는지(앞으로 건너뛰지 않는지) 알려 주세요.</li>
-    <li>A, C, B 순서로 각각 해 주세요. 한 번에 하나만 재생돼요.</li>
+    <li>A, C, B, D 순서로 각각 해 주세요. 한 번에 하나만 재생돼요.</li>
   </ol>
 </section>
 
@@ -61,7 +68,7 @@
   var ART = [{ src: "cover-geobuk.jpg", sizes: "720x720", type: "image/jpeg" }];
   var a0 = document.getElementById("a-el"); a0.src = SRC;
   function fmt(s) { s = Math.floor(s || 0); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
-  function stopOthers(except) { [a0, ac, ab].forEach(function (x) { if (x && x !== except && !x.paused) x.pause(); }); }
+  function stopOthers(except) { [a0, ac, ab, ad].forEach(function (x) { if (x && x !== except && !x.paused) x.pause(); }); }
   function meta() {
     if (!("mediaSession" in navigator)) return;
     try { navigator.mediaSession.metadata = new MediaMetadata({ title: TITLE, artist: "거북목 라디오", album: "재생 시험", artwork: ART.map(function (a) { return { src: new URL(a.src, location.href).href, sizes: a.sizes, type: a.type }; }) }); } catch (e) {}
@@ -71,8 +78,9 @@
 
   var ac = new Audio(); ac.preload = "metadata"; ac.src = SRC;
   var ab = new Audio(); ab.preload = "metadata"; ab.src = SRC;
+  var ad = new Audio(); ad.preload = "metadata"; ad.src = SRC;
   function paint(a, id) { document.getElementById(id).textContent = (a.paused ? "멈춤 " : "재생 ") + fmt(a.currentTime); }
-  setInterval(function () { paint(ac, "c-st"); paint(ab, "b-st"); }, 500);
+  setInterval(function () { paint(ac, "c-st"); paint(ab, "b-st"); paint(ad, "d-st"); }, 500);
 
   document.getElementById("c-play").onclick = function () {
     if (ac.paused) { stopOthers(ac); clearHandlers(); meta(); ac.play().catch(function (e) { document.getElementById("c-st").textContent = "재생 실패 " + e.name; }); } else ac.pause();
@@ -89,6 +97,17 @@
       h("seekto", function (d) { if (d && typeof d.seekTime === "number") ab.currentTime = d.seekTime; });
       ab.play().catch(function (e) { document.getElementById("b-st").textContent = "재생 실패 " + e.name; });
     } else ab.pause();
+  };
+  document.getElementById("d-play").onclick = function () {
+    if (ad.paused) {
+      stopOthers(ad); clearHandlers(); meta();
+      var ms = navigator.mediaSession;
+      function h(n, f) { try { ms.setActionHandler(n, f); } catch (e) {} }
+      h("seekbackward", function (d) { ad.currentTime = Math.max(0, ad.currentTime - ((d && d.seekOffset) || 10)); });
+      h("seekforward", function (d) { ad.currentTime = ad.currentTime + ((d && d.seekOffset) || 30); });
+      h("seekto", function (d) { if (d && typeof d.seekTime === "number") ad.currentTime = d.seekTime; });
+      ad.play().catch(function (e) { document.getElementById("d-st").textContent = "재생 실패 " + e.name; });
+    } else ad.pause();
   };
 </script>
 </body>
