@@ -509,6 +509,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (sess.audio) {
       ltFlush(sess);
       savePos(sess, true);
+      sess.hold = false; clearTimeout(sess.holdT);
       try { sess.audio.pause(); sess.audio.removeAttribute("src"); sess.audio.load(); } catch (e) {}
       if ("mediaSession" in navigator) { try { navigator.mediaSession.metadata = null; } catch (e) {} }
     }
@@ -745,7 +746,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   function isSynced() { var S = sess; return !!S && (S.useAudio || !!S.clock); }
   function pos() {
     var S = sess;
-    if (S && S.useAudio) { var t = S.audio ? S.audio.currentTime : 0; return Math.max(0, Math.min(S.dur, t || 0)); }
+    if (S && S.useAudio) { var t = S.audio ? apos(S) : 0; return Math.max(0, Math.min(S.dur, t || 0)); }
     var c = S && S.clock; if (!c) return 0;
     var p = c.playing ? c.pos0 + (Date.now() - c.t0) / 1000 : c.pos0;
     if (p >= S.dur) { p = S.dur; if (c.playing) { c.pos0 = p; c.playing = false; c.t0 = Date.now(); saveClock(); } }
@@ -943,8 +944,9 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   /* ---- 에피소드: 사이트 안 재생 ---- */
   function savePos(S, force) {
     var a = S.audio; if (!a) return;
-    if (a.readyState === 0 && !(a.currentTime > 0)) return;   /* 아직 음원을 못 읽었으면 저장된 위치를 건드리지 않는다 */
-    var t = a.currentTime > 5 ? Math.floor(a.currentTime) : 0;
+    var cur = apos(S);
+    if (!S.hold && a.readyState === 0 && !(cur > 0)) return;   /* 아직 음원을 못 읽었으면 저장된 위치를 건드리지 않는다 */
+    var t = cur > 5 ? Math.floor(cur) : 0;
     store.set("ds_pos_" + S.key, t ? String(t) : "");
     store.set("ds_post_" + S.key, String(Date.now()));
     pushPos(S, t, force);
@@ -998,9 +1000,9 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
   function ltPayload(S) {
     var L = S.ls; if (!L) return null;
-    if (L.open != null && S.audio) ltClose(S, S.audio.currentTime);   /* 재생 중에 나가는 경우 */
+    if (L.open != null && S.audio) ltClose(S, apos(S));   /* 재생 중에 나가는 경우 */
     if (L.listened < LT_MIN) return null;
-    var end = Math.round(S.audio ? S.audio.currentTime : L.last);
+    var end = Math.round(S.audio ? apos(S) : L.last);
     return { p_ep: S.key, p_device: ltToken ? null : ltDevice(), p_started: L.started.toISOString(), p_listened: Math.min(43200, Math.round(L.listened)),
              p_end: Math.max(0, Math.min(43200, end)), p_finished: !!(L.finished || (S.dur > 60 && end >= S.dur - 15)), p_segs: L.segs, p_rewinds: L.rew, p_skips: L.skp };
   }
@@ -1073,6 +1075,55 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     setInterval(trkPing, 90000);
     document.addEventListener("visibilitychange", function () { if (!document.hidden && Date.now() - TRK.lastPing > 60000) trkPing(); });
   }
+  /* ---- 멈춘 뒤 연결 유지(아이폰 잠금 화면 이어듣기) ---- */
+  var SIL_URL = null, HOLD_MAX = 600000;
+  function apos(S) { return S.hold ? S.holdPos : S.audio.currentTime; }
+  function aPaused(S) { return S.hold ? true : S.audio.paused; }
+  function silentUrl() {   /* 1초짜리 무음 WAV(8kHz·16비트·모노) */
+    if (SIL_URL) return SIL_URL;
+    var rate = 8000, n = rate, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    function w(o, str) { for (var i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); }
+    w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
+    return (SIL_URL = URL.createObjectURL(new Blob([buf], { type: "audio/wav" })));
+  }
+  function holdEnter(S) {
+    var a = S.audio;
+    if (!a || S.hold || a.ended || !(a.readyState > 0) || !(a.currentTime > 0) || (S.dur && a.currentTime >= S.dur - 3)) return;
+    S.holdPos = a.currentTime; S.hold = true; S.holdBusy = true;
+    dbg(S, "연결유지 시작 pos=" + S.holdPos.toFixed(1));
+    var started = function () { a.removeEventListener("playing", started); S.holdBusy = false; };
+    var ready = function () {
+      a.removeEventListener("canplay", ready);
+      a.addEventListener("playing", started);
+      var q = a.play(); if (q && q.catch) q.catch(function () { holdExit(S, false); });
+    };
+    try { a.loop = true; a.src = silentUrl(); a.addEventListener("canplay", ready); a.load(); } catch (e) { holdExit(S, false); return; }
+    clearTimeout(S.holdT); S.holdT = setTimeout(function () { holdExit(S, false); }, HOLD_MAX);   /* 오래 두면 배터리를 쓰므로 10분 뒤 해제 */
+  }
+  function holdExit(S, autoplay) {
+    if (!S.hold || S.holdExiting) return;
+    S.holdExiting = true; S.holdBusy = true; clearTimeout(S.holdT);
+    var a = S.audio, to = S.holdPos, done = false;
+    dbg(S, "연결유지 해제 autoplay=" + !!autoplay);
+    function fin() {
+      if (done) return; done = true;
+      S.hold = false; S.holdBusy = false; S.holdExiting = false;
+      if (sess !== S) return;
+      if (autoplay && !a.paused) ltPlay(S);
+      updatePlayBtn(); tick();
+    }
+    var onMeta = function () {
+      a.removeEventListener("loadedmetadata", onMeta);
+      try { if (to > 0) a.currentTime = to; } catch (e) {}
+      if (autoplay) {
+        a.addEventListener("playing", function once() { a.removeEventListener("playing", once); fin(); });
+        var q = a.play(); if (q && q.catch) q.catch(fin);
+        setTimeout(fin, 8000);
+      } else fin();
+    };
+    try { a.loop = false; a.src = S.ep.audio; applySpeed(a); a.addEventListener("loadedmetadata", onMeta); a.load(); } catch (e) { a.removeEventListener("loadedmetadata", onMeta); fin(); }
+  }
   var SPEEDS = [1, 1.25, 1.5];
   function getSpeed() { var v = parseFloat(store.get("ds_speed")); return SPEEDS.indexOf(v) >= 0 ? v : 1; }
   function applySpeed(a) { if (!a) return; var v = getSpeed(); try { a.defaultPlaybackRate = v; a.playbackRate = v; } catch (e) {} }
@@ -1084,7 +1135,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (sp0 > 5 && sp0 < S.dur - 15) { try { a.currentTime = sp0; } catch (e) {} S.resumedFrom = sp0; S.resumed = true; }
     if (SB && me) fetchServerPos(S);
     a.addEventListener("loadedmetadata", function () {
-      if (sess !== S) return;
+      if (sess !== S || S.hold) return;
       if (!S.ep.sec && isFinite(a.duration) && a.duration > 0) { S.dur = a.duration; renderSync(); renderMarks(); }
       if (S.pendingSeek != null) { a.currentTime = S.pendingSeek; S.pendingSeek = null; S.resumed = true; }
       else if (S.resumedFrom && Math.abs(a.currentTime - S.resumedFrom) > 2) a.currentTime = S.resumedFrom;
@@ -1097,7 +1148,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     });
     ["play", "pause", "ended"].forEach(function (ev) {
       a.addEventListener(ev, function () {
-        if (sess !== S) return;
+        if (sess !== S || S.hold) return;   /* 연결 유지 중에는 무음 소리의 이벤트를 앱 상태에 반영하지 않는다 */
         if (ev === "play") { S.touched = true; applySpeed(a); }
         if (ev === "pause" && a.readyState > 0) { S.pausedAt = Date.now(); S.pausePos = a.currentTime; }   /* load() 직후의 pause 는 제외 */
         if (ev === "ended") { store.set("ds_pos_" + S.key, ""); store.set("ds_post_" + S.key, String(Date.now())); pushPos(S, 0, true); }
@@ -1108,15 +1159,25 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     ["play", "playing", "pause", "waiting", "stalled", "emptied", "seeked", "error", "ended", "loadedmetadata", "canplay"].forEach(function (ev) {
       a.addEventListener(ev, function () { dbg(S, "오디오:" + ev); });
     });
-    a.addEventListener("seeked", function () { if (a.paused && a.readyState > 0) S.pausePos = a.currentTime; });
-    a.addEventListener("play", function () { ltPlay(S); });
-    a.addEventListener("pause", function () { ltPause(S); });
-    a.addEventListener("ended", function () { ltEnded(S); });
-    a.addEventListener("timeupdate", function () { if (S.ls && !a.seeking) S.ls.last = a.currentTime; });
-    a.addEventListener("seeking", function () { ltSeek(S); });
+    a.addEventListener("seeked", function () { if (!S.hold && a.paused && a.readyState > 0) S.pausePos = a.currentTime; });
+    a.addEventListener("play", function () { if (!S.hold) ltPlay(S); });
+    a.addEventListener("pause", function () { if (!S.hold) ltPause(S); });
+    a.addEventListener("ended", function () { if (!S.hold) ltEnded(S); });
+    a.addEventListener("timeupdate", function () { if (!S.hold && S.ls && !a.seeking) S.ls.last = a.currentTime; });
+    a.addEventListener("seeking", function () { if (!S.hold) ltSeek(S); });
     a.addEventListener("error", function () {
+      if (S.hold) { holdExit(S, false); return; }   /* 무음 소리를 못 열면 원래 음원으로 */
       S.audioErr = "음원을 불러오지 못했어요. 잠시 뒤 다시 시도하거나 '다른 앱에서 듣기'를 써 주세요.";
       if (sess === S && S.r.err2) S.r.err2.textContent = S.audioErr;
+    });
+    /* 아이폰: 화면이 꺼진 채 멈추면 같은 요소를 무음 소리(반복)로 바꿔 재생 연결을 유지한다. 무음 상태에서 재생이 오면 저장한 위치에서 방송으로 되돌린다.
+       앱 쪽 리스너가 먼저 실제 위치를 저장한 뒤 실행되도록 맨 마지막에 등록한다. */
+    a.addEventListener("pause", function () {
+      if (sess !== S || S.hold || !document.hidden || !S.useAudio) return;
+      holdEnter(S);
+    });
+    a.addEventListener("play", function () {
+      if (sess === S && S.hold && !S.holdBusy) holdExit(S, true);   /* 무음 상태에서 온 재생(잠금 화면 재생) */
     });
     if (S.useAudio) mediaSessionInit(S);
   }
@@ -1141,10 +1202,10 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
        그래서 재생·멈춤은 아이폰 기본 처리에 맡기고, 앞뒤 이동 버튼만 우리 코드로 처리한다. */
     h("seekbackward", function (d) { seekBy(-((d && d.seekOffset) || 10)); });
     h("seekforward", function (d) { seekBy((d && d.seekOffset) || 30); });
-    h("seekto", function (d) { if (d && typeof d.seekTime === "number") { a.currentTime = d.seekTime; tick(); } });
+    h("seekto", function (d) { if (d && typeof d.seekTime === "number") { if (S.hold) S.holdPos = Math.min(S.dur, Math.max(0, d.seekTime)); else a.currentTime = d.seekTime; tick(); } });
   }
   function audioTick(S, p) {
-    if (!S.useAudio || !S.audio || S.audio.paused) return;
+    if (!S.useAudio || !S.audio || aPaused(S)) return;
     var now = Date.now();
     if (now - (S.lastSave || 0) > 5000) { S.lastSave = now; savePos(S); }
     if (now - (S.lastMS || 0) > 1000 && "mediaSession" in navigator && navigator.mediaSession.setPositionState) {
@@ -1154,7 +1215,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
   function updatePlayBtn() {
     var S = sess; if (!S || !S.r.play || !S.audio) return;
-    var paused = S.audio.paused;
+    var paused = aPaused(S);
     S.r.play.replaceChildren(glyph(paused ? "play" : "pause"));
     S.r.play.setAttribute("aria-label", paused ? "재생" : "일시정지");
   }
@@ -1213,11 +1274,13 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   }
   function togglePlay() {
     var S = sess, a = S.audio; if (!a) return;
+    if (S.hold) { holdExit(S, true); return; }   /* 연결 유지 중에는 재생 버튼 = 방송으로 되돌려 재생 */
     if (a.paused) startPlay(S); else a.pause();
   }
   function seekBy(d) {
     var S = sess; if (!S || !S.audio) return;
     S.touched = true;
+    if (S.hold) { S.holdPos = Math.min(S.dur, Math.max(0, S.holdPos + d)); tick(); return; }   /* 연결 유지 중에는 저장한 위치만 옮긴다 */
     S.audio.currentTime = Math.min(S.dur, Math.max(0, S.audio.currentTime + d));
     tick();
   }
@@ -2339,7 +2402,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   /* ---- 지금 접속·재생 중인 수 (Realtime Presence) ----
      화면(탭)마다 {p: 재생 중이면 1, 아니면 0} 만 알린다. 닉네임·계정은 싣지 않는다.
      재생 중이 3명 이상이면 홈에 '지금 N명이 함께 듣고 있어요'를 보이고, 관리자는 관리 화면에서 두 숫자를 본다. */
-  function isPlayingNow() { var S = sess; return !!(S && ((S.audio && !S.audio.paused) || (S.clock && S.clock.playing))); }
+  function isPlayingNow() { var S = sess; return !!(S && ((S.audio && !aPaused(S)) || (S.clock && S.clock.playing))); }
   function liveRecount() {
     if (!liveCh) return;
     var st = {}; try { st = liveCh.presenceState() || {}; } catch (e) {}
@@ -2720,7 +2783,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
      화면이 꺼져 타이머가 멈춰도 돌아오는 순간 정확한 위치로 따라잡는다. */
   document.addEventListener("visibilitychange", function () {
     if (document.hidden) { if (sess && sess.audio) savePos(sess, true); }
-    else { tick(); if (sess && sess.poll) sess.poll(false); }
+    else { if (sess && sess.hold) holdExit(sess, false); tick(); if (sess && sess.poll) sess.poll(false); }
   });
   addEventListener("pagehide", function () { if (sess && sess.audio) { ltFlush(sess); savePos(sess, true); } });
   addEventListener("pageshow", function () { tick(); });
