@@ -52,13 +52,30 @@
 </section>
 
 <section>
+  <h2>E. 화면에 붙인 오디오</h2>
+  <p>C와 같지만 오디오 요소를 페이지에 붙여 둔 방식이에요.</p>
+  <button id="e-play" type="button">재생 / 멈춤</button>
+  <div class="st" id="e-st">멈춤 0:00</div>
+  <div id="e-host"></div>
+</section>
+
+<section>
+  <h2>F. 비디오 요소로 재생</h2>
+  <p>같은 음원을 비디오 요소(화면은 검게 보여요)로 재생해요. 영상 앱들이 쓰는 방식이에요.</p>
+  <button id="f-play" type="button">재생 / 멈춤</button>
+  <div class="st" id="f-st">멈춤 0:00</div>
+  <div id="f-host"></div>
+</section>
+
+<section>
   <h2>시험 방법</h2>
   <ol>
     <li>세 가지 중 하나에서 재생을 눌러요.</li>
     <li>폰 화면을 꺼요(잠금). 소리가 계속 나는지 확인.</li>
     <li>잠금 화면에서 멈춤 → 5초 기다리기 → 재생.</li>
     <li>소리가 나는지, 시간이 멈춘 곳에서 이어지는지(앞으로 건너뛰지 않는지) 알려 주세요.</li>
-    <li>A, C, B, D 순서로 각각 해 주세요. 한 번에 하나만 재생돼요.</li>
+    <li>각각 <b>두 번 이상 반복</b>해 주세요(멈춤 → 5초 → 재생을 연달아 두 번). 한 번은 되고 두 번째에서 안 되는 경우가 있어요.</li>
+    <li>A, C, E, F, B, D 순서로 해 주세요. 한 번에 하나만 재생돼요.</li>
   </ol>
 </section>
 
@@ -68,7 +85,7 @@
   var ART = [{ src: "cover-geobuk.jpg", sizes: "720x720", type: "image/jpeg" }];
   var a0 = document.getElementById("a-el"); a0.src = SRC;
   function fmt(s) { s = Math.floor(s || 0); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
-  function stopOthers(except) { [a0, ac, ab, ad].forEach(function (x) { if (x && x !== except && !x.paused) x.pause(); }); }
+  function stopOthers(except) { [a0, ac, ab, ad, ae, af].forEach(function (x) { if (x && x !== except && !x.paused) x.pause(); }); }
   function meta() {
     if (!("mediaSession" in navigator)) return;
     try { navigator.mediaSession.metadata = new MediaMetadata({ title: TITLE, artist: "거북목 라디오", album: "재생 시험", artwork: ART.map(function (a) { return { src: new URL(a.src, location.href).href, sizes: a.sizes, type: a.type }; }) }); } catch (e) {}
@@ -79,8 +96,10 @@
   var ac = new Audio(); ac.preload = "metadata"; ac.src = SRC;
   var ab = new Audio(); ab.preload = "metadata"; ab.src = SRC;
   var ad = new Audio(); ad.preload = "metadata"; ad.src = SRC;
+  var ae = document.createElement("audio"); ae.preload = "metadata"; ae.src = SRC; document.getElementById("e-host").appendChild(ae);
+  var af = document.createElement("video"); af.setAttribute("playsinline", ""); af.setAttribute("webkit-playsinline", ""); af.preload = "metadata"; af.src = SRC; af.style.width = "100%"; af.style.height = "60px"; af.style.background = "#000"; document.getElementById("f-host").appendChild(af);
   function paint(a, id) { document.getElementById(id).textContent = (a.paused ? "멈춤 " : "재생 ") + fmt(a.currentTime); }
-  setInterval(function () { paint(ac, "c-st"); paint(ab, "b-st"); paint(ad, "d-st"); }, 500);
+  setInterval(function () { paint(ac, "c-st"); paint(ab, "b-st"); paint(ad, "d-st"); paint(ae, "e-st"); paint(af, "f-st"); }, 500);
 
   document.getElementById("c-play").onclick = function () {
     if (ac.paused) { stopOthers(ac); clearHandlers(); meta(); ac.play().catch(function (e) { document.getElementById("c-st").textContent = "재생 실패 " + e.name; }); } else ac.pause();
@@ -109,6 +128,12 @@
       ad.play().catch(function (e) { document.getElementById("d-st").textContent = "재생 실패 " + e.name; });
     } else ad.pause();
   };
+  function plain(id, el, st) {
+    document.getElementById(id).onclick = function () {
+      if (el.paused) { stopOthers(el); clearHandlers(); meta(); var p = el.play(); if (p && p.catch) p.catch(function (e) { document.getElementById(st).textContent = "재생 실패 " + e.name; }); } else el.pause();
+    };
+  }
+  plain("e-play", ae, "e-st"); plain("f-play", af, "f-st");
 </script>
 </body>
 </html>
