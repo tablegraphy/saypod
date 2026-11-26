@@ -499,25 +499,58 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
 
   /* ---- 화면 이동 ---- */
   var sess = null;
+  /* 백그라운드 재생: 방송을 재생하던 중에 다른 화면(홈·프로그램·다른 방송·공개방송 나가기)으로 옮겨도 소리를 끊지 않는다.
+     화면은 버리고 재생 상태(S)만 bg 에 남긴다. 같은 방송 화면으로 돌아오면 이어받고, 다른 방송에서 재생을 누르면 그때 끈다. */
+  var bg = null;
+  function alive(S) { return !!S && !S.dead && (sess === S || bg === S); }
+  function bgStop(S) {
+    if (!S) return;
+    if (bg === S) bg = null;
+    S.dead = true;
+    clearInterval(S.bgT); clearTimeout(S.holdT);
+    if (S.audio) {
+      try { ltFlush(S); savePos(S, true); } catch (e) {}
+      S.hold = false;
+      try { S.audio.pause(); S.audio.removeAttribute("src"); S.audio.load(); } catch (e) {}
+    }
+    if (!bg && !sess && "mediaSession" in navigator) { try { navigator.mediaSession.metadata = null; } catch (e) {} }
+    if (!sess) document.documentElement.classList.remove("playing");
+  }
+  function bgTick() {
+    var S = bg; if (!S || !S.audio) return;
+    if (!sess) document.documentElement.classList.toggle("playing", !aPaused(S));
+    if (aPaused(S)) return;
+    audioTick(S, apos(S));
+  }
   function leave() {
     if (!sess) return;
-    clearInterval(sess.timer); clearInterval(sess.pollTimer); clearTimeout(sess.lt);
-    if (sess.unsub) { try { sess.unsub(); } catch (e) {} }
-    if (sess.rt) { try { sb.removeChannel(sess.rt); } catch (e) {} }
-    if (sess.room) roomTeardown(sess);
+    var S = sess;
+    clearInterval(S.timer); clearInterval(S.pollTimer); clearTimeout(S.lt);
+    if (S.unsub) { try { S.unsub(); } catch (e) {} }
+    if (S.rt) { try { sb.removeChannel(S.rt); } catch (e) {} }
+    if (S.room) roomTeardown(S);
     closeTicket();
-    if (sess.audio) {
-      ltFlush(sess);
-      savePos(sess, true);
-      sess.hold = false; clearTimeout(sess.holdT);
-      try { sess.audio.pause(); sess.audio.removeAttribute("src"); sess.audio.load(); } catch (e) {}
-      if ("mediaSession" in navigator) { try { navigator.mediaSession.metadata = null; } catch (e) {} }
+    S.unsub = S.rt = S.poll = S.pollTimer = null;
+    if (S.audio && S.useAudio && !S.dead && (S.hold || (!S.audio.paused && !S.audio.ended))) {
+      /* 재생 중이었으면 소리는 그대로 두고 화면만 떠난다 */
+      if (bg && bg !== S) bgStop(bg);
+      bg = S; clearInterval(S.bgT); S.bgT = setInterval(bgTick, 1000);
+      sess = null;
+      return;
+    }
+    if (S.audio) {
+      ltFlush(S);
+      savePos(S, true);
+      S.hold = false; clearTimeout(S.holdT);
+      try { S.audio.pause(); S.audio.removeAttribute("src"); S.audio.load(); } catch (e) {}
+      if (!bg && "mediaSession" in navigator) { try { navigator.mediaSession.metadata = null; } catch (e) {} }
     }
     sess = null;
   }
   function route() {
     leave();
-    document.documentElement.classList.remove("is-editing", "playing");
+    document.documentElement.classList.remove("is-editing");
+    document.documentElement.classList.toggle("playing", !!bg && !aPaused(bg));   /* 백그라운드 재생 중에는 당겨서 새로고침(=소리 끊김)을 막는다 */
     scrollToTop();
     var h = location.hash, m, ch;
     if ((m = h.match(/^#e-([a-z0-9]+)-(\d+)$/))) {
@@ -778,11 +811,19 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     return src ? el("img", { class: "th sq", src: src, alt: "" }) : null;
   }
   function showEpisode(ch, ep) {
-    var S = sess = {
+    var view = {
       ch: ch, ep: ep, key: ch.id + "-" + ep.n, dur: ep.sec || 3 * 3600,
       comments: [], mode: "near", reveal: false, sig: "", stamp: null,
       loadState: "loading", unsub: null, sending: false, editNick: false, showSet: false, open: {}, replyTo: null, threadIds: [], r: {}
     };
+    var S;
+    if (bg && bg.key === view.key && !bg.dead) {
+      /* 백그라운드에서 재생 중이던 같은 방송으로 돌아왔다: 소리는 그대로 두고 화면만 새로 붙인다 */
+      S = bg; bg = null; clearInterval(S.bgT);
+      var keepDur = S.dur; Object.assign(S, view); S.dur = keepDur;
+      S.markN = -1; S.playedIdx = -1; S.bars = null;
+    } else S = view;
+    sess = S;
     S.clock = loadClock(S.key);
     S.useAudio = SITE && !!ep.audio && (!OTHER_APP || store.get("ds_mode") !== "clock");
     if (S.useAudio) ensureAudio();
@@ -1109,9 +1150,9 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     function fin() {
       if (done) return; done = true;
       S.hold = false; S.holdBusy = false; S.holdExiting = false;
-      if (sess !== S) return;
+      if (!alive(S)) return;
       if (autoplay && !a.paused) ltPlay(S);
-      updatePlayBtn(); tick();
+      if (sess === S) { updatePlayBtn(); tick(); }
     }
     var onMeta = function () {
       a.removeEventListener("loadedmetadata", onMeta);
@@ -1135,7 +1176,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (sp0 > 5 && sp0 < S.dur - 15) { try { a.currentTime = sp0; } catch (e) {} S.resumedFrom = sp0; S.resumed = true; }
     if (SB && me) fetchServerPos(S);
     a.addEventListener("loadedmetadata", function () {
-      if (sess !== S || S.hold) return;
+      if (sess !== S || S.hold) return;   /* 백그라운드 재생 중에는 화면이 없으니 건드릴 것이 없다 */
       if (!S.ep.sec && isFinite(a.duration) && a.duration > 0) { S.dur = a.duration; renderSync(); renderMarks(); }
       if (S.pendingSeek != null) { a.currentTime = S.pendingSeek; S.pendingSeek = null; S.resumed = true; }
       else if (S.resumedFrom && Math.abs(a.currentTime - S.resumedFrom) > 2) a.currentTime = S.resumedFrom;
@@ -1148,12 +1189,12 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     });
     ["play", "pause", "ended"].forEach(function (ev) {
       a.addEventListener(ev, function () {
-        if (sess !== S || S.hold) return;   /* 연결 유지 중에는 무음 소리의 이벤트를 앱 상태에 반영하지 않는다 */
+        if (!alive(S) || S.hold) return;   /* 연결 유지 중에는 무음 소리의 이벤트를 앱 상태에 반영하지 않는다 */
         if (ev === "play") { S.touched = true; applySpeed(a); }
         if (ev === "pause" && a.readyState > 0) { S.pausedAt = Date.now(); S.pausePos = a.currentTime; }   /* load() 직후의 pause 는 제외 */
         if (ev === "ended") { store.set("ds_pos_" + S.key, ""); store.set("ds_post_" + S.key, String(Date.now())); pushPos(S, 0, true); }
         else if (ev !== "play") savePos(S, true);
-        updatePlayBtn(); tick();
+        if (sess === S) { updatePlayBtn(); tick(); }
       });
     });
     ["play", "playing", "pause", "waiting", "stalled", "emptied", "seeked", "error", "ended", "loadedmetadata", "canplay"].forEach(function (ev) {
@@ -1173,13 +1214,21 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     /* 아이폰: 화면이 꺼진 채 멈추면 같은 요소를 무음 소리(반복)로 바꿔 재생 연결을 유지한다. 무음 상태에서 재생이 오면 저장한 위치에서 방송으로 되돌린다.
        앱 쪽 리스너가 먼저 실제 위치를 저장한 뒤 실행되도록 맨 마지막에 등록한다. */
     a.addEventListener("pause", function () {
-      if (sess !== S || S.hold || !document.hidden || !S.useAudio) return;
+      if (!alive(S) || S.hold || !document.hidden || !S.useAudio) return;
       holdEnter(S);
     });
     a.addEventListener("play", function () {
-      if (sess === S && S.hold && !S.holdBusy) holdExit(S, true);   /* 무음 상태에서 온 재생(잠금 화면 재생) */
+      if (alive(S) && S.hold && !S.holdBusy) holdExit(S, true);   /* 무음 상태에서 온 재생(잠금 화면 재생) */
     });
-    if (S.useAudio) mediaSessionInit(S);
+    /* 백그라운드로 재생 중인 다른 방송이 있으면, 이 방송에서 재생을 누르는 순간 그쪽을 끄고 잠금 화면 정보도 이 방송으로 바꾼다 */
+    a.addEventListener("play", function () {
+      if (S.hold || !S.useAudio) return;
+      if (bg && bg !== S) { bgStop(bg); S.miDone = false; }
+      if (!S.miDone) { S.miDone = true; mediaSessionInit(S); }
+    });
+    /* 백그라운드로 끝까지 들었으면 정리한다(청취 기록은 위 ended 리스너가 먼저 처리) */
+    a.addEventListener("ended", function () { if (bg === S && !S.hold) bgStop(S); });
+    if (S.useAudio && !(bg && bg !== S)) { S.miDone = true; mediaSessionInit(S); }
   }
   /* 잠금 화면·알림에 뜨는 이미지: 선명한 720px 파일(방송 고유 이미지 → 채널 표지), 없으면 작은 표지 */
   function lockArt(S) {
@@ -1200,8 +1249,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     /* 잠금 화면의 재생·멈춤은 일부러 우리 코드가 받지 않는다: 우리 코드가 play()를 부르면 아이폰이 사용자가 누른 재생으로 인정하지 않아
        소리 출력을 켜 주지 않는다(재생 시계만 흐르고 소리가 안 남). 시험 페이지 결과: 기본 처리(A·C)는 되고 핸들러를 단 방식(B)은 안 됐다.
        그래서 재생·멈춤은 아이폰 기본 처리에 맡기고, 앞뒤 이동 버튼만 우리 코드로 처리한다. */
-    h("seekbackward", function (d) { seekBy(-((d && d.seekOffset) || 10)); });
-    h("seekforward", function (d) { seekBy((d && d.seekOffset) || 30); });
+    h("seekbackward", function (d) { seekBy(-((d && d.seekOffset) || 10), S); });
+    h("seekforward", function (d) { seekBy((d && d.seekOffset) || 30, S); });
     h("seekto", function (d) { if (d && typeof d.seekTime === "number") { if (S.hold) S.holdPos = Math.min(S.dur, Math.max(0, d.seekTime)); else a.currentTime = d.seekTime; tick(); } });
   }
   function audioTick(S, p) {
@@ -1255,7 +1304,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
       if (S.r && S.r.err2) S.r.err2.textContent = S.audioErr;
     }
     function retry() {
-      if (ok || tried || sess !== S) return;
+      if (ok || tried || !alive(S)) return;
       tried = true;
       var to = at > 0 ? at : (S.pendingSeek || 0);
       var onMeta = function () {
@@ -1277,8 +1326,8 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     if (S.hold) { holdExit(S, true); return; }   /* 연결 유지 중에는 재생 버튼 = 방송으로 되돌려 재생 */
     if (a.paused) startPlay(S); else a.pause();
   }
-  function seekBy(d) {
-    var S = sess; if (!S || !S.audio) return;
+  function seekBy(d, T) {
+    var S = T || sess; if (!S || !S.audio) return;
     S.touched = true;
     if (S.hold) { S.holdPos = Math.min(S.dur, Math.max(0, S.holdPos + d)); tick(); return; }   /* 연결 유지 중에는 저장한 위치만 옮긴다 */
     S.audio.currentTime = Math.min(S.dur, Math.max(0, S.audio.currentTime + d));
@@ -2402,7 +2451,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   /* ---- 지금 접속·재생 중인 수 (Realtime Presence) ----
      화면(탭)마다 {p: 재생 중이면 1, 아니면 0} 만 알린다. 닉네임·계정은 싣지 않는다.
      재생 중이 3명 이상이면 홈에 '지금 N명이 함께 듣고 있어요'를 보이고, 관리자는 관리 화면에서 두 숫자를 본다. */
-  function isPlayingNow() { var S = sess; return !!(S && ((S.audio && !aPaused(S)) || (S.clock && S.clock.playing))); }
+  function isPlayingNow() { var S = sess; return !!(S && ((S.audio && !aPaused(S)) || (S.clock && S.clock.playing))) || !!(bg && bg.audio && !aPaused(bg)); }
   function liveRecount() {
     if (!liveCh) return;
     var st = {}; try { st = liveCh.presenceState() || {}; } catch (e) {}
@@ -2782,10 +2831,10 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   /* 시계는 setInterval 횟수가 아니라 실제 시각(Date.now)에서 계산한다.
      화면이 꺼져 타이머가 멈춰도 돌아오는 순간 정확한 위치로 따라잡는다. */
   document.addEventListener("visibilitychange", function () {
-    if (document.hidden) { if (sess && sess.audio) savePos(sess, true); }
-    else { if (sess && sess.hold) holdExit(sess, false); tick(); if (sess && sess.poll) sess.poll(false); }
+    if (document.hidden) { if (sess && sess.audio) savePos(sess, true); if (bg && bg.audio) savePos(bg, true); }
+    else { if (sess && sess.hold) holdExit(sess, false); if (bg && bg.hold) holdExit(bg, false); tick(); if (sess && sess.poll) sess.poll(false); }
   });
-  addEventListener("pagehide", function () { if (sess && sess.audio) { ltFlush(sess); savePos(sess, true); } });
+  addEventListener("pagehide", function () { if (sess && sess.audio) { ltFlush(sess); savePos(sess, true); } if (bg && bg.audio) { ltFlush(bg); savePos(bg, true); } });
   addEventListener("pageshow", function () { tick(); });
   addEventListener("focus", function () { tick(); });
   function onScroll() { if (sess) sess.follow = nearBottom(); }
@@ -2829,6 +2878,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
      달라졌으면 '재생 중이 아니고, 글 쓰는 중이 아니고, 창이 열려 있지 않을 때'(=방해되지 않을 때) 다시 불러온다. */
   var BUILD_ID = "__BUILD_ID__", newBuild = "";
   function updateIdle() {
+    if (bg) return false;   /* 백그라운드로 재생 중이면 새로고침하지 않는다 */
     var S = sess, ae = document.activeElement;
     var playing = !!(S && ((S.audio && !S.audio.paused) || (S.clock && S.clock.playing)));
     var typing = !!ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA");
