@@ -49,6 +49,8 @@ tr.sel td { background: var(--soft); }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 760px) { .row2 { grid-template-columns: 1fr; } }
 input[type=text], input[type=email], input[type=password], select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; min-height: 36px; }
+#epsel { background: var(--sig); color: #14161B; border-color: transparent; font-weight: 700; padding: 8px 14px; min-height: 40px; cursor: pointer; box-shadow: 0 1px 0 rgba(0,0,0,.12); }
+#epsel option { background: var(--surface); color: var(--fg); font-weight: 400; }
 .bars .b { display: grid; grid-template-columns: 90px 1fr 46px; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
 .bars .t { height: 12px; background: var(--soft); border-radius: 6px; overflow: hidden; }
 .bars .t i { display: block; height: 100%; background: var(--bar); border-radius: 6px; }
@@ -205,7 +207,7 @@ __SB_SCRIPT__
     return Promise.all([cached("episodes", function () { return rpc("admin_episodes"); }), cached("chs", function () { return rpc("admin_channels"); })]).then(function (r0) {
       var list = r0[0].filter(function (x) { return inCh(x.episode_key); }), chs = r0[1];
       var keys = EPS.map(function (e) { return e.key; }).filter(inCh); list.forEach(function (x) { if (keys.indexOf(x.episode_key) < 0) keys.push(x.episode_key); });
-      if (!state.ep || keys.indexOf(state.ep) < 0) { var best = list.slice().sort(function (a, b) { return (b.sessions + b.comments) - (a.sessions + a.comments); })[0]; state.ep = best ? best.episode_key : (keys[0] || null); }
+      if (!state.ep || keys.indexOf(state.ep) < 0) { var newest = EPS.filter(function (e) { return inCh(e.key); }).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || (b.n - a.n); })[0]; state.ep = newest ? newest.key : (keys[0] || null); }   /* 기본은 가장 최근 방송(날짜 → 회차 번호 순) */
       if (!state.ep) { v.innerHTML = '<div class="empty">회차가 없어요.</div>'; return; }
       var sel = '<select id="epsel">' + keys.map(function (k) { return '<option value="' + esc(k) + '"' + (k === state.ep ? " selected" : "") + ">" + esc(epName(k)) + (epTitle(k) ? " · " + esc(epTitle(k).replace(/^\s*\[[^\]]*\]\s*/, "")) : "") + "</option>"; }).join("") + "</select>";
       return Promise.all([cached("ed:" + state.ep, function () { return rpc("admin_episode_detail", { p_ep: state.ep }); }), cached("hot", function () { return rpc("admin_hot_moments", { p_limit: 100 }); }), cached("att", function () { return rpc("admin_attendance"); })]).then(function (rs) {
