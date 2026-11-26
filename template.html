@@ -270,6 +270,15 @@ button.t:hover, button.t:active { text-decoration: underline; }
 .comp form { display: flex; gap: 8px; }
 .comp form input { flex: 1; min-width: 0; border-radius: 999px; background: var(--surface); padding: 0 18px; }
 .comp .send { flex: none; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 50%; background: var(--sig); color: var(--on-sig); display: inline-grid; place-items: center; cursor: pointer; }
+/* 백그라운드 재생 바: 소리가 이어지는 방송이 있고 지금 그 방송 화면이 아닐 때만. 방송 화면에서는 댓글 입력줄 바로 위, 글 쓰는 동안은 숨김 */
+#bgbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 19; display: flex; align-items: center; gap: 8px; height: 44px; box-sizing: content-box; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); }
+#bgbar[hidden] { display: none; }
+#bgbar .mt { flex: 1; min-width: 0; height: 44px; padding: 0; border: 0; background: none; color: var(--fg); font: 600 14px var(--font); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+#bgbar .mb { flex: none; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: var(--sig); color: var(--on-sig); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+#bgbar .mb .gl { width: 20px; height: 20px; display: block; }
+html.hasbar #app { padding-bottom: 56px; }
+body:has(.comp input:focus) #bgbar, html.is-editing #bgbar { display: none; }
 .comp .send:disabled { opacity: .4; cursor: default; }
 .comp .send svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .comp .meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 12px; }
@@ -515,8 +524,33 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
     }
     if (!bg && !sess && "mediaSession" in navigator) { try { navigator.mediaSession.metadata = null; } catch (e) {} }
     if (!sess) document.documentElement.classList.remove("playing");
+    updateBar();
+  }
+  /* 백그라운드 재생 바(제목 누르면 그 방송으로, 버튼은 재생/일시정지) */
+  var barEl = null, barPaused = null, barTitle = null;
+  function updateBar() {
+    var S = (bg && !bg.dead && bg.audio && sess !== bg) ? bg : null;
+    if (!S) { if (barEl) barEl.hidden = true; document.documentElement.classList.remove("hasbar"); return; }
+    if (!barEl) {
+      barEl = el("div", { id: "bgbar", role: "region", "aria-label": "재생 중인 방송" },
+        el("button", { class: "mt", type: "button", onclick: function () { if (bg) location.hash = "#e-" + bg.ch.id + "-" + bg.ep.n; } }),
+        el("button", { class: "mb", type: "button", onclick: function () {
+          var B = bg; if (!B || !B.audio) return;
+          if (B.hold) holdExit(B, true); else if (B.audio.paused) startPlay(B); else B.audio.pause();
+          setTimeout(updateBar, 120);
+        } }));
+      document.body.appendChild(barEl);
+    }
+    var t = S.ep.title, paused = aPaused(S), btn = barEl.lastChild;
+    if (t !== barTitle) { barTitle = t; barEl.firstChild.textContent = t; barEl.firstChild.setAttribute("aria-label", t + ", 방송으로 이동"); }
+    if (paused !== barPaused) { barPaused = paused; btn.replaceChildren(glyph(paused ? "play" : "pause")); btn.setAttribute("aria-label", paused ? "재생" : "일시정지"); }
+    var c = document.querySelector(".comp");
+    barEl.style.bottom = c ? c.offsetHeight + "px" : "0px";
+    barEl.style.paddingBottom = c ? "0px" : "env(safe-area-inset-bottom, 0px)";
+    barEl.hidden = false; document.documentElement.classList.add("hasbar");
   }
   function bgTick() {
+    updateBar();
     var S = bg; if (!S || !S.audio) return;
     if (!sess) document.documentElement.classList.toggle("playing", !aPaused(S));
     if (aPaused(S)) return;
@@ -1194,7 +1228,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
         if (ev === "pause" && a.readyState > 0) { S.pausedAt = Date.now(); S.pausePos = a.currentTime; }   /* load() 직후의 pause 는 제외 */
         if (ev === "ended") { store.set("ds_pos_" + S.key, ""); store.set("ds_post_" + S.key, String(Date.now())); pushPos(S, 0, true); }
         else if (ev !== "play") savePos(S, true);
-        if (sess === S) { updatePlayBtn(); tick(); }
+        if (sess === S) { updatePlayBtn(); tick(); } else if (bg === S) updateBar();
       });
     });
     ["play", "playing", "pause", "waiting", "stalled", "emptied", "seeked", "error", "ended", "loadedmetadata", "canplay"].forEach(function (ev) {
@@ -2906,7 +2940,7 @@ html.is-editing .comp { display: none; }   /* 댓글을 고치는 동안: 헤더
   setInterval(function () { if (!document.hidden) checkUpdate(); }, 600000);
   setInterval(function () { if (newBuild && !document.hidden) applyUpdate(); }, 15000);
   watchKeyboard();
-  addEventListener("hashchange", route);
+  addEventListener("hashchange", function () { route(); updateBar(); });
   route();
   trkStart();   /* 방문·유입·동시 접속 기록 시작(사이트 빌드에서만, 추적 안 함 설정이면 안 함) */
   ready.then(function () { if (sess) updateComposer(); });
