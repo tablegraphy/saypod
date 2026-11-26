@@ -7,7 +7,7 @@
 - 깃허브 자동 갱신용: python build.py --site-only --out _site  (시제품 파일은 만들지 않고 지정한 폴더에 index.html만 만든다).
 - 표지는 cache/cover_<채널id>.json 에 한 번 저장해 두고 재사용한다(깃허브 서버에는 sips가 없다).
 """
-import base64, datetime, hashlib, json, os, re, shutil, subprocess, sys, tempfile, urllib.request
+import base64, datetime, hashlib, json, os, re, shutil, subprocess, sys, tempfile, urllib.parse, urllib.request
 import xml.etree.ElementTree as ET
 KST = datetime.timezone(datetime.timedelta(hours=9))   # 한국 표준시(서머타임 없음)
 from email.utils import parsedate_to_datetime
@@ -306,10 +306,13 @@ def main():
         shutil.copyfile(path, os.path.join(out_dir, name))
     at_path = os.path.join(HERE, "audiotest.html")   # 재생 시험 페이지(재생 문제 원인 가르기용): 최신 회차 음원 주소를 끼워 내보낸다
     if os.path.exists(at_path):
+        clip = os.path.join(HERE, "audiotest-clip.mp3")   # 시험 H 용 짧은 음원(우리 도메인에서 바로 받는 3분짜리)
+        if os.path.exists(clip):
+            shutil.copyfile(clip, os.path.join(out_dir, "audiotest-clip.mp3"))
         newest = [e for c in channels if c["id"] == "geobuk" for e in c["episodes"]][:1]
         if newest and newest[0].get("audio"):
             open(os.path.join(out_dir, "audiotest.html"), "w", encoding="utf-8").write(
-                open(at_path, encoding="utf-8").read().replace("__SRC__", newest[0]["audio"]).replace("[22화] 전국투어 1탄 (feat. 공주 책방, 잇다)", newest[0].get("title", "")))
+                open(at_path, encoding="utf-8").read().replace("__SRC__", newest[0]["audio"]).replace("__CF__", urllib.parse.unquote(newest[0]["audio"].rsplit("/", 1)[-1]) if newest[0]["audio"].startswith("https://anchor.fm/") else newest[0]["audio"]).replace("[22화] 전국투어 1탄 (feat. 공주 책방, 잇다)", newest[0].get("title", "")))
     adm_path = os.path.join(HERE, "admin.html")   # 관리자 화면(로그인한 관리자만 데이터를 봄): 회차·프로그램 목록과 연결 값을 끼워 내보낸다
     if os.path.exists(adm_path) and sbcfg:
         eps = [{"key": "%s-%s" % (c["id"], e["n"]), "ch": c["id"], "chName": c["name"], "n": e["n"], "title": e.get("title", ""), "date": e.get("date", ""), "sec": e.get("sec") or 0}

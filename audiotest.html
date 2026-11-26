@@ -17,6 +17,7 @@
   button { font:inherit; font-weight:700; color:#14161B; background:var(--btn); border:0; border-radius:12px; padding:14px 18px; min-height:48px; margin:0 8px 8px 0; }
   audio { width:100%; }
   .st { font:13px/1.5 ui-monospace, Menlo, monospace; color:var(--fg); }
+  .log { white-space: pre-wrap; font: 11px/1.45 ui-monospace, Menlo, monospace; max-height: 340px; overflow: auto; background: rgba(127,127,127,.08); padding: 8px; border-radius: 8px; margin: 8px 0 0; }
   ol { padding-left:18px; margin:8px 0 0; font-size:13px; color:var(--muted); }
 </style>
 </head>
@@ -76,6 +77,27 @@
 </section>
 
 <section>
+  <h2>H. 우리 도메인의 짧은 음원</h2>
+  <p>C와 같은 방식이지만 음원을 우리 사이트 주소에서 바로 받아요(3분짜리, 리디렉션 없음).</p>
+  <button id="h-play" type="button">재생 / 멈춤</button>
+  <div class="st" id="h-st">멈춤 0:00</div>
+</section>
+
+<section>
+  <h2>I. 리디렉션 없이 직접 주소</h2>
+  <p>C와 같은 방식이지만 앵커(anchor.fm)를 거치지 않고 실제 파일 주소로 바로 받아요.</p>
+  <button id="i-play" type="button">재생 / 멈춤</button>
+  <div class="st" id="i-st">멈춤 0:00</div>
+</section>
+
+<section>
+  <h2>재생 기록</h2>
+  <p>안 될 때 이 기록을 캡처해서 보내 주세요. 어떤 일이 있었는지 그대로 남아요.</p>
+  <button id="log-clear" type="button">기록 지우기</button>
+  <pre class="log" id="log">기록이 아직 없어요</pre>
+</section>
+
+<section>
   <h2>시험 방법</h2>
   <ol>
     <li>세 가지 중 하나에서 재생을 눌러요.</li>
@@ -83,7 +105,7 @@
     <li>잠금 화면에서 멈춤 → 5초 기다리기 → 재생.</li>
     <li>소리가 나는지, 시간이 멈춘 곳에서 이어지는지(앞으로 건너뛰지 않는지) 알려 주세요.</li>
     <li>각각 <b>두 번 이상 반복</b>해 주세요(멈춤 → 5초 → 재생을 연달아 두 번). 한 번은 되고 두 번째에서 안 되는 경우가 있어요.</li>
-    <li>A, C, E, F, G 순서로 해 주세요(B, D는 이미 한 걸로 충분해요). 한 번에 하나만 재생돼요.</li>
+    <li>A, C, E, F, G 순서로 해 주세요(B, D는 이미 한 걸로 충분해요). 가능하면 H, I도 해 주세요. 한 번에 하나만 재생돼요.</li>
   </ol>
 </section>
 
@@ -93,7 +115,7 @@
   var ART = [{ src: "cover-geobuk.jpg", sizes: "720x720", type: "image/jpeg" }];
   var a0 = document.getElementById("a-el"); a0.src = SRC;
   function fmt(s) { s = Math.floor(s || 0); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
-  function stopOthers(except) { [a0, ac, ab, ad, ae, af, ag].forEach(function (x) { if (x && x !== except && !x.paused) x.pause(); }); }
+  function stopOthers(except) { [a0, ac, ab, ad, ae, af, ag, ah, ai].forEach(function (x) { if (x && x !== except && !x.paused) x.pause(); }); }
   function meta() {
     if (!("mediaSession" in navigator)) return;
     try { navigator.mediaSession.metadata = new MediaMetadata({ title: TITLE, artist: "거북목 라디오", album: "재생 시험", artwork: ART.map(function (a) { return { src: new URL(a.src, location.href).href, sizes: a.sizes, type: a.type }; }) }); } catch (e) {}
@@ -105,10 +127,13 @@
   var ab = new Audio(); ab.preload = "metadata"; ab.src = SRC;
   var ad = new Audio(); ad.preload = "metadata"; ad.src = SRC;
   var ag = new Audio(); ag.preload = "metadata"; ag.src = SRC;
+  var CF = "__CF__";
+  var ah = new Audio(); ah.preload = "metadata"; ah.src = "audiotest-clip.mp3";
+  var ai = new Audio(); ai.preload = "metadata"; ai.src = CF;
   var ae = document.createElement("audio"); ae.preload = "metadata"; ae.src = SRC; document.getElementById("e-host").appendChild(ae);
   var af = document.createElement("video"); af.setAttribute("playsinline", ""); af.setAttribute("webkit-playsinline", ""); af.preload = "metadata"; af.src = SRC; af.style.width = "100%"; af.style.height = "60px"; af.style.background = "#000"; document.getElementById("f-host").appendChild(af);
   function paint(a, id) { document.getElementById(id).textContent = (a.paused ? "멈춤 " : "재생 ") + fmt(a.currentTime); }
-  setInterval(function () { paint(ac, "c-st"); paint(ab, "b-st"); paint(ad, "d-st"); paint(ae, "e-st"); paint(af, "f-st"); paint(ag, "g-st"); }, 500);
+  setInterval(function () { paint(ac, "c-st"); paint(ab, "b-st"); paint(ad, "d-st"); paint(ae, "e-st"); paint(af, "f-st"); paint(ag, "g-st"); paint(ah, "h-st"); paint(ai, "i-st"); }, 500);
 
   document.getElementById("c-play").onclick = function () {
     if (ac.paused) { stopOthers(ac); clearHandlers(); meta(); ac.play().catch(function (e) { document.getElementById("c-st").textContent = "재생 실패 " + e.name; }); } else ac.pause();
@@ -142,7 +167,28 @@
       if (el.paused) { stopOthers(el); clearHandlers(); meta(); var p = el.play(); if (p && p.catch) p.catch(function (e) { document.getElementById(st).textContent = "재생 실패 " + e.name; }); } else el.pause();
     };
   }
-  plain("e-play", ae, "e-st"); plain("f-play", af, "f-st");
+  plain("e-play", ae, "e-st"); plain("f-play", af, "f-st"); plain("h-play", ah, "h-st"); plain("i-play", ai, "i-st");
+
+  /* 재생 기록: 모든 요소의 이벤트를 시각·위치·상태와 함께 남긴다(이 기기에만 저장). */
+  var LOG = []; try { LOG = JSON.parse(localStorage.getItem("ds_tlog") || "[]"); } catch (e) { LOG = []; }
+  function z(n) { return ("0" + n).slice(-2); }
+  function note(label, ev, el) {
+    var d = new Date(), extra = "";
+    if (el) { extra = " t=" + (el.currentTime || 0).toFixed(1) + (el.paused ? " 멈춤" : " 재생") + " rs" + el.readyState + " ns" + el.networkState + (el.error ? " 오류" + el.error.code : ""); }
+    LOG.push(z(d.getHours()) + ":" + z(d.getMinutes()) + ":" + z(d.getSeconds()) + " " + label + " " + ev + extra + (document.hidden ? " 숨김" : ""));
+    if (LOG.length > 150) LOG.shift();
+    try { localStorage.setItem("ds_tlog", JSON.stringify(LOG)); } catch (e) {}
+    var pre = document.getElementById("log"); pre.textContent = LOG.join("\n"); pre.scrollTop = pre.scrollHeight;
+  }
+  [["A", a0], ["C", ac], ["B", ab], ["D", ad], ["E", ae], ["F", af], ["G", ag], ["H", ah], ["I", ai]].forEach(function (x) {
+    ["loadstart", "loadedmetadata", "canplay", "play", "playing", "pause", "waiting", "stalled", "suspend", "emptied", "abort", "error", "seeking", "seeked", "ended"].forEach(function (ev) {
+      x[1].addEventListener(ev, function () { note(x[0], ev, x[1]); });
+    });
+  });
+  ["visibilitychange", "freeze", "resume"].forEach(function (ev) { document.addEventListener(ev, function () { note("화면", ev + (ev === "visibilitychange" ? "=" + document.visibilityState : ""), null); }); });
+  ["pagehide", "pageshow"].forEach(function (ev) { addEventListener(ev, function () { note("화면", ev, null); }); });
+  document.getElementById("log-clear").onclick = function () { LOG = []; try { localStorage.removeItem("ds_tlog"); } catch (e) {} document.getElementById("log").textContent = "기록이 아직 없어요"; };
+  if (LOG.length) document.getElementById("log").textContent = LOG.join("\n");
 
   /* G: 한 개의 오디오 요소를 쓰고, 화면이 숨겨진 채 멈추면 무음 소리(반복)로 바꿔 연결을 유지한다. 무음 상태에서 다시 재생이 오면 저장한 위치에서 실제 소리로 되돌린다. */
   function silentUrl() {
